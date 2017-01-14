@@ -5,6 +5,7 @@ import com.github.mte.util.Logs;
 import com.github.mte.util.U;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
@@ -129,7 +130,8 @@ public class Config {
 
                     for (int i = 0; i < incrementColumn.size(); i++) {
                         String column = incrementColumn.get(i);
-                        querySql.append(String.format(" `%s` > %s", column, params[i]));
+                        querySql.append(String.format(" `%s`) > ", column))
+                                .append(NumberUtils.isNumber(params[i]) ? params[i] : String.format("'%s'", params[i]));
                         if (i + 1 != incrementColumn.size()) {
                             querySql.append(" AND");
                         }
