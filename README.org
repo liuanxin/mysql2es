@@ -2,7 +2,7 @@
 ** mysql to es
 
   同步 mysql 表的数据到 es 的精简版本, 只支持添加和更新, 不支持物理删除, 建议使用逻辑删除
-  基于 jdk 8 和 spring boot, 支持 es 5.1.1(截至 2017 1)
+  基于 jdk 8 和 spring boot, 支持 es 5.1.1(截至 2017 年 1 月)
 
 相关的配置(application.yml)如下:
 
