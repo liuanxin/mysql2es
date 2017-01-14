@@ -1,0 +1,60 @@
+
+** mysql to es
+
+  同步 mysql 表的数据到 es 的精简版本, 只支持添加和更新, 不支持物理删除, 建议使用逻辑删除
+  基于 jdk 8 和 spring boot, 支持 es 5.1.1(截至 2017 1)
+
+相关的配置(application.yml)如下:
+
+#+BEGIN_SRC yaml
+config:
+  ip-port: ["127.0.0.1:9300"]     # 可以不设定, 默认是 127.0.0.1:9300
+  cron: 0 * * * * *               # 可以不设定, 将会同步运行时的所有数据
+
+  index: lawyer                   # *** 必须设定. 表示 es 中 /index/type/id 的 index, 与 database name 对应
+  relation:
+    -
+      table: T_PRODUCT            # *** 必须设定且要有主键. 主键用来生成 es 中 /index/type/id 的 id, 如果多序列主键将会拼接
+      increment-column: ["ID"]    # *** 必须设定. 表示用来做数据增量主要用来增量操作时用
+
+    -                             # 多张表
+      table: T_SOME               # *** 必须设定且要有主键
+      increment-column: ["ID"]    # *** 必须设定
+
+      type: some                  # 表示 es 中 /index/type/id 的 type, 不设定将会自动从数据库表名生成(t_some_one ==> someOne)
+      sql: select * from T_SOME   # 自定义的 sql 语句, 不设定将会自动从数据库表拼装
+      limit: 10                   # 一次从数据库获取的条数, 默认是 20
+      mapping:                    # 对应关系. 「db column」: 「es field」, 不设定将会自动从表字段生成(c_id_name ==> idName)
+        ID: id
+        NAME: name
+        CREATE_TIME: createTime
+        UPDATE_TIME: updateTime
+        IS_DELETE: isDelete
+#+END_SRC
+
+cron 的说明如下
+#+BEGIN_EXAMPLE
+.---------------- second (0 - 59)     if (0/10) then (0, 10, 20, 30, 40, 50) run
+.  .---------------- minute (0 - 59)
+.  .  .------------- hour (0 - 23)
+.  .  .  .---------- day of month (1 - 31)
+.  .  .  .  .------- month (1 - 12) OR jan,feb,mar,apr,may,jun,jul,aug,sep,oct,nov,dec
+.  .  .  .  .  .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat
+.  .  .  .  .  .
+?  *  *  *  *  *
+
+如  0/5 * * * * *  表示每 5 秒运行一次
+#+END_EXAMPLE
+
+
+** run
+
+#+BEGIN_SRC conf
+mvn clean package; java -jar target/mysql2es-1.0-SNAPSHOT.jar
+#+END_SRC
+
+or
+
+#+BEGIN_SRC conf
+mvn spring-boot:run
+#+END_SRC

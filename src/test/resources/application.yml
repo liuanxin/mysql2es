@@ -1,0 +1,18 @@
+
+spring.profiles.active: test
+
+db:
+  url: jdbc:mysql://192.168.10.224:3306/test?useUnicode=true&characterEncoding=utf8&statementInterceptors=com.github.mte.util.PrintSql
+  userName: root
+  password: root
+
+config:
+  ip-port: ["192.168.10.224:9300"]
+  index: platform
+  relation:
+    -
+      table: T_PRODUCT
+      increment-column: ID
+    -
+      table: T_CONTENT
+      increment-column: UPDATE_TIME
