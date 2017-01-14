@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <include resource="org/springframework/boot/logging/logback/defaults.xml" />
+    <property name="CONSOLE_LOG_PATTERN" value="%d [${PID:- } %t\\(%logger\\) : %p]%n%class.%method \\(%file:%line\\)%n%m%n%n"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml" />
+
+    <logger name="io.netty" level="warn"/>
+    <logger name="org.apache" level="warn"/>
+    <logger name="com.github" level="warn"/>
+    <logger name="com.alibaba" level="warn"/>
+    <logger name="org.elasticsearch" level="warn"/>
+    <logger name="org.springframework" level="warn"/>
+
+    <root level="info">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>
