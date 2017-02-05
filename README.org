@@ -35,11 +35,11 @@ config:
 
 cron 的说明如下
 #+BEGIN_EXAMPLE
-.---------------- second (0 - 59)     if (0/10) then (0, 10, 20, 30, 40, 50) run
+.------------------- second (0 - 59)   if (0/10) then (0, 10, 20, 30, 40, 50) run
 .  .---------------- minute (0 - 59)
 .  .  .------------- hour (0 - 23)
 .  .  .  .---------- day of month (1 - 31)
-.  .  .  .  .------- month (1 - 12) OR jan,feb,mar,apr,may,jun,jul,aug,sep,oct,nov,dec
+.  .  .  .  .------- month (1 - 12)   OR jan,feb,mar,apr,may,jun,jul,aug,sep,oct,nov,dec
 .  .  .  .  .  .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat
 .  .  .  .  .  .
 ?  *  *  *  *  *
