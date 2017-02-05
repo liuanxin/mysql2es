@@ -18,7 +18,7 @@ config:
       table: T_PRODUCT            # *** 必须设定且要有主键. 主键会生成 es 中 /index/type/id 的 id, 主键如果多个将会拼接
       increment-column: ["ID"]    # *** 必须设定. 表示用来做数据增量操作时用
 
-    -                             # 多张表
+    -
       table: T_SOME               # *** 必须设定且要有主键
       increment-column: ["ID"]    # *** 必须设定
 
