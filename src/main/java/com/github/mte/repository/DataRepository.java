@@ -116,7 +116,7 @@ public class DataRepository {
                         if (i + 1 == mapList.size()) {
                             List<String> lastList = A.lists();
                             for (String column : relation.getIncrementColumn()) {
-                                lastList.add(getLast(objMap.get(column)));
+                                lastList.add(getObj(objMap.get(column)));
                             }
                             last = A.toStr(lastList);
                         }
@@ -171,7 +171,7 @@ public class DataRepository {
                         if (i + 1 == mapList.size()) {
                             List<String> lastList = A.lists();
                             for (String column : relation.getIncrementColumn()) {
-                                lastList.add(getLast(objMap.get(column)));
+                                lastList.add(getObj(objMap.get(column)));
                             }
                             last = A.toStr(lastList);
                         }
@@ -185,7 +185,8 @@ public class DataRepository {
         }
         return documents;
     }
-    private static String getLast(Object obj) {
+    /** if was time, return currentTimeMillis. else return string value */
+    private static String getObj(Object obj) {
         if (U.isBlank(obj)) {
             return U.EMPTY;
         } else if (obj instanceof Date) {
