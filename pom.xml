@@ -40,6 +40,7 @@
             <version>${lombok.version}</version>
         </dependency>
 
+        <!-- default es version: 2.2.0 -->
         <!--<dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-elasticsearch</artifactId>
