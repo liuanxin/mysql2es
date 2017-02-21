@@ -18,7 +18,7 @@ public class BondingService {
     }
 
     public void saveOrUpdateData() {
-        esRepository.saveData(dataRepository.incrementData());
+        esRepository.saveDataToEs(dataRepository.incrementData());
     }
 
     public void deleteScheme() {

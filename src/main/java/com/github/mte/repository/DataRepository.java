@@ -35,7 +35,7 @@ public class DataRepository {
     public List<Scheme> dbToEsScheme() {
         check();
 
-        List<Scheme> scheme = A.lists();
+        List<Scheme> schemeList = A.lists();
         for (Config.Relation relation : config.getRelation()) {
             String table = relation.getTable();
 
@@ -59,11 +59,11 @@ public class DataRepository {
                 if (Logs.ROOT_LOG.isWarnEnabled())
                     Logs.ROOT_LOG.warn("table ({}) no primary key, can't create index in es!", table);
             } else {
-                scheme.add(new Scheme().setIndex(config.getIndex())
+                schemeList.add(new Scheme().setIndex(config.getIndex())
                         .setType(relation.useType()).setProperties(propertyMap));
             }
         }
-        return scheme;
+        return schemeList;
     }
     private static Map<String, Map> dbToEsType(String fieldType) {
         if ("tinyint(1)".equals(fieldType)) {
@@ -80,54 +80,16 @@ public class DataRepository {
         for (Config.Relation relation : config.getRelation()) {
             List<String> keyList = relation.getKeyList();
             if (A.isEmpty(keyList)) {
+                // 把 mysql 的表结构同步到 es
                 dbToEsScheme();
                 keyList = relation.getKeyList();
             }
             // must have primary key
             if (A.isNotEmpty(keyList)) {
-                String sql = relation.querySql(last);
-
-                List<Map<String, Object>> mapList = jdbcTemplate.queryForList(sql);
-                if (A.isNotEmpty(mapList)) {
-                    List<Document> documents = A.lists();
-                    for (int i = 0; i < mapList.size(); i++) {
-                        Map<String, Object> objMap = mapList.get(i);
-
-                        StringBuilder id = new StringBuilder();
-                        for (String primary : keyList) {
-                            id.append(objMap.get(primary));
-                        }
-                        // Document no id, can't be save
-                        if (U.isNotBlank(id.toString())) {
-                            Map<String, Object> dataMap = A.newHashMap();
-                            for (Map.Entry<String, Object> entry : objMap.entrySet()) {
-                                String key = relation.useField(entry.getKey());
-                                if (U.isNotBlank(key)) {
-                                    dataMap.put(key, entry.getValue());
-                                }
-                            }
-                            // Document no data, don't need to save? or update to nil?
-                            // if (A.isNotEmpty(dataMap)) {
-                            documents.add(new Document().setIndex(config.getIndex())
-                                    .setType(relation.useType()).setId(id.toString()).setData(dataMap));
-                            // }
-                        }
-
-                        if (i + 1 == mapList.size()) {
-                            List<String> lastList = A.lists();
-                            for (String column : relation.getIncrementColumn()) {
-                                lastList.add(getObj(objMap.get(column)));
-                            }
-                            last = A.toStr(lastList);
-                        }
-                    }
-                    esRepository.saveData(documents);
-                    syncData(last);
-                }
+                syncDbToEs(last, relation, keyList);
             }
         }
     }
-
     public List<Document> incrementData() {
         check();
 
@@ -140,53 +102,73 @@ public class DataRepository {
             }
             // must have primary key
             if (A.isNotEmpty(keyList)) {
-                // read last id to temp file
-                String sql = relation.querySql(Files.read(config.getIndex(), relation.useType()));
-
-                List<Map<String, Object>> mapList = jdbcTemplate.queryForList(sql);
-                if (A.isNotEmpty(mapList)) {
-                    String last = U.EMPTY;
-                    for (int i = 0; i < mapList.size(); i++) {
-                        Map<String, Object> objMap = mapList.get(i);
-
-                        StringBuilder id = new StringBuilder();
-                        for (String primary : keyList) {
-                            id.append(objMap.get(primary));
-                        }
-                        // Document no id, can't be save
-                        if (U.isNotBlank(id.toString())) {
-                            Map<String, Object> dataMap = A.newHashMap();
-                            for (Map.Entry<String, Object> entry : objMap.entrySet()) {
-                                String key = relation.useField(entry.getKey());
-                                if (U.isNotBlank(key)) {
-                                    dataMap.put(key, entry.getValue());
-                                }
-                            }
-                            // Document no data, don't need to save? or update to nil?
-                            // if (A.isNotEmpty(dataMap)) {
-                            documents.add(new Document().setIndex(config.getIndex())
-                                    .setType(relation.useType()).setId(id.toString()).setData(dataMap));
-                            // }
-                        }
-                        if (i + 1 == mapList.size()) {
-                            List<String> lastList = A.lists();
-                            for (String column : relation.getIncrementColumn()) {
-                                lastList.add(getObj(objMap.get(column)));
-                            }
-                            last = A.toStr(lastList);
-                        }
-                    }
-                    // write last id in temp file
-                    if (U.isNotBlank(last)) {
-                        Files.write(config.getIndex(), relation.useType(), last);
-                    }
-                }
+                syncDbToEsByTmpFile(documents, relation, keyList);
             }
         }
         return documents;
     }
+    /** 把数据库数据同步到 es. 递归调用 */
+    private void syncDbToEs(String last, Config.Relation relation, List<String> keyList) {
+        List<Map<String, Object>> mapList = jdbcTemplate.queryForList(relation.querySql(last));
+        if (A.isNotEmpty(mapList)) {
+            List<Document> documents = A.lists();
+            last = getDocuments(documents, relation, keyList, mapList);
+            esRepository.saveDataToEs(documents);
+            syncDbToEs(last, relation, keyList);
+        }
+    }
+    private String getDocuments(List<Document> documents, Config.Relation relation,
+                                List<String> keyList, List<Map<String, Object>> dataList) {
+        String last = U.EMPTY;
+        for (int i = 0; i < dataList.size(); i++) {
+            Map<String, Object> objMap = dataList.get(i);
+
+            StringBuilder id = new StringBuilder();
+            for (String primary : keyList) {
+                id.append(objMap.get(primary));
+            }
+            // Document no id, can't be save
+            if (U.isNotBlank(id.toString())) {
+                Map<String, Object> dataMap = A.newHashMap();
+                for (Map.Entry<String, Object> entry : objMap.entrySet()) {
+                    String key = relation.useField(entry.getKey());
+                    if (U.isNotBlank(key)) {
+                        dataMap.put(key, entry.getValue());
+                    }
+                }
+                // Document no data, don't need to save? or update to nil?
+                // if (A.isNotEmpty(dataMap)) {
+                documents.add(new Document().setIndex(config.getIndex())
+                        .setType(relation.useType()).setId(id.toString()).setData(dataMap));
+                // }
+            }
+            if (i + 1 == dataList.size()) {
+                List<String> lastList = A.lists();
+                for (String column : relation.getIncrementColumn()) {
+                    lastList.add(getIncrement(objMap.get(column)));
+                }
+                last = A.toStr(lastList);
+            }
+        }
+        return last;
+    }
+    private void syncDbToEsByTmpFile(List<Document> documents, Config.Relation relation, List<String> keyList) {
+        // read last id to temp file
+        String sql = relation.querySql(Files.read(config.getIndex(), relation.useType()));
+
+        List<Map<String, Object>> mapList = jdbcTemplate.queryForList(sql);
+        if (A.isNotEmpty(mapList)) {
+            String last = getDocuments(documents, relation, keyList, mapList);
+            // write last id in temp file
+            if (U.isNotBlank(last)) {
+                Files.write(config.getIndex(), relation.useType(), last);
+            }
+        }
+    }
+
+
     /** if was time, return currentTimeMillis. else return string value */
-    private static String getObj(Object obj) {
+    private static String getIncrement(Object obj) {
         if (U.isBlank(obj)) {
             return U.EMPTY;
         } else if (obj instanceof Date) {
