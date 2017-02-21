@@ -24,14 +24,8 @@ public class DataRepository {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    private void check() {
-        U.assertNil(config, "no config with mysql and es");
-        config.check();
-    }
-
     /** 将相关表的结构同步至 es */
     public List<Scheme> dbToEsScheme() {
-        check();
         List<Scheme> schemeList = A.lists();
         for (Config.Relation relation : config.getRelation()) {
             String table = relation.getTable();
@@ -137,7 +131,6 @@ public class DataRepository {
 
     /** 增量数据, 从临时文件中取值并查询固定数量的数据, 将最后一条记录的值写回临时文件 */
     public List<Document> incrementData() {
-        check();
         List<Document> documents = A.lists();
         for (Config.Relation relation : config.getRelation()) {
             List<String> keyList = relation.getKeyList();

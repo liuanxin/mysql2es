@@ -3,7 +3,6 @@ package com.github.mte.run;
 
 import com.github.mte.model.Config;
 import com.github.mte.service.BondingService;
-import com.github.mte.util.U;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -25,9 +24,6 @@ public class Job implements SchedulingConfigurer {
 
     @Override
     public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
-        U.assertNil(config, "no config with mysql and es");
-        config.check();
-
         bondingService.createScheme();
         taskRegistrar.addTriggerTask(bondingService::syncData, new CronTrigger(config.getCron()));
     }
