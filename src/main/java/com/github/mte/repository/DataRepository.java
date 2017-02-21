@@ -24,43 +24,42 @@ public class DataRepository {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    @Autowired
-    private EsRepository esRepository;
-
     private void check() {
         U.assertNil(config, "no config with mysql and es");
         config.check();
     }
 
+    /** 将相关表的结构同步至 es */
     public List<Scheme> dbToEsScheme() {
         check();
-
         List<Scheme> schemeList = A.lists();
         for (Config.Relation relation : config.getRelation()) {
             String table = relation.getTable();
+            List<Map<String, Object>> mapList = jdbcTemplate.queryForList(String.format("desc `%s`", table));
+            if (A.isNotEmpty(mapList)) {
+                List<String> keyList = A.lists();
+                Map<String, Map> propertyMap = A.maps();
+                for (Map<String, Object> map : mapList) {
+                    Object column = map.get("Field");
+                    Object type = map.get("Type");
 
-            List<String> keyList = A.lists();
-            Map<String, Map> propertyMap = A.maps();
-            for (Map<String, Object> map : jdbcTemplate.queryForList("desc `" + table + "`")) {
-                Object column = map.get("Field");
-                Object type = map.get("Type");
+                    if (U.isNotBlank(column) && U.isNotBlank(type)) {
+                        propertyMap.put(relation.useField(column.toString()), dbToEsType(type.toString().toLowerCase()));
 
-                if (U.isNotBlank(column) && U.isNotBlank(type)) {
-                    propertyMap.put(relation.useField(column.toString()), dbToEsType(type.toString().toLowerCase()));
-
-                    Object key = map.get("Key");
-                    if (U.isNotBlank(key) && "PRI".equals(key)) {
-                        keyList.add(column.toString());
+                        Object key = map.get("Key");
+                        if (U.isNotBlank(key) && "PRI".equals(key)) {
+                            keyList.add(column.toString());
+                        }
                     }
                 }
-            }
-            relation.setKeyList(keyList);
-            if (A.isEmpty(keyList)) {
-                if (Logs.ROOT_LOG.isWarnEnabled())
-                    Logs.ROOT_LOG.warn("table ({}) no primary key, can't create index in es!", table);
-            } else {
-                schemeList.add(new Scheme().setIndex(config.getIndex())
-                        .setType(relation.useType()).setProperties(propertyMap));
+                relation.setKeyList(keyList);
+                if (A.isEmpty(keyList)) {
+                    if (Logs.ROOT_LOG.isWarnEnabled())
+                        Logs.ROOT_LOG.warn("table ({}) no primary key, can't create index in es!", table);
+                } else {
+                    schemeList.add(new Scheme().setIndex(config.getIndex())
+                            .setType(relation.useType()).setProperties(propertyMap));
+                }
             }
         }
         return schemeList;
@@ -75,50 +74,9 @@ public class DataRepository {
         }
     }
 
-    public void syncData(String last) {
-        check();
-        for (Config.Relation relation : config.getRelation()) {
-            List<String> keyList = relation.getKeyList();
-            if (A.isEmpty(keyList)) {
-                // 把 mysql 的表结构同步到 es
-                dbToEsScheme();
-                keyList = relation.getKeyList();
-            }
-            // must have primary key
-            if (A.isNotEmpty(keyList)) {
-                syncDbToEs(last, relation, keyList);
-            }
-        }
-    }
-    public List<Document> incrementData() {
-        check();
-
-        List<Document> documents = A.lists();
-        for (Config.Relation relation : config.getRelation()) {
-            List<String> keyList = relation.getKeyList();
-            if (A.isEmpty(keyList)) {
-                dbToEsScheme();
-                keyList = relation.getKeyList();
-            }
-            // must have primary key
-            if (A.isNotEmpty(keyList)) {
-                syncDbToEsByTmpFile(documents, relation, keyList);
-            }
-        }
-        return documents;
-    }
-    /** 把数据库数据同步到 es. 递归调用 */
-    private void syncDbToEs(String last, Config.Relation relation, List<String> keyList) {
-        List<Map<String, Object>> mapList = jdbcTemplate.queryForList(relation.querySql(last));
-        if (A.isNotEmpty(mapList)) {
-            List<Document> documents = A.lists();
-            last = getDocuments(documents, relation, keyList, mapList);
-            esRepository.saveDataToEs(documents);
-            syncDbToEs(last, relation, keyList);
-        }
-    }
-    private String getDocuments(List<Document> documents, Config.Relation relation,
-                                List<String> keyList, List<Map<String, Object>> dataList) {
+    /** 遍历结果集并返回最后一条 */
+    private String iterDocumentAndReturnLast(List<Document> documents, Config.Relation relation,
+                                             List<String> keyList, List<Map<String, Object>> dataList) {
         String last = U.EMPTY;
         for (int i = 0; i < dataList.size(); i++) {
             Map<String, Object> objMap = dataList.get(i);
@@ -152,22 +110,7 @@ public class DataRepository {
         }
         return last;
     }
-    private void syncDbToEsByTmpFile(List<Document> documents, Config.Relation relation, List<String> keyList) {
-        // read last id to temp file
-        String sql = relation.querySql(Files.read(config.getIndex(), relation.useType()));
-
-        List<Map<String, Object>> mapList = jdbcTemplate.queryForList(sql);
-        if (A.isNotEmpty(mapList)) {
-            String last = getDocuments(documents, relation, keyList, mapList);
-            // write last id in temp file
-            if (U.isNotBlank(last)) {
-                Files.write(config.getIndex(), relation.useType(), last);
-            }
-        }
-    }
-
-
-    /** if was time, return currentTimeMillis. else return string value */
+    /** 如果是时间类型, 返回时间戳, 否则返回其 toString */
     private static String getIncrement(Object obj) {
         if (U.isBlank(obj)) {
             return U.EMPTY;
@@ -176,6 +119,38 @@ public class DataRepository {
         } else {
             return obj.toString();
         }
+    }
+    /** 从临时文件读值并查询数据库, 将记录中的最后一条写回临时文件 */
+    private void syncDbToEsByTmpFile(List<Document> documents, Config.Relation relation, List<String> keyList) {
+        // read last id from temp file
+        String sql = relation.querySql(Files.read(config.getIndex(), relation.useType()));
+
+        List<Map<String, Object>> mapList = jdbcTemplate.queryForList(sql);
+        if (A.isNotEmpty(mapList)) {
+            String last = iterDocumentAndReturnLast(documents, relation, keyList, mapList);
+            // write last id to temp file
+            if (U.isNotBlank(last)) {
+                Files.write(config.getIndex(), relation.useType(), last);
+            }
+        }
+    }
+
+    /** 增量数据, 从临时文件中取值并查询固定数量的数据, 将最后一条记录的值写回临时文件 */
+    public List<Document> incrementData() {
+        check();
+        List<Document> documents = A.lists();
+        for (Config.Relation relation : config.getRelation()) {
+            List<String> keyList = relation.getKeyList();
+            if (A.isEmpty(keyList)) {
+                dbToEsScheme();
+                keyList = relation.getKeyList();
+            }
+            // must have primary key
+            if (A.isNotEmpty(keyList)) {
+                syncDbToEsByTmpFile(documents, relation, keyList);
+            }
+        }
+        return documents;
     }
 
     public void deleteTempFile() {

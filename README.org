@@ -10,13 +10,13 @@
 #+BEGIN_SRC yaml
 config:
   ip-port: ["127.0.0.1:9300"]     # 可以不设定, 默认是 127.0.0.1:9300
-  cron: 0 * * * * *               # 可以不设定, 将会同步运行时的所有数据
+  cron: 0 * * * * *               # 可以不设定, 默认是每分钟执行一次
 
   index: platform                 # *** 必须设定. 表示 es 中 /index/type/id 的 index, 与 database name 对应
   relation:
     -
       table: T_PRODUCT            # *** 必须设定且要有主键. 主键会生成 es 中 /index/type/id 的 id, 主键如果多个将会拼接
-      increment-column: ["ID"]    # *** 必须设定. 表示用来做数据增量操作时用
+      increment-column: ["ID"]    # *** 必须设定. 表示用来做数据增量操作时用, 使用 id 和 updateTime(更新时间戳)
 
     -
       table: T_SOME               # *** 必须设定且要有主键
@@ -60,3 +60,9 @@ mvn spring-boot:run
 #+END_SRC
 
 将 log.xml 中的项目 level info 改成 debug 可以看到更多的运行细节
+
+
+** 说明
+项目在启动时会基于配置进行数据库查询, 将相关的表结构保存至 es.
+而后定时器会在每分钟从临时文件读取值查询并同步进 es 且将最后的值写进临时文件.
+PS : 第一次运行时可以将定时任务的周期尽量短一点, 比如 5 秒一次.
