@@ -49,64 +49,68 @@ public class EsRepository {
     }
 
     public void deleteScheme(List<Scheme> schemes) {
-        if (A.isEmpty(schemes)) return;
+        if (A.isNotEmpty(schemes)) {
+            // try-with-resources
+            try (TransportClient client = connect()) {
+                IndicesAdminClient indices = client.admin().indices();
 
-        // try-with-resources
-        try (TransportClient client = connect()) {
-            IndicesAdminClient indices = client.admin().indices();
-
-            for (Scheme scheme : schemes) {
-                String index = scheme.getIndex();
-                String type = scheme.getType();
-                try {
-                    if (indices.prepareExists(index).get().isExists()) {
-                        DeleteIndexResponse resp = indices.prepareDelete(index).get();
-                        boolean flag = resp.isAcknowledged();
-                        if (Logs.ROOT_LOG.isDebugEnabled())
-                            Logs.ROOT_LOG.debug("delete scheme ({}/{}) return: ({})", index, type, flag);
+                for (Scheme scheme : schemes) {
+                    String index = scheme.getIndex();
+                    String type = scheme.getType();
+                    try {
+                        if (indices.prepareExists(index).get().isExists()) {
+                            DeleteIndexResponse resp = indices.prepareDelete(index).get();
+                            boolean flag = resp.isAcknowledged();
+                            if (Logs.ROOT_LOG.isDebugEnabled())
+                                Logs.ROOT_LOG.debug("delete scheme ({}/{}) return: ({})", index, type, flag);
+                        }
+                    } catch (ElasticsearchException e) {
+                        if (Logs.ROOT_LOG.isWarnEnabled())
+                            Logs.ROOT_LOG.warn(String.format("delete scheme (%s/%s) es exception", index, type), e);
                     }
-                }  catch (ElasticsearchException e) {
-                    if (Logs.ROOT_LOG.isWarnEnabled())
-                        Logs.ROOT_LOG.warn(String.format("delete scheme (%s/%s) es exception", index, type), e);
                 }
             }
         }
     }
 
     public void saveScheme(List<Scheme> schemes) {
-        if (A.isEmpty(schemes)) return;
-
-        // try-with-resources
-        try (TransportClient client = connect()) {
-            IndicesAdminClient indices = client.admin().indices();
-
+        if (A.isNotEmpty(schemes)) {
             List<Scheme> successList = A.lists();
-            for (Scheme scheme : schemes) {
-                String index = scheme.getIndex();
-                String type = scheme.getType();
-                try {
-                    // create index if not exists
-                    if (!indices.prepareExists(index).get().isExists()) {
-                        indices.prepareCreate(index).get();
-                    }
-                    //indices.prepareDelete(index).get().isAcknowledged()
 
-                    String source = Jsons.toJson(A.maps("properties", scheme.getProperties()));
-                    if (Logs.ROOT_LOG.isDebugEnabled()) {
-                        Logs.ROOT_LOG.debug("curl -XPUT \"http://{}/{}/{}/_mapping\" -d '{}'",
-                                config.ipAndPort(), index, type, source);
+            // try-with-resources
+            try (TransportClient client = connect()) {
+                IndicesAdminClient indices = client.admin().indices();
+
+                for (Scheme scheme : schemes) {
+                    String index = scheme.getIndex();
+                    String type = scheme.getType();
+                    try {
+                        // create index if not exists
+                        if (!indices.prepareExists(index).get().isExists()) {
+                            indices.prepareCreate(index).get();
+                        }
+                        // indices.prepareDelete(index).get().isAcknowledged()
+
+                        String source = Jsons.toJson(A.maps("properties", scheme.getProperties()));
+                        if (Logs.ROOT_LOG.isDebugEnabled()) {
+                            Logs.ROOT_LOG.debug("curl -XPUT \"http://{}/{}/{}/_mapping\" -d '{}'",
+                                    config.ipAndPort(), index, type, source);
+                        }
+                        // create or update mapping
+                        PutMappingResponse resp = indices.preparePutMapping(index).setType(type).setSource(source).get();
+                        boolean flag = resp.isAcknowledged();
+                        if (flag) {
+                            successList.add(scheme);
+                        }
+                        if (Logs.ROOT_LOG.isDebugEnabled())
+                            Logs.ROOT_LOG.debug("put scheme ({}/{}) return: ({})", index, type, flag);
+                    } catch (ElasticsearchException e) {
+                        if (Logs.ROOT_LOG.isWarnEnabled())
+                            Logs.ROOT_LOG.warn(String.format("put scheme (%s/%s) es exception", index, type), e);
                     }
-                    // create or update mapping
-                    PutMappingResponse resp = indices.preparePutMapping(index).setType(type).setSource(source).get();
-                    boolean flag = resp.isAcknowledged();
-                    if (Logs.ROOT_LOG.isDebugEnabled())
-                        Logs.ROOT_LOG.debug("put scheme ({}/{}) return: ({})", index, type, flag);
-                    successList.add(scheme);
-                }  catch (ElasticsearchException e) {
-                    if (Logs.ROOT_LOG.isWarnEnabled())
-                        Logs.ROOT_LOG.warn(String.format("put scheme (%s/%s) es exception", index, type), e);
                 }
             }
+
             if (A.isNotEmpty(successList)) {
                 if (Logs.ROOT_LOG.isInfoEnabled())
                     Logs.ROOT_LOG.info("put {} schemes from db to es", successList);
@@ -114,22 +118,22 @@ public class EsRepository {
         }
     }
 
-    public void saveData(List<Document> documents) {
-        if (A.isEmpty(documents)) return;
-
-        try (TransportClient client = connect()) {
+    public void saveDataToEs(List<Document> documents) {
+        if (A.isNotEmpty(documents)) {
             List<Document> successList = A.lists();
-            for (Document doc : documents) {
-                try {
-                    IndexResponse response = client.prepareIndex(doc.getIndex(), doc.getType(), doc.getId())
-                            .setSource(Jsons.toJson(doc.getData())).get();
-                    if (Logs.ROOT_LOG.isDebugEnabled())
-                        Logs.ROOT_LOG.debug("create or update date return : {}", response.status());
+            try (TransportClient client = connect()) {
+                for (Document doc : documents) {
+                    try {
+                        IndexResponse response = client.prepareIndex(doc.getIndex(), doc.getType(), doc.getId())
+                                .setSource(Jsons.toJson(doc.getData())).get();
+                        if (Logs.ROOT_LOG.isDebugEnabled())
+                            Logs.ROOT_LOG.debug("create or update date return : {}", response.status());
 
-                    successList.add(doc);
-                }  catch (ElasticsearchException e) {
-                    if (Logs.ROOT_LOG.isWarnEnabled())
-                        Logs.ROOT_LOG.warn("create or update data es exception", e);
+                        successList.add(doc);
+                    } catch (ElasticsearchException e) {
+                        if (Logs.ROOT_LOG.isWarnEnabled())
+                            Logs.ROOT_LOG.warn("create or update data es exception", e);
+                    }
                 }
             }
             if (A.isNotEmpty(successList)) {

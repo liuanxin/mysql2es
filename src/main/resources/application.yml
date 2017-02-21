@@ -9,21 +9,24 @@ db:
 
 config:
   ip-port: ["192.168.10.224:9300"]       # default was 127.0.0.1:9300
-  # cron: 0/5 * * * * *                  # this mean: [0 5 10 15 20 25 30 35 40 45 50 55] second
+  cron: 0/5 * * * * *                    # this mean: [0 5 10 15 20 25 30 35 40 45 50 55] second
 
   index: lawyer                          # *** must set ES index <==> database name
   relation:
     -
       table: T_INFORMATION               # *** must set
       increment-column: ["ID"]           # *** must set
+      limit: 100
 
     -
       table: T_JUDGEMENT                 # *** must set
       increment-column: ["ID"]           # *** must set
+      limit: 80
 
     -
       table: T_LEGAL                     # *** must set
       increment-column: ["ID"]           # *** must set
+      limit: 50
 
 #      # above two param must set, table must have primary, if multi cloumn, will append
 #
