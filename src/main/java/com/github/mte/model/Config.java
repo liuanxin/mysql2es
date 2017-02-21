@@ -130,7 +130,7 @@ public class Config {
 
                     for (int i = 0; i < incrementColumn.size(); i++) {
                         String column = incrementColumn.get(i);
-                        querySql.append(String.format(" `%s`) > ", column))
+                        querySql.append(String.format(" `%s` > ", column))
                                 .append(NumberUtils.isNumber(params[i]) ? params[i] : String.format("'%s'", params[i]));
                         if (i + 1 != incrementColumn.size()) {
                             querySql.append(" AND");
