@@ -20,11 +20,11 @@ config:
     -
       table: T_JUDGEMENT                 # *** must set
       increment-column: ["ID"]           # *** must set
-      
-#    -
-#      table: T_LEGAL                     # *** must set
-#      increment-column: ["ID"]           # *** must set
-#
+
+    -
+      table: T_LEGAL                     # *** must set
+      increment-column: ["ID"]           # *** must set
+
 #      # above two param must set, table must have primary, if multi cloumn, will append
 #
 #      type: legal
