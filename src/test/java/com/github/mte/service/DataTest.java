@@ -17,7 +17,7 @@ public class DataTest extends BaseTest {
     @Sql(value = {"classpath:sql/delete.sql"}, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
     @Test
     public void test() {
-        bondingService.saveOrUpdateData();
+        bondingService.syncData();
     }
 
     @After

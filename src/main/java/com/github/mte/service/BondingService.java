@@ -17,7 +17,7 @@ public class BondingService {
         esRepository.saveScheme(dataRepository.dbToEsScheme());
     }
 
-    public void saveOrUpdateData() {
+    public void syncData() {
         esRepository.saveDataToEs(dataRepository.incrementData());
     }
 

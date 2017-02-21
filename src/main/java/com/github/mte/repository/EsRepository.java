@@ -18,6 +18,7 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.net.InetSocketAddress;
@@ -48,6 +49,7 @@ public class EsRepository {
         return client;
     }
 
+    @Async
     public void deleteScheme(List<Scheme> schemes) {
         if (A.isNotEmpty(schemes)) {
             // try-with-resources
@@ -73,6 +75,7 @@ public class EsRepository {
         }
     }
 
+    @Async
     public void saveScheme(List<Scheme> schemes) {
         if (A.isNotEmpty(schemes)) {
             List<Scheme> successList = A.lists();
@@ -118,6 +121,7 @@ public class EsRepository {
         }
     }
 
+    @Async
     public void saveDataToEs(List<Document> documents) {
         if (A.isNotEmpty(documents)) {
             List<Document> successList = A.lists();
