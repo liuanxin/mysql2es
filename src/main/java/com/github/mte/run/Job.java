@@ -28,10 +28,7 @@ public class Job implements SchedulingConfigurer {
         U.assertNil(config, "no config with mysql and es");
         config.check();
 
-        String cron = config.getCron();
-        if (U.isNotBlank(cron)) {
-            bondingService.createScheme();
-            taskRegistrar.addTriggerTask(bondingService::saveOrUpdateData, new CronTrigger(config.getCron()));
-        }
+        bondingService.createScheme();
+        taskRegistrar.addTriggerTask(bondingService::syncData, new CronTrigger(config.getCron()));
     }
 }

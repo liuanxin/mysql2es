@@ -3,11 +3,12 @@ package com.github.mte.model;
 import com.github.mte.util.A;
 import com.github.mte.util.Logs;
 import com.github.mte.util.U;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.Accessors;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 import java.util.Map;
@@ -20,8 +21,9 @@ import java.util.Map;
  */
 @Getter
 @Setter
-@Configuration
-@ConfigurationProperties(prefix = "config")
+@NoArgsConstructor
+@AllArgsConstructor
+@Accessors(chain = true)
 public class Config {
 
     List<String> ipPort = A.lists("127.0.0.1:9300");
@@ -43,7 +45,7 @@ public class Config {
      *
      * @see org.springframework.scheduling.support.CronSequenceGenerator#parse(java.lang.String)
      */
-    String cron; // = "0 * * * * *"; every minutes
+    String cron = "0 * * * * *"; // every minutes with default
 
     /**
      * <pre>
@@ -70,12 +72,12 @@ public class Config {
      */
     List<Relation> relation;
 
+
     public void check() {
         U.assertNil(index, "must set (es index name) <==> database name");
         U.assertException(relation == null || A.isEmpty(relation), "must set [db es] relation");
         relation.forEach(Config.Relation::check);
     }
-
     public String ipAndPort() {
         return A.isEmpty(ipPort) ? U.EMPTY : ipPort.iterator().next();
     }
@@ -87,7 +89,7 @@ public class Config {
         String table;
         String type;
         String sql;
-        Integer limit = 20;
+        Integer limit = new Integer(50);
         List<String> incrementColumn;
         Map<String, String> mapping;
 
@@ -115,7 +117,7 @@ public class Config {
             }
             return U.columnToField(column);
         }
-
+        /** generate query sql */
         public String querySql(String param) {
             check();
 
@@ -125,20 +127,26 @@ public class Config {
             // param split length = increment column size
             if (U.isNotBlank(param)) {
                 String params[] = param.split(U.SPLIT);
-                if (incrementColumn.size() == params.length) {
+                if (incrementColumn.size() != params.length) {
+                    if (Logs.ROOT_LOG.isErrorEnabled())
+                        Logs.ROOT_LOG.error("increment ({}) != param ({})", A.toStr(incrementColumn), param);
+                } else {
                     querySql.append(querySql.toString().toUpperCase().contains(" WHERE ") ? " AND" : " WHERE");
 
                     for (int i = 0; i < incrementColumn.size(); i++) {
-                        String column = incrementColumn.get(i);
-                        querySql.append(String.format(" `%s` > ", column))
-                                .append(NumberUtils.isNumber(params[i]) ? params[i] : String.format("'%s'", params[i]));
-                        if (i + 1 != incrementColumn.size()) {
-                            querySql.append(" AND");
+                        String p = params[i];
+                        if (U.isNotBlank(p)) {
+                            String column = incrementColumn.get(i);
+                            if (NumberUtils.isNumber(p)) {
+                                querySql.append(String.format(" `%s` > %d", column, NumberUtils.toLong(p)));
+                            } else {
+                                querySql.append(String.format(" `%s` > '%s'", column, p));
+                            }
+                            if (i + 1 != incrementColumn.size()) {
+                                querySql.append(" AND");
+                            }
                         }
                     }
-                } else {
-                    if (Logs.ROOT_LOG.isErrorEnabled())
-                        Logs.ROOT_LOG.error("increment ({}) != param ({})", A.toStr(incrementColumn), param);
                 }
             }
             querySql.append(" ORDER BY");
