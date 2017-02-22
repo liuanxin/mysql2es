@@ -1,5 +1,5 @@
 
-logging.config: classpath:log.xml
+logging.config: classpath:log-prod.xml
 
 db:
   url: jdbc:mysql://192.168.10.224:3306/lawyer-preview?useUnicode=true&characterEncoding=utf8&statementInterceptors=com.github.mte.util.PrintSql
