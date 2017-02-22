@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <property name="LOG_PATTERN" value="[%X{receiveTime}%d] [${PID:- } %t\\(%logger\\) : %p] [%X{requestInfo} %X{headInfo}] %class{30}#%method\\(%file:%line\\)%n%m%n%n"/>
+    <property name="FILE_PATH" value="${user.home}/logs/mysql2es"/>
+
+    <appender name="PROJECT" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${FILE_PATH}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${FILE_PATH}-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>10</maxHistory>
+        </rollingPolicy>
+
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <includeCallerData>true</includeCallerData>
+        <appender-ref ref ="PROJECT"/>
+    </appender>
+
+    <logger name="com.hhly.business" level="info"/>
+    <logger name="org.apache" level="warn"/>
+    <logger name="com.github" level="warn"/>
+    <logger name="com.alibaba" level="warn"/>
+    <logger name="org.springframework" level="warn"/>
+
+    <root level="info">
+        <appender-ref ref="ASYNC"/>
+    </root>
+</configuration>
