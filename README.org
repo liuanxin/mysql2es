@@ -50,16 +50,15 @@ cron 的说明如下
 
 ** 运行
 #+BEGIN_SRC conf
-mvn clean package; java -jar target/mysql2es-1.0-SNAPSHOT.jar
+mvn clean package; nohup java -jar -Dspring.profiles.active=prod target/mysql2es-1.0-SNAPSHOT.jar >/dev/null 2>&1 &
 #+END_SRC
 
 or
 
 #+BEGIN_SRC conf
-mvn spring-boot:run
+nohup mvn spring-boot:run -Dspring.profiles.active=prod >/dev/null 2>&1 &
 #+END_SRC
 
-将 log.xml 中的项目 level info 改成 debug 可以看到更多的运行细节
 
 
 ** 说明
