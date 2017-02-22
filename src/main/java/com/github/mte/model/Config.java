@@ -89,7 +89,7 @@ public class Config {
         String table;
         String type;
         String sql;
-        Integer limit = new Integer(50);
+        Integer limit = 50;
         List<String> incrementColumn;
         Map<String, String> mapping;
 
@@ -117,10 +117,13 @@ public class Config {
             }
             return U.columnToField(column);
         }
+
+        /** generate desc sql */
+        public String descSql() {
+            return String.format("desc `%s`", table);
+        }
         /** generate query sql */
         public String querySql(String param) {
-            check();
-
             StringBuilder querySql = new StringBuilder();
             querySql.append(U.isNotBlank(sql) ? sql : String.format("SELECT * FROM `%s`", table));
 
