@@ -28,8 +28,7 @@ public class DataRepository {
     public List<Scheme> dbToEsScheme() {
         List<Scheme> schemeList = A.lists();
         for (Config.Relation relation : config.getRelation()) {
-            String table = relation.getTable();
-            List<Map<String, Object>> mapList = jdbcTemplate.queryForList(String.format("desc `%s`", table));
+            List<Map<String, Object>> mapList = jdbcTemplate.queryForList(relation.descSql());
             if (A.isNotEmpty(mapList)) {
                 List<String> keyList = A.lists();
                 Map<String, Map> propertyMap = A.maps();
@@ -46,13 +45,12 @@ public class DataRepository {
                         }
                     }
                 }
-                relation.setKeyList(keyList);
                 if (A.isEmpty(keyList)) {
                     if (Logs.ROOT_LOG.isWarnEnabled())
-                        Logs.ROOT_LOG.warn("table ({}) no primary key, can't create index in es!", table);
+                        Logs.ROOT_LOG.warn("table ({}) no primary key, can't create index in es!", relation.getTable());
                 } else {
-                    schemeList.add(new Scheme().setIndex(config.getIndex())
-                            .setType(relation.useType()).setProperties(propertyMap));
+                    relation.setKeyList(keyList);
+                    schemeList.add(new Scheme(config.getIndex(), relation.useType(), propertyMap));
                 }
             }
         }
@@ -68,13 +66,54 @@ public class DataRepository {
         }
     }
 
-    /** 遍历结果集并返回最后一条 */
-    private String iterDocumentAndReturnLast(List<Document> documents, Config.Relation relation,
-                                             List<String> keyList, List<Map<String, Object>> dataList) {
-        String last = U.EMPTY;
-        for (int i = 0; i < dataList.size(); i++) {
-            Map<String, Object> objMap = dataList.get(i);
+    /** 增量数据, 从临时文件中取值并查询固定数量的数据, 将最后一条记录的值写回临时文件 */
+    public List<Document> incrementData() {
+        List<Document> documents = A.lists();
+        for (Config.Relation relation : config.getRelation()) {
+            List<String> keyList = relation.getKeyList();
+            if (A.isEmpty(keyList)) {
+                dbToEsScheme();
+                keyList = relation.getKeyList();
+            }
+            // must have primary key
+            if (A.isNotEmpty(keyList)) {
+                // read last id from temp file
+                String sql = relation.querySql(Files.read(config.getIndex(), relation.useType()));
+                List<Map<String, Object>> dataList = jdbcTemplate.queryForList(sql);
+                if (A.isNotEmpty(dataList)) {
+                    // write last id to temp file
+                    String last = getLast(relation.getIncrementColumn(), dataList);
+                    if (U.isNotBlank(last)) {
+                        Files.write(config.getIndex(), relation.useType(), last);
+                    }
 
+                    documents.addAll(fixDocument(relation, keyList, dataList));
+                }
+            }
+        }
+        return documents;
+    }
+    /** 返回最后一条记录 */
+    private String getLast(List<String> incrementColumnList, List<Map<String, Object>> dataList) {
+        Map<String, Object> last = A.last(dataList);
+        if (A.isNotEmpty(last)) {
+            List<String> lastList = A.lists();
+            for (String column : incrementColumnList) {
+                Object obj = last.get(column);
+                if (U.isNotBlank(obj)) {
+                    // 如果是时间类型则返回时间戳, 否则返回其 toString
+                    lastList.add((obj instanceof Date) ? String.valueOf(((Date) obj).getTime()) : obj.toString());
+                }
+            }
+            return A.toStr(lastList);
+        }
+        return U.EMPTY;
+    }
+    /** 遍历结果集并整理成 es 相关的数据集 */
+    private List<Document> fixDocument(Config.Relation relation, List<String> keyList,
+                                       List<Map<String, Object>> dataList) {
+        List<Document> documents = A.lists();
+        for (Map<String, Object> objMap : dataList) {
             StringBuilder id = new StringBuilder();
             for (String primary : keyList) {
                 id.append(objMap.get(primary));
@@ -94,57 +133,10 @@ public class DataRepository {
                         .setType(relation.useType()).setId(id.toString()).setData(dataMap));
                 // }
             }
-            if (i + 1 == dataList.size()) {
-                List<String> lastList = A.lists();
-                for (String column : relation.getIncrementColumn()) {
-                    lastList.add(getIncrement(objMap.get(column)));
-                }
-                last = A.toStr(lastList);
-            }
-        }
-        return last;
-    }
-    /** 如果是时间类型, 返回时间戳, 否则返回其 toString */
-    private static String getIncrement(Object obj) {
-        if (U.isBlank(obj)) {
-            return U.EMPTY;
-        } else if (obj instanceof Date) {
-            return String.valueOf(((Date) obj).getTime());
-        } else {
-            return obj.toString();
-        }
-    }
-    /** 从临时文件读值并查询数据库, 将记录中的最后一条写回临时文件 */
-    private void syncDbToEsByTmpFile(List<Document> documents, Config.Relation relation, List<String> keyList) {
-        // read last id from temp file
-        String sql = relation.querySql(Files.read(config.getIndex(), relation.useType()));
-
-        List<Map<String, Object>> mapList = jdbcTemplate.queryForList(sql);
-        if (A.isNotEmpty(mapList)) {
-            String last = iterDocumentAndReturnLast(documents, relation, keyList, mapList);
-            // write last id to temp file
-            if (U.isNotBlank(last)) {
-                Files.write(config.getIndex(), relation.useType(), last);
-            }
-        }
-    }
-
-    /** 增量数据, 从临时文件中取值并查询固定数量的数据, 将最后一条记录的值写回临时文件 */
-    public List<Document> incrementData() {
-        List<Document> documents = A.lists();
-        for (Config.Relation relation : config.getRelation()) {
-            List<String> keyList = relation.getKeyList();
-            if (A.isEmpty(keyList)) {
-                dbToEsScheme();
-                keyList = relation.getKeyList();
-            }
-            // must have primary key
-            if (A.isNotEmpty(keyList)) {
-                syncDbToEsByTmpFile(documents, relation, keyList);
-            }
         }
         return documents;
     }
+
 
     public void deleteTempFile() {
         for (Config.Relation relation : config.getRelation()) {
