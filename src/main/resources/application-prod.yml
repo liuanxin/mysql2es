@@ -1,0 +1,26 @@
+
+logging.config: classpath:log.xml
+
+db:
+  url: jdbc:mysql://192.168.10.224:3306/lawyer-preview?useUnicode=true&characterEncoding=utf8&statementInterceptors=com.github.mte.util.PrintSql
+  userName: root
+  password: root
+
+
+config:
+  cron: 0/5 * * * * *
+
+  index: lawyer
+  relation:
+    -
+      table: T_INFORMATION
+      increment-column: ["ID"]
+      limit: 100
+    -
+      table: T_JUDGEMENT
+      increment-column: ["ID"]
+      limit: 80
+    -
+      table: T_LEGAL
+      increment-column: ["ID"]
+      limit: 50
