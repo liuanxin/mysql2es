@@ -76,7 +76,7 @@ public class Dates {
     }
 
     /** 2016-12-31 xx:yy:zz --> 2016-12-31 23:59:59 999 */
-    private static Date filterMaxHourMinuteSecond(Date date) {
+    public static Date startInDay(Date date) {
         if (U.isBlank(date)) return null;
 
         return new DateTime(date).hourOfDay().withMaximumValue()
@@ -85,7 +85,7 @@ public class Dates {
                 .millisOfSecond().withMaximumValue().toDate();
     }
     /** 2016-12-31 xx:yy:zz --> 2016-12-31 00:00:00 000 */
-    private static Date filterMinHourMinuteSecond(Date date) {
+    public static Date endInDay(Date date) {
         if (U.isBlank(date)) return null;
 
         return new DateTime(date).hourOfDay().withMinimumValue()
