@@ -1,5 +1,5 @@
 
-** MariaDB to es
+** MariaDB/MySQL to es
 
   同步 MariaDB 表的数据到 es 的精简版本, 只支持添加和更新, 不支持物理删除的更新, 建议使用逻辑删除.
   
