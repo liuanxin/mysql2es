@@ -21,7 +21,6 @@
         <appender-ref ref ="PROJECT"/>
     </appender>
 
-    <logger name="com.hhly.business" level="info"/>
     <logger name="org.apache" level="warn"/>
     <logger name="com.github" level="warn"/>
     <logger name="com.alibaba" level="warn"/>
