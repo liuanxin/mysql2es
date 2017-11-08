@@ -23,13 +23,13 @@ public class PrintSql implements StatementInterceptor {
             if (U.isNotBlank(sql)) {
                 int indexOf = sql.indexOf(':');
                 if (indexOf > 0) {
-                    sql = SqlFormat.format(sql.substring(indexOf + 1).trim());
+                    sql = sql.substring(indexOf + 1).trim();
                 }
             }
         }
         if (U.isNotBlank(sql)) {
             if (Logs.SQL_LOG.isDebugEnabled() && !"SELECT 1".equalsIgnoreCase(sql)) {
-                Logs.SQL_LOG.debug("{}", sql);
+                Logs.SQL_LOG.debug("{}", SqlFormat.format(sql));
             }
         }
         return null;
