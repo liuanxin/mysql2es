@@ -1,26 +1,28 @@
 
 logging.config: classpath:log-prod.xml
 
-db:
-  url: jdbc:mysql://192.168.10.224:3306/lawyer-preview?useUnicode=true&characterEncoding=utf8&statementInterceptors=com.github.mte.util.PrintSql
-  userName: root
+spring.datasource:
+  url: jdbc:mysql://127.0.0.0:3306?useSSL=false&useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true
+  username: root
   password: root
-
+  hikari:
+    minimumIdle: 10
+    maximumPoolSize: 30
+    dataSourceProperties:
+      prepStmtCacheSize: 250
+      prepStmtCacheSqlLimit: 2048
+      cachePrepStmts: true
+      useServerPrepStmts: true
 
 config:
   cron: 0/5 * * * * *
-
-  index: lawyer
+  index: db
   relation:
     -
-      table: T_INFORMATION
-      increment-column: ["ID"]
+      table: t_property
+      increment-column: ["id"]
       limit: 100
     -
-      table: T_JUDGEMENT
-      increment-column: ["ID"]
+      table: t_value
+      increment-column: ["id"]
       limit: 80
-    -
-      table: T_LEGAL
-      increment-column: ["ID"]
-      limit: 50

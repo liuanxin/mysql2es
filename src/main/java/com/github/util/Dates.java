@@ -1,4 +1,4 @@
-package com.github.mte.util;
+package com.github.util;
 
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -56,7 +56,9 @@ public class Dates {
 
     /** format date to string {@link Type} */
     public static String format(Date date, Type type) {
-        if (U.isBlank(date) || U.isBlank(type)) return U.EMPTY;
+        if (U.isBlank(date) || U.isBlank(type)) {
+            return U.EMPTY;
+        }
 
         return getDateFormat(type).print(date.getTime());
     }
@@ -65,19 +67,25 @@ public class Dates {
     }
     /** format string to date, type with every one in {@link Type} */
     public static Date parse(String source) {
-        if (U.isBlank(source)) return null;
+        if (U.isBlank(source)) {
+            return null;
+        }
 
         source = source.trim();
         for (Type type : Type.values()) {
             Date date = getDateFormat(type).parseDateTime(source).toDate();
-            if (date != null) return date;
+            if (date != null) {
+                return date;
+            }
         }
         return null;
     }
 
     /** 2016-12-31 xx:yy:zz --> 2016-12-31 23:59:59 999 */
     public static Date startInDay(Date date) {
-        if (U.isBlank(date)) return null;
+        if (U.isBlank(date)) {
+            return null;
+        }
 
         return new DateTime(date).hourOfDay().withMaximumValue()
                 .minuteOfHour().withMaximumValue()
@@ -86,7 +94,9 @@ public class Dates {
     }
     /** 2016-12-31 xx:yy:zz --> 2016-12-31 00:00:00 000 */
     public static Date endInDay(Date date) {
-        if (U.isBlank(date)) return null;
+        if (U.isBlank(date)) {
+            return null;
+        }
 
         return new DateTime(date).hourOfDay().withMinimumValue()
                 .minuteOfHour().withMinimumValue()

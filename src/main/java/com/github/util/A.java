@@ -1,4 +1,4 @@
-package com.github.mte.util;
+package com.github.util;
 
 import java.util.*;
 
@@ -39,12 +39,16 @@ public final class A {
         return toStr(array, ",");
     }
     public static String toStr(Object[] array, String split) {
-        if (isEmpty(array)) return U.EMPTY;
+        if (isEmpty(array)) {
+            return U.EMPTY;
+        }
 
         StringBuilder sbd = new StringBuilder();
         for (int i = 0; i < array.length; i++) {
             sbd.append(array[i]);
-            if (i + 1 != array.length) sbd.append(split);
+            if (i + 1 != array.length) {
+                sbd.append(split);
+            }
         }
         return sbd.toString();
     }
@@ -98,7 +102,9 @@ public final class A {
         return isEmpty(collection) ? null : collection.iterator().next();
     }
     public static <T> T last(Collection<T> collection) {
-        if (isEmpty(collection)) return null;
+        if (isEmpty(collection)) {
+            return null;
+        }
 
         if (collection instanceof List) {
             List<T> list = (List<T>) collection;
