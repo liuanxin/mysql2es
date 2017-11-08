@@ -1,12 +1,12 @@
-package com.github.mte.repository;
+package com.github.repository;
 
-import com.github.mte.model.Config;
-import com.github.mte.model.Document;
-import com.github.mte.model.Scheme;
-import com.github.mte.util.A;
-import com.github.mte.util.Files;
-import com.github.mte.util.Logs;
-import com.github.mte.util.U;
+import com.github.model.Document;
+import com.github.model.Config;
+import com.github.model.Scheme;
+import com.github.util.A;
+import com.github.util.Files;
+import com.github.util.Logs;
+import com.github.util.U;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -46,8 +46,9 @@ public class DataRepository {
                     }
                 }
                 if (A.isEmpty(keyList)) {
-                    if (Logs.ROOT_LOG.isWarnEnabled())
+                    if (Logs.ROOT_LOG.isWarnEnabled()) {
                         Logs.ROOT_LOG.warn("table ({}) no primary key, can't create index in es!", relation.getTable());
+                    }
                 } else {
                     relation.setKeyList(keyList);
                     schemeList.add(new Scheme(config.getIndex(), relation.useType(), propertyMap));

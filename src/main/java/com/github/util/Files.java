@@ -1,6 +1,6 @@
-package com.github.mte.util;
+package com.github.util;
 
-import com.github.mte.model.Const;
+import com.github.model.Const;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -15,13 +15,15 @@ public class Files {
     public static String read(String index, String type) {
         String fileName = getFileName(index, type);
         try {
-            return com.google.common.io.Files.toString(new File(fileName), U.UTF8);
+            return com.google.common.io.Files.asCharSource(new File(fileName), U.UTF8).read();
         } catch (FileNotFoundException e) {
-            if (Logs.ROOT_LOG.isDebugEnabled())
+            if (Logs.ROOT_LOG.isDebugEnabled()) {
                 Logs.ROOT_LOG.debug("no file ({})", fileName);
+            }
         } catch (IOException e) {
-            if (Logs.ROOT_LOG.isInfoEnabled())
+            if (Logs.ROOT_LOG.isInfoEnabled()) {
                 Logs.ROOT_LOG.info(String.format("read from file(%s) exception", fileName), e);
+            }
         }
         return U.EMPTY;
     }
@@ -30,11 +32,12 @@ public class Files {
         String fileName = getFileName(index, type);
         try {
             File file = new File(fileName);
-            com.google.common.io.Files.write(content, file, U.UTF8);
+            com.google.common.io.Files.asCharSink(file, U.UTF8).write(content);
             return true;
         } catch (IOException e) {
-            if (Logs.ROOT_LOG.isInfoEnabled())
+            if (Logs.ROOT_LOG.isInfoEnabled()) {
                 Logs.ROOT_LOG.info(String.format("write to file(%s) exception", fileName), e);
+            }
             return false;
         }
     }
@@ -42,8 +45,9 @@ public class Files {
     public static boolean delete(String index, String type) {
         String fileName = getFileName(index, type);
         boolean flag = new File(fileName).delete();
-        if (Logs.ROOT_LOG.isInfoEnabled())
+        if (Logs.ROOT_LOG.isInfoEnabled()) {
             Logs.ROOT_LOG.info("delete ({}) {}", fileName, flag);
+        }
 
         return flag;
     }

@@ -1,4 +1,4 @@
-package com.github.mte.model;
+package com.github.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -13,13 +13,15 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @Accessors(chain = true)
-public class Scheme {
+public class Document {
+
     String index;
     String type;
-    Map<String, Map> properties;
+    String id;
+    Map<String, Object> data;
 
     @Override
     public String toString() {
-        return index + "/" + type;
+        return index + "/" + type + "/" + id;
     }
 }

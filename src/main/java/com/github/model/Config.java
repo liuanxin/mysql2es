@@ -1,8 +1,8 @@
-package com.github.mte.model;
+package com.github.model;
 
-import com.github.mte.util.A;
-import com.github.mte.util.Logs;
-import com.github.mte.util.U;
+import com.github.util.A;
+import com.github.util.Logs;
+import com.github.util.U;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -103,17 +103,25 @@ public class Config {
 
         /** if not set the 「type」, generate from 「table name」 */
         public String useType() {
-            if (U.isNotBlank(type)) return type;
-            if (U.isNotBlank(table)) return U.tableToType(table);
+            if (U.isNotBlank(type)) {
+                return type;
+            }
+            if (U.isNotBlank(table)) {
+                return U.tableToType(table);
+            }
             return U.EMPTY;
         }
         /** if not config the 「mapping」, generate from 「column name」 */
         public String useField(String column) {
-            if (U.isBlank(column)) return U.EMPTY;
+            if (U.isBlank(column)) {
+                return U.EMPTY;
+            }
 
             if (A.isNotEmpty(mapping)) {
                 String field = mapping.get(column);
-                if (U.isNotBlank(field)) return field;
+                if (U.isNotBlank(field)) {
+                    return field;
+                }
             }
             return U.columnToField(column);
         }
@@ -131,8 +139,9 @@ public class Config {
             if (U.isNotBlank(param)) {
                 String params[] = param.split(U.SPLIT);
                 if (incrementColumn.size() != params.length) {
-                    if (Logs.ROOT_LOG.isErrorEnabled())
+                    if (Logs.ROOT_LOG.isErrorEnabled()) {
                         Logs.ROOT_LOG.error("increment ({}) != param ({})", A.toStr(incrementColumn), param);
+                    }
                 } else {
                     querySql.append(querySql.toString().toUpperCase().contains(" WHERE ") ? " AND" : " WHERE");
 

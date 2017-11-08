@@ -1,4 +1,4 @@
-package com.github.mte.model;
+package com.github.model;
 
 public final class Const {
 

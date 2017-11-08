@@ -1,47 +1,37 @@
 
 logging.config: classpath:log.xml
 
-db:
-  url: jdbc:mysql://192.168.10.224:3306/lawyer?useUnicode=true&characterEncoding=utf8&statementInterceptors=com.github.mte.util.PrintSql
-  userName: root
+spring.datasource:
+  url: jdbc:mysql://127.0.0.1:3306/db?useSSL=false&useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&statementInterceptors=com.github.util.sql.PrintSql
+  username: root
   password: root
+  hikari:
+    minimumIdle: 1
+    maximumPoolSize: 1
 
 
 config:
-  ip-port: ["192.168.10.224:9300"]       # default was 127.0.0.1:9300
-  cron: 0/5 * * * * *                    # this mean: [0 5 10 15 20 25 30 35 40 45 50 55] second
-
-  index: lawyer                          # *** must set ES index <==> database name
+  ip-port: ["127.0.0.1:9300"]    # default was 127.0.0.1:9300
+  cron: 0/5 * * * * *            # this mean: [0 5 10 15 20 25 30 35 40 45 50 55] second
+  index: db                      # *** must set ES index <==> database name
   relation:
     -
-      table: T_INFORMATION               # *** must set
-      increment-column: ["ID"]           # *** must set
+      table: t_property          # *** must set
+      increment-column: ["id"]   # *** must set
       limit: 100
-
     -
-      table: T_JUDGEMENT                 # *** must set
-      increment-column: ["ID"]           # *** must set
+      table: t_value             # *** must set
+      increment-column: ["id"]   # *** must set
       limit: 80
-
-    -
-      table: T_LEGAL                     # *** must set
-      increment-column: ["ID"]           # *** must set
-      limit: 50
 
 #      # above two param must set, table must have primary, if multi cloumn, will append
 #
-#      type: legal
-#      sql: select * from T_LEGAL
+#      type: simple
+#      sql: select * from t_simple
 #      limit: 10
 #      mapping:
-#        ID: id                           # mapping alias. key = db column, value = es field
-#        INDEX: index
-#        STATUS: status
-#        URL: url
-#        LEGAL_TYPE_ID: legalTypeId
-#        DATE: date
-#        TITLE: title
-#        CONTENT: content
-#        CREATE_TIME: createTime
-#        UPDATE_TIME: updateTime
-#        IS_DELETE: isDelete
+#        id: id                      # mapping alias. key = db column, value = es field
+#        user_name: userName
+#        create_time: createTime
+#        update_time: updateTime
+#        is_delete: isDelete

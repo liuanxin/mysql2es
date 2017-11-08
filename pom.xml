@@ -7,72 +7,60 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>1.5.1.RELEASE</version>
+        <version>1.5.8.RELEASE</version>
         <relativePath/>
     </parent>
 
-    <groupId>com.github.mte</groupId>
+    <groupId>com.github</groupId>
     <artifactId>mysql2es</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <properties>
         <java.version>1.8</java.version>
 
-        <elasticsearch.version>5.1.1</elasticsearch.version>
-        <druid.version>1.0.18</druid.version>
+        <elasticsearch.version>5.6.3</elasticsearch.version>
+        <hikaricp.version>2.7.2</hikaricp.version>
 
         <commons-lang3.version>3.4</commons-lang3.version>
-        <guava.version>20.0</guava.version>
-        <jackson.version>2.8.5</jackson.version>
-        <joda.version>2.9.6</joda.version>
+        <guava.version>23.0</guava.version>
+        <jackson.version>2.9.2</jackson.version>
+        <joda.version>2.9.9</joda.version>
 
-        <log4j-slf4j.version>2.7</log4j-slf4j.version>
-        <slf4j-api.version>1.7.21</slf4j-api.version>
-
-        <lombok.version>1.16.8</lombok.version>
-        <lombok-maven-plugin.version>1.16.8.0</lombok-maven-plugin.version>
+        <log4j-slf4j.version>2.9.1</log4j-slf4j.version>
+        <slf4j-api.version>1.7.25</slf4j-api.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
         </dependency>
 
-        <!-- default es version {"1.4.1": "2.2.0", "1.5.1": "2.4.0"}-->
-        <!--<dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-elasticsearch</artifactId>
-        </dependency>-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
-
 
         <dependency>
             <groupId>org.elasticsearch.client</groupId>
             <artifactId>transport</artifactId>
             <version>${elasticsearch.version}</version>
         </dependency>
-        <!-- es must have -->
+        <!-- es need -->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-to-slf4j</artifactId>
-            <version>${log4j-slf4j.version}</version>
-        </dependency>
-        <!-- es must have -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j-api.version}</version>
+            <artifactId>log4j-core</artifactId>
         </dependency>
 
-
         <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-jdbc</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.tomcat</groupId>
+                    <artifactId>tomcat-jdbc</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -81,9 +69,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>druid</artifactId>
-            <version>${druid.version}</version>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>${hikaricp.version}</version>
         </dependency>
 
         <dependency>
@@ -117,12 +105,6 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.projectlombok</groupId>
-                <artifactId>lombok-maven-plugin</artifactId>
-                <version>${lombok-maven-plugin.version}</version>
-            </plugin>
-
-            <plugin>
                 <artifactId>maven-source-plugin</artifactId>
                 <executions>
                     <execution>
@@ -145,7 +127,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>com.github.mte.DbToEsApplication</mainClass>
+                    <mainClass>com.github.DbToEsApplication</mainClass>
                 </configuration>
             </plugin>
         </plugins>
