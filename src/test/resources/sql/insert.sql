@@ -1,22 +1,22 @@
 
-INSERT INTO `T_PRODUCT`(`NAME`, `CREATE_TIME`, `UPDATE_TIME`)
+INSERT INTO `t_product`(`name`, `create_time`, `update_time`)
 VALUES ('Apple/苹果 iPhone 7 Plus', '2016-12-30 09:00:00', '2016-12-30 09:30:00');
 
-INSERT INTO `T_PRODUCT`(`NAME`, `CREATE_TIME`, `UPDATE_TIME`)
+INSERT INTO `t_product`(`name`, `create_time`, `update_time`)
 VALUES ('Samsung/三星 Galaxy S7 Edge SM-G9350', '2016-12-30 09:02:00', '2016-12-30 09:03:00');
 
-INSERT INTO `T_PRODUCT`(`NAME`, `CREATE_TIME`, `UPDATE_TIME`)
+INSERT INTO `t_product`(`name`, `create_time`, `update_time`)
 VALUES ('摩托罗拉 Moto Z', '2016-12-30 09:04:00', '2016-12-30 09:05:00');
 
-INSERT INTO `T_PRODUCT`(`NAME`, `CREATE_TIME`, `UPDATE_TIME`)
+INSERT INTO `t_product`(`name`, `create_time`, `update_time`)
 VALUES ('LG G5（H868）流光金 4G 双卡双待', '2016-12-30 09:06:00', '2016-12-30 09:07:00');
 
-INSERT INTO `T_PRODUCT`(`NAME`, `CREATE_TIME`, `UPDATE_TIME`)
+INSERT INTO `t_product`(`name`, `create_time`, `update_time`)
 VALUES ('锤子 M1（SM901）4GB+32GB 咖啡金 全金属边框 全网通 双卡双待 4G 手机', '2016-12-30 09:08:00', '2016-12-30 09:09:00');
 
 
 
-INSERT INTO `T_CONTENT`(`TYPE_ID`, `URL`, `DATE`, `TITLE`, `CREATE_TIME`, `UPDATE_TIME`, `CONTENT`)
+INSERT INTO `t_content`(`type_id`, `url`, `date`, `title`, `create_time`, `update_time`, `content`)
 VALUES (1, 'http://www.lookmw.cn/html/wish/sort011/wz-6020.html', '2010-09-25 08:07:00', '未完成的歌', '2016-10-20 12:30:00', '2016-10-20 12:30:00',
 '——（壹）
 九月，寂静的天，我落寞的看着你的黑色瞳孔，你是我说不出的美好。
@@ -40,7 +40,7 @@ VALUES (1, 'http://www.lookmw.cn/html/wish/sort011/wz-6020.html', '2010-09-25 08
 作出约定，而我总是言而无信，选择离开，于是遗忘，如果我们都不曾遇见，会是怎样结果，
 曾经最美，不知道谁把谁弄丢，依稀记忆，黑夜重生，现实有些事只能遗忘，暖暖的幸福就好了。');
 
-INSERT INTO `T_CONTENT`(`TYPE_ID`, `URL`, `DATE`, `TITLE`, `CREATE_TIME`, `UPDATE_TIME`, `CONTENT`)
+INSERT INTO `t_content`(`type_id`, `url`, `date`, `title`, `create_time`, `update_time`, `content`)
 VALUES (1, 'http://www.lookmw.cn/html/wish/sort011/wz-6008.html', '2010-09-21 08:26:00', '转身、希望自己不曾爱过', '2016-10-21 12:30:00', '2016-10-21 12:30:00',
 '爱情就像是诱惑，我却解不开自己心中的锁。
 
@@ -75,7 +75,7 @@ VALUES (1, 'http://www.lookmw.cn/html/wish/sort011/wz-6008.html', '2010-09-21 08
 
 再见吧！Baay。  我们也许都该长大了。');
 
-INSERT INTO `T_CONTENT`(`TYPE_ID`, `URL`, `DATE`, `TITLE`, `CREATE_TIME`, `UPDATE_TIME`, `CONTENT`)
+INSERT INTO `t_content`(`type_id`, `url`, `date`, `title`, `create_time`, `update_time`, `content`)
 VALUES (2, 'http://www.lookmw.cn/html/wish/sort011/wz-5850.html', '2010-07-31 08:23:00', '沁入心扉', '2016-10-22 12:30:00', '2016-10-22 12:30:00',
 '你不是我身边最漂亮的女人，但却是最美丽的。以前爱你的方法不对，只想让你在我划定的领地里拥有自由，
 可是你有的是一颗自由的心，让我无法左右你的生活，而往往是你左右了我的一切。看见你身边的其他男人，
@@ -90,14 +90,14 @@ VALUES (2, 'http://www.lookmw.cn/html/wish/sort011/wz-5850.html', '2010-07-31 08
 但是我任然在你身边的不远处！转身后的思念，一天天堆积，爱过的你还在我心里，虽然我们不能在一起，
 多少凄凉的夜晚，无缘相守却又难忘记，那些曾经走过的悲喜，刻成了回忆！');
 
-INSERT INTO `T_CONTENT`(`TYPE_ID`, `URL`, `DATE`, `TITLE`, `CREATE_TIME`, `UPDATE_TIME`, `CONTENT`)
+INSERT INTO `t_content`(`type_id`, `url`, `date`, `title`, `create_time`, `update_time`, `content`)
 VALUES (2, 'http://www.lookmw.cn/html/wish/sort011/wz-3755.html', '2009-06-02 12:41:00', '如此的如此！', '2016-10-23 12:30:00', '2016-10-23 12:30:00',
 '今天的夜晚，如此的凄凉！今天的世界，如此的肮脏！今天的人类，如此的贪婪！今天的爱情，如此的失败！今天的我，
 如此的失望！我失望，是因为看到贪婪的人类，却无法阻止他们继续下去！我失望，是因为看到肮脏的世界，却无法解决！
 我失望，是因为我的女朋友离我远去，走向别人，却无法阻止爱的流逝！我失望，是因为今晚的背景如此的煞风景，我却得继续呆下去！
 哎！如此的事，真是如此的如此！如此的如此，如此的如此…梦中醒来的我，嘴里还在唠叨：今天的你，看起来如此的美丽帅气！');
 
-INSERT INTO `T_CONTENT`(`TYPE_ID`, `URL`, `DATE`, `TITLE`, `CREATE_TIME`, `UPDATE_TIME`, `CONTENT`)
+INSERT INTO `t_content`(`type_id`, `url`, `date`, `title`, `create_time`, `update_time`, `content`)
 VALUES (3, 'http://www.lookmw.cn/html/wish/sort011/wz-3525.html', '2009-04-29 17:39:00', '我对你的好', '2016-10-24 12:30:00', '2016-10-24 12:30:00',
 '现在开始，什么都不要说，嘘，听我说。
 
@@ -122,7 +122,7 @@ VALUES (3, 'http://www.lookmw.cn/html/wish/sort011/wz-3525.html', '2009-04-29 17
 所以我不难过，因为她会幸福。
 装傻是谁的强项？');
 
-INSERT INTO `T_CONTENT`(`TYPE_ID`, `URL`, `DATE`, `TITLE`, `CREATE_TIME`, `UPDATE_TIME`, `CONTENT`)
+INSERT INTO `t_content`(`type_id`, `url`, `date`, `title`, `create_time`, `update_time`, `content`)
 VALUES (3, 'http://www.lookmw.cn/html/wish/sort011/wz-3290.html', '2009-03-29 16:36:00', '因为懂得所以慈悲', '2016-10-25 12:30:00', '2016-10-25 12:30:00',
 '我怎么可以不记得
 你从我世界消失的时候
@@ -159,7 +159,7 @@ VALUES (3, 'http://www.lookmw.cn/html/wish/sort011/wz-3290.html', '2009-03-29 16
 请记得把我曾经一遗失的心....
 还我');
 
-INSERT INTO `T_CONTENT`(`TYPE_ID`, `URL`, `DATE`, `TITLE`, `CREATE_TIME`, `UPDATE_TIME`, `CONTENT`)
+INSERT INTO `t_content`(`type_id`, `url`, `date`, `title`, `create_time`, `update_time`, `content`)
 VALUES (2, 'http://www.lookmw.cn/html/wish/sort011/wz-3148.html', '2009-03-11 20:55:00', '梦想', '2016-10-26 12:30:00', '2016-10-26 12:30:00',
 '<p>问&nbsp;&nbsp;考上省重点 你为什么不上了<br>
 <br>

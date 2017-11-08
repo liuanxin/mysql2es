@@ -1,8 +1,7 @@
-package com.github.mte.run;
+package com.github.run;
 
-
-import com.github.mte.model.Config;
-import com.github.mte.service.BondingService;
+import com.github.model.Config;
+import com.github.service.BondingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -24,7 +23,14 @@ public class Job implements SchedulingConfigurer {
 
     @Override
     public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
-        bondingService.createScheme();
-        taskRegistrar.addTriggerTask(bondingService::syncData, new CronTrigger(config.getCron()));
+        final boolean flag = bondingService.createScheme();
+        taskRegistrar.addTriggerTask(new Runnable() {
+            @Override
+            public void run() {
+                if (flag) {
+                    bondingService.syncData();
+                }
+            }
+        }, new CronTrigger(config.getCron()));
     }
 }

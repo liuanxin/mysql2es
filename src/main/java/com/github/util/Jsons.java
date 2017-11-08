@@ -1,4 +1,4 @@
-package com.github.mte.util;
+package com.github.util;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;

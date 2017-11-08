@@ -1,4 +1,4 @@
-package com.github.mte.run;
+package com.github.run;
 
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.aop.interceptor.SimpleAsyncUncaughtExceptionHandler;

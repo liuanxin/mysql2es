@@ -1,4 +1,4 @@
-package com.github.mte.util;
+package com.github.util;
 
 import com.google.common.base.CaseFormat;
 
@@ -18,7 +18,9 @@ public final class U {
 
 
     public static String random(int length) {
-        if (length <= 0) return EMPTY;
+        if (length <= 0) {
+            return EMPTY;
+        }
 
         StringBuilder sbd = new StringBuilder();
         for (int i = 0; i < length; i++) {
@@ -39,8 +41,12 @@ public final class U {
 
 
     public static String addSuffix(String src) {
-        if (isBlank(src)) return "/";
-        if (src.endsWith("/")) return src;
+        if (isBlank(src)) {
+            return "/";
+        }
+        if (src.endsWith("/")) {
+            return src;
+        }
         return src + "/";
     }
 
@@ -72,6 +78,8 @@ public final class U {
         assertException(less0(obj), msg);
     }
     public static void assertException(Boolean flag, String msg) {
-        if (flag != null && flag) throw new RuntimeException(msg);
+        if (flag != null && flag) {
+            throw new RuntimeException(msg);
+        }
     }
 }
