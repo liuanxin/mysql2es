@@ -50,14 +50,14 @@ cron 的说明如下
 
 ** 运行
 #+BEGIN_SRC conf
-mvn clean package
+mvn clean package -DskipTests
 nohup java -jar -Dspring.profiles.active=prod target/mysql2es-1.0-SNAPSHOT.jar >/dev/null 2>&1 &
 #+END_SRC
 
 or
 
 #+BEGIN_SRC conf
-nohup mvn spring-boot:run -Dspring.profiles.active=prod >/dev/null 2>&1 &
+nohup mvn spring-boot:run -DskipTests -Dspring.profiles.active=prod >/dev/null 2>&1 &
 #+END_SRC
 
 
