@@ -81,19 +81,8 @@ public class Dates {
         return null;
     }
 
-    /** 2016-12-31 xx:yy:zz --> 2016-12-31 23:59:59 999 */
-    public static Date startInDay(Date date) {
-        if (U.isBlank(date)) {
-            return null;
-        }
-
-        return new DateTime(date).hourOfDay().withMaximumValue()
-                .minuteOfHour().withMaximumValue()
-                .secondOfMinute().withMaximumValue()
-                .millisOfSecond().withMaximumValue().toDate();
-    }
     /** 2016-12-31 xx:yy:zz --> 2016-12-31 00:00:00 000 */
-    public static Date endInDay(Date date) {
+    public static Date startInDay(Date date) {
         if (U.isBlank(date)) {
             return null;
         }
@@ -102,5 +91,16 @@ public class Dates {
                 .minuteOfHour().withMinimumValue()
                 .secondOfMinute().withMinimumValue()
                 .millisOfSecond().withMinimumValue().toDate();
+    }
+    /** 2016-12-31 xx:yy:zz --> 2016-12-31 23:59:59 999 */
+    public static Date endInDay(Date date) {
+        if (U.isBlank(date)) {
+            return null;
+        }
+
+        return new DateTime(date).hourOfDay().withMaximumValue()
+                .minuteOfHour().withMaximumValue()
+                .secondOfMinute().withMaximumValue()
+                .millisOfSecond().withMaximumValue().toDate();
     }
 }
