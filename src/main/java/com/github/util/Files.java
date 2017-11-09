@@ -31,8 +31,7 @@ public class Files {
     public static boolean write(String index, String type, String content) {
         String fileName = getFileName(index, type);
         try {
-            File file = new File(fileName);
-            com.google.common.io.Files.asCharSink(file, U.UTF8).write(content);
+            com.google.common.io.Files.asCharSink(new File(fileName), U.UTF8).write(content);
             return true;
         } catch (IOException e) {
             if (Logs.ROOT_LOG.isInfoEnabled()) {
@@ -48,7 +47,6 @@ public class Files {
         if (Logs.ROOT_LOG.isInfoEnabled()) {
             Logs.ROOT_LOG.info("delete ({}) {}", fileName, flag);
         }
-
         return flag;
     }
 }
