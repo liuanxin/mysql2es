@@ -1,9 +1,9 @@
 
 ** MariaDB/MySQL to es
 
-  同步 MariaDB 表的数据到 es 的精简版本, 只支持添加和更新, 不支持物理删除的更新(物理删除需要根据 binlog 才好处理), 建议使用逻辑删除.
-  
-  基于 jdk 8 和 spring boot, 支持 es 5.1.1(截至 2017 年 1 月)
+  同步 MariaDB 表的数据到 es 的精简版本, 只支持添加和更新, 不支持物理删除的更新(物理删除需要根据 binlog 才能处理), 建议使用逻辑删除.
+
+  基于 jdk 8 和 spring boot, 支持 es 5.6.3(2017/11)
 
 相关的配置(application.yml)如下:
 
@@ -50,7 +50,8 @@ cron 的说明如下
 
 ** 运行
 #+BEGIN_SRC conf
-mvn clean package; nohup java -jar -Dspring.profiles.active=prod target/mysql2es-1.0-SNAPSHOT.jar >/dev/null 2>&1 &
+mvn clean package
+nohup java -jar -Dspring.profiles.active=prod target/mysql2es-1.0-SNAPSHOT.jar >/dev/null 2>&1 &
 #+END_SRC
 
 or
