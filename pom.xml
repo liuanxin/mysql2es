@@ -3,7 +3,6 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -40,7 +39,7 @@
 
         <!--
             https://github.com/spring-projects/spring-data-elasticsearch/wiki   ->   Spring Boot SDE matrix
-            因为版本兼容的问题, 不使用 spring 提供的 start, 用原生的 transport 来操作以跟随 es 的最新版本
+            因为版本兼容的问题, 不使用 spring 提供的 start, 用原生的 transport 来操作以跟随 es 的新版本
             https://www.elastic.co/guide/en/elasticsearch/client/java-api/current/transport-client.html
                 https://www.elastic.co/guide/en/elasticsearch/client/java-api/2.0/transport-client.html
         -->
