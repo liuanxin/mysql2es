@@ -6,6 +6,9 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * https://github.com/hibernate/hibernate-orm/blob/2964ecbf1b74003fcc337b0574487c724638fe94/hibernate-core/src/main/java/org/hibernate/engine/jdbc/internal/BasicFormatterImpl.java
+ */
 class SqlFormat {
 
     private static final Set<String> BEGIN_CLAUSES = new HashSet<String>();
@@ -56,38 +59,30 @@ class SqlFormat {
     private static final String INDENT_STRING = "  ";
     private static final String INITIAL = "  ";
 
-    /** 参数匹配的正则 */
     private static final Pattern PARAM_REGEX = Pattern.compile("(?s)('[^']*?\\s{2,}?.*?')");
-    /** 多空白符的正则 */
     private static final Pattern BLANK_REGEX = Pattern.compile("\\s{2,}");
-    /** 占位参数 */
     private static final String SCRIPT_PLACE = String.format("___%s-%s===", SqlFormat.class.getName(), "PARam");
-    /** 占位参数的正则 */
     private static final Pattern SCRIPT_PLACE_REGEX = Pattern.compile(SCRIPT_PLACE);
 
     static String format(String source) {
         if (source == null || "".equals(source.trim())) {
             return "";
         }
-        return new FormatProcess(handlerParam(source)).perform();
+        return new FormatProcess(handlerBlank(source)).perform();
     }
 
-    private static String handlerParam(String sql) {
+    private static String handlerBlank(String sql) {
         Matcher match = PARAM_REGEX.matcher(sql);
         List<String> list = Lists.newArrayList();
         while (match.find()) {
-            // 把参数 '' 收集起来
             list.add(match.group());
         }
         if (list.size() == 0) {
             return sql;
         }
 
-        // 把参数 '' 用占用替代
         sql = match.replaceAll(Matcher.quoteReplacement(SCRIPT_PLACE));
-        // 把多个空白符替换成一个空格
         sql = BLANK_REGEX.matcher(sql).replaceAll(" ");
-        // 把占位一个个又还原回去
         while (sql.contains(SCRIPT_PLACE)) {
             String place = list.remove(0);
             Matcher m = SCRIPT_PLACE_REGEX.matcher(sql);

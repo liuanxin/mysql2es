@@ -24,12 +24,14 @@ public class DataRepository {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    /** 将相关表的结构同步至 es */
+    /** generate scheme of es on the database table structure */
     public List<Scheme> dbToEsScheme() {
         List<Scheme> schemeList = A.lists();
         for (Config.Relation relation : config.getRelation()) {
             List<Map<String, Object>> mapList = jdbcTemplate.queryForList(relation.descSql());
             if (A.isNotEmpty(mapList)) {
+                boolean scheme = relation.isScheme();
+
                 List<String> keyList = A.lists();
                 Map<String, Map> propertyMap = A.maps();
                 for (Map<String, Object> map : mapList) {
@@ -37,7 +39,9 @@ public class DataRepository {
                     Object type = map.get("Type");
 
                     if (U.isNotBlank(column) && U.isNotBlank(type)) {
-                        propertyMap.put(relation.useField(column.toString()), dbToEsType(type.toString().toLowerCase()));
+                        if (scheme) {
+                            propertyMap.put(relation.useField(column.toString()), dbToEsType(type.toString()));
+                        }
 
                         Object key = map.get("Key");
                         if (U.isNotBlank(key) && "PRI".equals(key)) {
@@ -51,23 +55,40 @@ public class DataRepository {
                     }
                 } else {
                     relation.setKeyList(keyList);
-                    schemeList.add(new Scheme(config.getIndex(), relation.useType(), propertyMap));
+                    if (scheme) {
+                        schemeList.add(new Scheme(config.getIndex(), relation.useType(), propertyMap));
+                    }
                 }
             }
         }
         return schemeList;
     }
     private static Map<String, Map> dbToEsType(String fieldType) {
+        fieldType = fieldType.toLowerCase();
+
         if ("tinyint(1)".equals(fieldType)) {
             return A.maps("type", "boolean");
-        } else if (fieldType.contains("int") || fieldType.contains("time")) {
+        } else if (fieldType.contains("int") || fieldType.contains("date") || fieldType.contains("time")) {
             return A.maps("type", "long");
         } else {
+            // if use ik, global set like next line, scheme mapping set with text, ik config don't need
+            /*
+            curl -XPOST http://ip:port/index/fulltext/_mapping -d '
+                {
+                  "properties": {
+                    "content": {
+                      "type": "text",
+                      "analyzer": "ik_max_word",
+                      "search_analyzer": "ik_max_word"
+                    }
+                  }
+                }'
+            */
             return A.maps("type", "text");//, "analyzer", "ik_max_word", "search_analyzer", "ik_max_word");
         }
     }
 
-    /** 增量数据, 从临时文件中取值并查询固定数量的数据, 将最后一条记录的值写回临时文件 */
+    /** increment data: read temp file -> query data -> write last record in temp file */
     public List<Document> incrementData() {
         List<Document> documents = A.lists();
         for (Config.Relation relation : config.getRelation()) {
@@ -94,7 +115,7 @@ public class DataRepository {
         }
         return documents;
     }
-    /** 返回最后一条记录 */
+    /** return last record */
     private String getLast(List<String> incrementColumnList, List<Map<String, Object>> dataList) {
         Map<String, Object> last = A.last(dataList);
         if (A.isNotEmpty(last)) {
@@ -102,7 +123,7 @@ public class DataRepository {
             for (String column : incrementColumnList) {
                 Object obj = last.get(column);
                 if (U.isNotBlank(obj)) {
-                    // 如果是时间类型则返回时间戳, 否则返回其 toString
+                    // if was Date return timeMillis, else return toStr
                     lastList.add((obj instanceof Date) ? String.valueOf(((Date) obj).getTime()) : obj.toString());
                 }
             }
@@ -110,7 +131,7 @@ public class DataRepository {
         }
         return U.EMPTY;
     }
-    /** 遍历结果集并整理成 es 相关的数据集 */
+    /** traverse the Database Result and organize into es Document */
     private List<Document> fixDocument(Config.Relation relation, List<String> keyList,
                                        List<Map<String, Object>> dataList) {
         List<Document> documents = A.lists();
@@ -137,7 +158,6 @@ public class DataRepository {
         }
         return documents;
     }
-
 
     public void deleteTempFile() {
         for (Config.Relation relation : config.getRelation()) {

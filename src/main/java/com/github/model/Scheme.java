@@ -14,6 +14,7 @@ import java.util.Map;
 @AllArgsConstructor
 @Accessors(chain = true)
 public class Scheme {
+
     String index;
     String type;
     Map<String, Map> properties;
