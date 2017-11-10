@@ -25,7 +25,7 @@ config:
       type: some                  # 表示 es 中 /index/type/id 的 type, 不设定将会从数据库表名生成(t_some_one ==> someOne)
       scheme: false               # 是否事先基于 数据库表结构 生成 es 的 scheme, 默认是 true
       sql: select * from t_some   # 自定义的 sql 语句, 不设定将会自动从数据库表拼装. 如果只想生成指定字段, 上面的 scheme 设置为 false 并查询指定的字段即可
-      limit: 10                   # 一次从数据库获取的条数, 默认是 20
+      limit: 10                   # 一次从数据库获取的条数, 默认是 50
       mapping:                    # 对应关系.「table column」:「es field」, 不设定将会从表字段生成(c_some_type ==> someType), 只设置特殊情况即可
         x_type: type
 #+END_SRC
