@@ -25,9 +25,6 @@
         <guava.version>23.0</guava.version>
         <jackson.version>2.9.2</jackson.version>
         <joda.version>2.9.9</joda.version>
-
-        <log4j-slf4j.version>2.9.1</log4j-slf4j.version>
-        <slf4j-api.version>1.7.25</slf4j-api.version>
     </properties>
 
     <dependencies>
@@ -40,6 +37,17 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
+
+        <!--
+            https://github.com/spring-projects/spring-data-elasticsearch/wiki/Spring-Data-Elasticsearch---Spring-Boot---version-matrix
+            因为版本兼容的问题, 不使用 spring 提供的 start, 用原生的 transport 来操作以跟随 es 的最新版本
+            https://www.elastic.co/guide/en/elasticsearch/client/java-api/current/transport-client.html
+                https://www.elastic.co/guide/en/elasticsearch/client/java-api/2.0/transport-client.html
+        -->
+        <!--<dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-elasticsearch</artifactId>
+        </dependency>-->
 
         <dependency>
             <groupId>org.elasticsearch.client</groupId>
@@ -62,16 +70,14 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-        </dependency>
-
         <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
             <version>${hikaricp.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
         </dependency>
 
         <dependency>
@@ -126,9 +132,6 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <mainClass>com.github.DbToEsApplication</mainClass>
-                </configuration>
             </plugin>
         </plugins>
     </build>
