@@ -72,7 +72,6 @@ public class Config {
      */
     List<Relation> relation;
 
-
     public void check() {
         U.assertNil(index, "must set (es index name) <==> database name");
         U.assertException(relation == null || A.isEmpty(relation), "must set [db es] relation");
@@ -88,14 +87,29 @@ public class Config {
     @Getter
     @Setter
     public static class Relation {
+        /** database table name */
         String table;
-        String type;
-        String sql;
-        Integer limit = 50;
+        /** The field name for the increment in the table */
         List<String> incrementColumn;
+
+        // above two properties must be set, the following don't need.
+
+        /** es type <==> database table name. it not, will generate by table name(t_some_one ==> someOne) */
+        String type;
+        /** whether to generate scheme of es on the database table structure */
+        boolean scheme = true;
+        /** operate sql statement. if not, will generate by table name(select * from table_name) */
+        String sql;
+        /** number of each operation. will append in sql(select ... limit 50) */
+        Integer limit = 50;
+        /** table column -> es field. if not, will generate by column(c_some_type ==> someType) */
         Map<String, String> mapping;
 
-        /** primary key, query from db table, if not, can't create index in es */
+        /**
+         * primary key, will generate to id in es, query from db table, if not, can't create index in es
+         *
+         * @see org.elasticsearch.client.support.AbstractClient#prepareIndex(java.lang.String, java.lang.String, java.lang.String)
+         */
         List<String> keyList;
 
         private void check() {
