@@ -22,13 +22,12 @@ public class DataInit {
         return new Config();
     }
 
-    @Bean
+    @Bean(destroyMethod = "close")
     public TransportClient connect() {
         Config config = config();
         U.assertNil(config, "no config with mysql and es mapping");
         config.check();
 
-        // es 5.1.1 --> TransportClient is a abstract class
         TransportClient client = new PreBuiltTransportClient(Settings.EMPTY);
         for (String ipAndPort : config.getIpPort()) {
             String[] ipPort = ipAndPort.split(":");

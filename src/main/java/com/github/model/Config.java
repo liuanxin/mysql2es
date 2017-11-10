@@ -76,7 +76,9 @@ public class Config {
     public void check() {
         U.assertNil(index, "must set (es index name) <==> database name");
         U.assertException(relation == null || A.isEmpty(relation), "must set [db es] relation");
-        relation.forEach(Config.Relation::check);
+        for (Relation relation1 : relation) {
+            relation1.check();
+        }
     }
     public String ipAndPort() {
         return A.isEmpty(ipPort) ? U.EMPTY : ipPort.iterator().next();
