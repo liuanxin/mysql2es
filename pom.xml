@@ -39,7 +39,7 @@
         </dependency>
 
         <!--
-            https://github.com/spring-projects/spring-data-elasticsearch/wiki/Spring-Data-Elasticsearch---Spring-Boot---version-matrix
+            https://github.com/spring-projects/spring-data-elasticsearch/wiki   ->   Spring Boot SDE matrix
             因为版本兼容的问题, 不使用 spring 提供的 start, 用原生的 transport 来操作以跟随 es 的最新版本
             https://www.elastic.co/guide/en/elasticsearch/client/java-api/current/transport-client.html
                 https://www.elastic.co/guide/en/elasticsearch/client/java-api/2.0/transport-client.html
