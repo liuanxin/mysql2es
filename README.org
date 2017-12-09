@@ -48,13 +48,13 @@ cron 的说明如下
 ** 运行
 #+BEGIN_SRC conf
 mvn clean package -DskipTests
-nohup java -jar target/mysql2es-1.0-SNAPSHOT.jar >/dev/null 2>&1 &
+nohup java -jar -Dspring.profiles.active=prod target/mysql2es-1.0-SNAPSHOT.jar >/dev/null 2>&1 &
 #+END_SRC
 
 or
 
 #+BEGIN_SRC conf
-nohup mvn -DskipTests spring-boot:run >/dev/null 2>&1 &
+nohup mvn -DskipTests -Dspring.profiles.active=prod spring-boot:run >/dev/null 2>&1 &
 #+END_SRC
 
 
