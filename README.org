@@ -5,8 +5,7 @@
 
   基于 jdk 8 和 spring boot, 支持 es 5.6.3(2017/11)
 
-相关的配置(application.yml)如下:
-
+相关的配置如下:
 #+BEGIN_SRC yaml
 config:
   ip-port: ["127.0.0.1:9300"]     # 可以不设定, 默认是 127.0.0.1:9300
@@ -48,12 +47,14 @@ cron 的说明如下
 ** 运行
 #+BEGIN_SRC conf
 mvn clean package -DskipTests
+# 这样会读取 application-prod.yml 文件的配置
 nohup java -jar -Dspring.profiles.active=prod target/mysql2es-1.0-SNAPSHOT.jar >/dev/null 2>&1 &
 #+END_SRC
 
 or
 
 #+BEGIN_SRC conf
+# 这样会读取 application-prod.yml 文件的配置
 nohup mvn spring-boot:run -DskipTests -Dspring.profiles.active=prod >/dev/null 2>&1 &
 #+END_SRC
 
