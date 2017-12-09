@@ -57,6 +57,8 @@ or
 nohup mvn -DskipTests -Dspring.profiles.active=prod spring-boot:run >/dev/null 2>&1 &
 #+END_SRC
 
+日志在 ~/logs/mysql2es.log 中
+
 
 ** 说明
 项目在启动时会基于配置进行数据库查询, 将相关的表结构保存至 es.\\
