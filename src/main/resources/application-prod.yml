@@ -15,6 +15,7 @@ spring.datasource:
       useServerPrepStmts: true
 
 config:
+  ip-port: ["127.0.0.1:9300"]
   cron: 0/5 * * * * *
   index: db
   relation:
