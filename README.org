@@ -49,12 +49,16 @@ cron 的说明如下
 #+BEGIN_SRC conf
 mvn clean package -DskipTests
 nohup java -jar -Dspring.profiles.active=prod target/mysql2es-1.0-SNAPSHOT.jar >/dev/null 2>&1 &
+# 要指定外部文件, 这样运行即可
+nohup java -jar -Dspring.config.location=/x/y.yml target/mysql2es-1.0-SNAPSHOT.jar >/dev/null 2>&1 &
 #+END_SRC
 
 or
 
 #+BEGIN_SRC conf
 nohup mvn -DskipTests -Dspring.profiles.active=prod spring-boot:run >/dev/null 2>&1 &
+# 要指定外部文件, 这样运行即可
+nohup mvn -DskipTests -Dspring.config.location=/x/y.yml spring-boot:run >/dev/null 2>&1 &
 #+END_SRC
 
 日志在 ~/logs/mysql2es.log 中
