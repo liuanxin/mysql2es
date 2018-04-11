@@ -6,11 +6,11 @@ spring.datasource:
   username: root
   password: root
   hikari:
-    minimumIdle: 10
-    maximumPoolSize: 30
+    minimumIdle: 5
+    maximumPoolSize: 8
     dataSourceProperties:
-      prepStmtCacheSize: 250
-      prepStmtCacheSqlLimit: 2048
+      prepStmtCacheSize: 100
+      prepStmtCacheSqlLimit: 200
       cachePrepStmts: true
       useServerPrepStmts: true
 
