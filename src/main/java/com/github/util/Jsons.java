@@ -18,10 +18,13 @@ public class Jsons {
 	}
 
 	public static String toJson(Object obj) {
+	    if (U.isBlank(obj)) {
+	        return null;
+        }
         try {
             return BASIC.writeValueAsString(obj);
         } catch (Exception e) {
-            throw new RuntimeException("object(" + obj + ") to json exception.", e);
+            throw new RuntimeException(String.format("object(%s) to json exception", obj), e);
         }
 	}
 
@@ -29,13 +32,16 @@ public class Jsons {
 		try {
 			return BASIC.readValue(json, clazz);
 		} catch (Exception e) {
-			throw new RuntimeException("json (" + json + ") to object(" + clazz.getName() + ") exception", e);
+			throw new RuntimeException(String.format("json(%s) to object(%s) exception", json, clazz.getName()), e);
 		}
 	}
     public static <T> T toObjectNil(String json, Class<T> clazz) {
         try {
             return BASIC.readValue(json, clazz);
         } catch (Exception e) {
+            if (Logs.ROOT_LOG.isErrorEnabled()) {
+                Logs.ROOT_LOG.error(String.format("json(%s) to object(%s) exception", json, clazz.getName()), e);
+            }
             return null;
         }
     }
@@ -44,13 +50,16 @@ public class Jsons {
         try {
             return BASIC.readValue(json, BASIC.getTypeFactory().constructCollectionType(List.class, clazz));
         } catch (Exception e) {
-            throw new RuntimeException("json(" + json + ") to list(" + clazz.getName() + ") exception.", e);
+            throw new RuntimeException(String.format("json(%s) to List<%s> exception", json, clazz.getName()), e);
         }
     }
     public static <T> List<T> toListNil(String json, Class<T> clazz) {
         try {
             return BASIC.readValue(json, BASIC.getTypeFactory().constructCollectionType(List.class, clazz));
         } catch (Exception e) {
+            if (Logs.ROOT_LOG.isErrorEnabled()) {
+                Logs.ROOT_LOG.error(String.format("json(%s) to List<%s> exception", json, clazz.getName()), e);
+            }
             return null;
         }
     }
