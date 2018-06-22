@@ -71,7 +71,7 @@ public class Config {
 
     public void check() {
         U.assertNil(index, "must set (es index name) <==> database name");
-        U.assertException(relation == null || A.isEmpty(relation), "must set [db es] relation");
+        U.assertException(A.isEmpty(relation), "must set [db es] relation");
         for (Relation relation1 : relation) {
             relation1.check();
         }
