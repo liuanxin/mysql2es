@@ -2,6 +2,7 @@ package com.github.repository;
 
 import com.github.model.Document;
 import com.github.model.Config;
+import com.github.model.Relation;
 import com.github.model.Scheme;
 import com.github.util.A;
 import com.github.util.Files;
@@ -27,7 +28,7 @@ public class DataRepository {
     /** generate scheme of es on the database table structure */
     public List<Scheme> dbToEsScheme() {
         List<Scheme> schemeList = A.lists();
-        for (Config.Relation relation : config.getRelation()) {
+        for (Relation relation : config.getRelation()) {
             List<Map<String, Object>> mapList = jdbcTemplate.queryForList(relation.descSql());
             if (A.isNotEmpty(mapList)) {
                 boolean scheme = relation.isScheme();
@@ -91,7 +92,7 @@ public class DataRepository {
     /** increment data: read temp file -> query data -> write last record in temp file */
     public List<Document> incrementData() {
         List<Document> documents = A.lists();
-        for (Config.Relation relation : config.getRelation()) {
+        for (Relation relation : config.getRelation()) {
             List<String> keyList = relation.getKeyList();
             if (A.isEmpty(keyList)) {
                 dbToEsScheme();
@@ -132,7 +133,7 @@ public class DataRepository {
         return U.EMPTY;
     }
     /** traverse the Database Result and organize into es Document */
-    private List<Document> fixDocument(Config.Relation relation, List<String> keyList,
+    private List<Document> fixDocument(Relation relation, List<String> keyList,
                                        List<Map<String, Object>> dataList) {
         List<Document> documents = A.lists();
         for (Map<String, Object> objMap : dataList) {
@@ -160,7 +161,7 @@ public class DataRepository {
     }
 
     public void deleteTempFile() {
-        for (Config.Relation relation : config.getRelation()) {
+        for (Relation relation : config.getRelation()) {
             Files.delete(config.getIndex(), relation.useType());
         }
     }
