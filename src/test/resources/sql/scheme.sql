@@ -11,8 +11,8 @@ CREATE TABLE IF NOT EXISTS `t_product_info` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='商品表';
 
 
-DROP TABLE IF EXISTS `t_content`;
-CREATE TABLE IF NOT EXISTS `t_content` (
+DROP TABLE IF EXISTS `t_common_content`;
+CREATE TABLE IF NOT EXISTS `t_common_content` (
   `id` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   `type_id` INT(10) UNSIGNED NOT NULL COMMENT '类型 id(1.散文, 2.短篇, 3.其他 etc...)',
   `url` VARCHAR(512) NOT NULL COMMENT '数据来源',

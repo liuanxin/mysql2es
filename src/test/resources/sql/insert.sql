@@ -16,7 +16,7 @@ VALUES ('锤子 M1（SM901）4GB+32GB 咖啡金 全金属边框 全网通 双卡
 
 
 
-INSERT INTO `t_content`(`type_id`, `url`, `date`, `title`, `create_time`, `update_time`, `content`)
+INSERT INTO `t_common_content`(`type_id`, `url`, `date`, `title`, `create_time`, `update_time`, `content`)
 VALUES (1, 'http://www.lookmw.cn/html/wish/sort011/wz-6020.html', '2010-09-25 08:07:00', '未完成的歌', '2016-10-20 12:30:00', '2016-10-20 12:30:00',
 '——（壹）
 九月，寂静的天，我落寞的看着你的黑色瞳孔，你是我说不出的美好。
