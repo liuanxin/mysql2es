@@ -57,7 +57,7 @@ public class DataRepository {
                 } else {
                     relation.setKeyList(keyList);
                     if (scheme) {
-                        schemeList.add(new Scheme(config.getIndex(), relation.useType(), propertyMap));
+                        schemeList.add(new Scheme().setIndex(relation.useType()).setProperties(propertyMap));
                     }
                 }
             }
@@ -74,7 +74,7 @@ public class DataRepository {
         } else {
             // if use ik, global set like next line, scheme mapping set with text, ik config don't need
             /*
-            curl -XPOST http://ip:port/index/fulltext/_mapping -d '
+            curl -XPOST http://ip:port/index/fulltext/_mapping -H 'Content-Type:application/json' -d '
                 {
                   "properties": {
                     "content": {
@@ -137,12 +137,16 @@ public class DataRepository {
                                        List<Map<String, Object>> dataList) {
         List<Document> documents = A.lists();
         for (Map<String, Object> objMap : dataList) {
-            StringBuilder id = new StringBuilder();
+            StringBuilder sbd = new StringBuilder();
             for (String primary : keyList) {
-                id.append(objMap.get(primary));
+                sbd.append(objMap.get(primary)).append("-");
             }
+            if (sbd.toString().endsWith("-")) {
+                sbd.delete(sbd.length() - 1, sbd.length());
+            }
+            String id = sbd.toString();
             // Document no id, can't be save
-            if (U.isNotBlank(id.toString())) {
+            if (U.isNotBlank(id)) {
                 Map<String, Object> dataMap = A.newHashMap();
                 for (Map.Entry<String, Object> entry : objMap.entrySet()) {
                     String key = relation.useField(entry.getKey());
@@ -152,8 +156,11 @@ public class DataRepository {
                 }
                 // Document no data, don't need to save? or update to nil?
                 // if (A.isNotEmpty(dataMap)) {
-                documents.add(new Document().setIndex(config.getIndex())
-                        .setType(relation.useType()).setId(id.toString()).setData(dataMap));
+                documents.add(new Document()
+                        .setIndex(relation.useType())
+                        // index use old type, type use default: _doc
+                        // .setIndex(config.getIndex()).setType(relation.useType())
+                        .setId(id).setData(dataMap));
                 // }
             }
         }
