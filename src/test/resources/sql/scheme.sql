@@ -1,9 +1,8 @@
 
-DROP TABLE IF EXISTS `t_user`;
-CREATE TABLE IF NOT EXISTS `t_product` (
+DROP TABLE IF EXISTS `t_product_info`;
+CREATE TABLE IF NOT EXISTS `t_product_info` (
   `id` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `name` VARCHAR(32) NOT NULL COMMENT '用户名',
-  `password` VARCHAR(128) NOT NULL COMMENT '密码',
+  `name` VARCHAR(64) NOT NULL COMMENT '用户名',
 
   `create_time` DATETIME NOT NULL COMMENT '创建时间',
   `update_time` DATETIME NOT NULL COMMENT '更新时间',
