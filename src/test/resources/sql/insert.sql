@@ -1,17 +1,17 @@
 
-INSERT INTO `t_product`(`name`, `create_time`, `update_time`)
+INSERT INTO `t_product_info`(`name`, `create_time`, `update_time`)
 VALUES ('Apple/苹果 iPhone 7 Plus', '2016-12-30 09:00:00', '2016-12-30 09:30:00');
 
-INSERT INTO `t_product`(`name`, `create_time`, `update_time`)
+INSERT INTO `t_product_info`(`name`, `create_time`, `update_time`)
 VALUES ('Samsung/三星 Galaxy S7 Edge SM-G9350', '2016-12-30 09:02:00', '2016-12-30 09:03:00');
 
-INSERT INTO `t_product`(`name`, `create_time`, `update_time`)
+INSERT INTO `t_product_info`(`name`, `create_time`, `update_time`)
 VALUES ('摩托罗拉 Moto Z', '2016-12-30 09:04:00', '2016-12-30 09:05:00');
 
-INSERT INTO `t_product`(`name`, `create_time`, `update_time`)
+INSERT INTO `t_product_info`(`name`, `create_time`, `update_time`)
 VALUES ('LG G5（H868）流光金 4G 双卡双待', '2016-12-30 09:06:00', '2016-12-30 09:07:00');
 
-INSERT INTO `t_product`(`name`, `create_time`, `update_time`)
+INSERT INTO `t_product_info`(`name`, `create_time`, `update_time`)
 VALUES ('锤子 M1（SM901）4GB+32GB 咖啡金 全金属边框 全网通 双卡双待 4G 手机', '2016-12-30 09:08:00', '2016-12-30 09:09:00');
 
 
