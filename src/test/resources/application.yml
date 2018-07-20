@@ -13,7 +13,7 @@ config:
   index: db
   relation:
     -
-      table: t_product
+      table: t_product_info
       increment-column: ["id"]
     -
       table: t_content
