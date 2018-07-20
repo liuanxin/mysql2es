@@ -1,6 +1,5 @@
 package com.github.model;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -11,16 +10,13 @@ import java.util.Map;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 @Accessors(chain = true)
 public class Scheme {
 
-    String index;
-    String type;
-    Map<String, Map> properties;
+    // begin with 6.0, type will be remove, replace with _doc
+    // https://www.elastic.co/guide/en/elasticsearch/reference/current/removal-of-types.html
 
-    @Override
-    public String toString() {
-        return index + "/" + type;
-    }
+    String index;
+    String type = "_doc";
+    Map<String, Map> properties;
 }
