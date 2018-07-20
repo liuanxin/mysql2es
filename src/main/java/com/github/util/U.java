@@ -30,12 +30,14 @@ public final class U {
     }
 
     public static String columnToField(String column) {
-        return CaseFormat.UPPER_UNDERSCORE.converterTo(CaseFormat.LOWER_CAMEL)
+        return CaseFormat.UPPER_UNDERSCORE.converterTo(CaseFormat.LOWER_HYPHEN)
                 .convert(column.toUpperCase().startsWith("C_") ? column.toUpperCase().substring(2) : column);
     }
 
+    // Invalid index name [abcXyz], must be lowercase ==> convert to : abc-xyz
+
     public static String tableToType(String table) {
-        return CaseFormat.UPPER_UNDERSCORE.converterTo(CaseFormat.LOWER_CAMEL)
+        return CaseFormat.UPPER_UNDERSCORE.converterTo(CaseFormat.LOWER_HYPHEN)
                 .convert(table.toUpperCase().startsWith("T_") ? table.toUpperCase().substring(2) : table);
     }
 

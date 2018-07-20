@@ -63,6 +63,8 @@ public class EsRepository {
 
             IndicesAdminClient indices = client.admin().indices();
             for (Scheme scheme : schemes) {
+                // begin with 6.0, 1 index can't set multi type
+                // Rejecting mapping update to [index] as the final mapping would have more than 1 type [type1, type2]
                 String index = scheme.getIndex();
                 String type = scheme.getType();
                 try {
@@ -96,7 +98,7 @@ public class EsRepository {
 
             if (A.isNotEmpty(successList)) {
                 if (Logs.ROOT_LOG.isInfoEnabled()) {
-                    Logs.ROOT_LOG.info("put {} schemes from db to es", successList);
+                    Logs.ROOT_LOG.info("put {} schemes ({}) from db to es", successList.size(), Jsons.toJson(successList));
                 }
             }
         }
