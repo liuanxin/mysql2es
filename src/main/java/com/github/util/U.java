@@ -30,7 +30,7 @@ public final class U {
     }
 
     public static String columnToField(String column) {
-        return CaseFormat.UPPER_UNDERSCORE.converterTo(CaseFormat.LOWER_HYPHEN)
+        return CaseFormat.UPPER_UNDERSCORE.converterTo(CaseFormat.LOWER_CAMEL)
                 .convert(column.toUpperCase().startsWith("C_") ? column.toUpperCase().substring(2) : column);
     }
 
