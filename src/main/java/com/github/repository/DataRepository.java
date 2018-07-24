@@ -4,10 +4,7 @@ import com.github.model.Document;
 import com.github.model.Config;
 import com.github.model.Relation;
 import com.github.model.Scheme;
-import com.github.util.A;
-import com.github.util.Files;
-import com.github.util.Logs;
-import com.github.util.U;
+import com.github.util.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -69,9 +66,22 @@ public class DataRepository {
 
         if ("tinyint(1)".equals(fieldType)) {
             return A.maps("type", "boolean");
-        } else if (fieldType.contains("int") || fieldType.contains("date") || fieldType.contains("time")) {
+        }
+        else if (fieldType.contains("int")) {
             return A.maps("type", "long");
-        } else {
+        }
+        else if (fieldType.contains("date") || fieldType.contains("time")) {
+            return A.maps("type", "date");
+        }
+        /*
+        else if () {
+            return A.maps("type", "nested");
+        }
+        else if () {
+            return A.maps("type", "object");
+        }
+        */
+        else {
             // if use ik, global set like next line, scheme mapping set with text, ik config don't need
             /*
             curl -XPOST http://ip:port/index/fulltext/_mapping -H 'Content-Type:application/json' -d '
@@ -85,7 +95,8 @@ public class DataRepository {
                   }
                 }'
             */
-            return A.maps("type", "text");//, "analyzer", "ik_max_word", "search_analyzer", "ik_max_word");
+            // return A.maps("type", "text", "analyzer", "ik_max_word", "search_analyzer", "ik_max_word");
+            return A.maps("type", "text");
         }
     }
 
@@ -125,7 +136,7 @@ public class DataRepository {
                 Object obj = last.get(column);
                 if (U.isNotBlank(obj)) {
                     // if was Date return timeMillis, else return toStr
-                    lastList.add((obj instanceof Date) ? String.valueOf(((Date) obj).getTime()) : obj.toString());
+                    lastList.add((obj instanceof Date) ? Dates.format((Date) obj, Dates.Type.YYYY_MM_DD_HH_MM_SS) : obj.toString());
                 }
             }
             return A.toStr(lastList);
