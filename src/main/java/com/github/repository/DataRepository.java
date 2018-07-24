@@ -64,11 +64,15 @@ public class DataRepository {
     private static Map<String, Map> dbToEsType(String fieldType) {
         fieldType = fieldType.toLowerCase();
 
+        // https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html
         if ("tinyint(1)".equals(fieldType)) {
             return A.maps("type", "boolean");
         }
-        else if (fieldType.contains("int")) {
+        else if (fieldType.contains("bigint")) {
             return A.maps("type", "long");
+        }
+        else if (fieldType.contains("int")) {
+            return A.maps("type", "integer");
         }
         else if (fieldType.contains("date") || fieldType.contains("time")) {
             return A.maps("type", "date");
