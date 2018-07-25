@@ -28,7 +28,10 @@ public class DataInit {
         U.assertNil(config, "no config with mysql and es mapping");
         config.check();
 
-        TransportClient client = new PreBuiltTransportClient(Settings.EMPTY);
+        Settings settings = Settings.builder()
+                .put("client.transport.sniff", true)
+                .build();
+        TransportClient client = new PreBuiltTransportClient(settings);
         for (String ipAndPort : config.getIpPort()) {
             String[] ipPort = ipAndPort.split(":");
             if (U.isNotBlank(ipPort) && ipPort.length >= 2) {
