@@ -11,7 +11,7 @@ spring.datasource:
 
 
 config:
-  ip-port: ["127.0.0.1:9300"]    # default was 127.0.0.1:9300
+  ip-port: ["127.0.0.1:9200"]    # default was 127.0.0.1:9200
   cron: 0/5 * * * * *            # this mean: [0 5 10 15 20 25 30 35 40 45 50 55] second
   index: db                      # *** must set ES index <==> database name
   relation:

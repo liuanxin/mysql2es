@@ -6,46 +6,54 @@ import com.github.model.Scheme;
 import com.github.util.A;
 import com.github.util.Jsons;
 import com.github.util.Logs;
-import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.action.DocWriteResponse;
+import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
+import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
+import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequest;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
-import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.client.IndicesAdminClient;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.client.IndicesClient;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
+import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Future;
 
-//@Component
-public class EsRepository {
+@Component
+public class EsNewRepository {
 
     @Autowired
     private Config config;
 
     @Autowired
-    private TransportClient client;
+    private RestHighLevelClient client;
 
     @Async
     public Future<Boolean> deleteScheme(List<Scheme> schemes) {
         if (A.isNotEmpty(schemes)) {
-            IndicesAdminClient indices = client.admin().indices();
+            IndicesClient indices = client.indices();
 
             for (Scheme scheme : schemes) {
                 String index = scheme.getIndex();
                 String type = scheme.getType();
                 try {
-                    if (indices.prepareExists(index).get().isExists()) {
-                        DeleteIndexResponse resp = indices.prepareDelete(index).get();
+                    if (indices.exists(new GetIndexRequest().indices(index))) {
+                        DeleteIndexResponse resp = indices.delete(new DeleteIndexRequest(index));
                         boolean flag = resp.isAcknowledged();
                         if (Logs.ROOT_LOG.isDebugEnabled()) {
                             Logs.ROOT_LOG.debug("delete scheme ({}/{}) return: ({})", index, type, flag);
                         }
                     }
-                } catch (ElasticsearchException e) {
+                } catch (IOException e) {
                     if (Logs.ROOT_LOG.isWarnEnabled()) {
                         Logs.ROOT_LOG.warn(String.format("delete scheme (%s/%s) es exception", index, type), e);
                     }
@@ -60,28 +68,24 @@ public class EsRepository {
         if (A.isNotEmpty(schemes)) {
             List<Scheme> successList = A.lists();
 
-            IndicesAdminClient indices = client.admin().indices();
+            IndicesClient indices = client.indices();
             for (Scheme scheme : schemes) {
-                // begin with 6.0, 1 index can't set multi type
-                // Rejecting mapping update to [index] as the final mapping would have more than 1 type [type1, type2]
                 String index = scheme.getIndex();
                 String type = scheme.getType();
                 try {
                     // create index if not exists
-                    if (!indices.prepareExists(index).get().isExists()) {
-                        indices.prepareCreate(index).get();
+                    if (!indices.exists(new GetIndexRequest().indices(index))) {
+                        indices.create(new CreateIndexRequest(index));
                     }
-                    // indices.prepareDelete(index).get().isAcknowledged();
 
                     String source = Jsons.toJson(A.maps("properties", scheme.getProperties()));
                     if (Logs.ROOT_LOG.isDebugEnabled()) {
                         Logs.ROOT_LOG.debug("curl -XPUT \"http://{}/{}/{}/_mapping\" -d '{}'",
                                 config.ipAndPort(), index, type, source);
                     }
-                    // create or update mapping
-                    PutMappingResponse resp = indices.preparePutMapping(index).setType(type)
-                            .setSource(source, XContentType.JSON).get();
-                    boolean flag = resp.isAcknowledged();
+                    PutMappingRequest put = new PutMappingRequest(index).type(type).source(source, XContentType.JSON);
+                    PutMappingResponse response = indices.putMapping(put);
+                    boolean flag = response.isAcknowledged();
                     if (flag) {
                         successList.add(scheme);
                     }
@@ -97,7 +101,7 @@ public class EsRepository {
 
             if (A.isNotEmpty(successList)) {
                 if (Logs.ROOT_LOG.isInfoEnabled()) {
-                    Logs.ROOT_LOG.info("put {} schemes ({}) from db to es", successList.size(), Jsons.toJson(successList));
+                    Logs.ROOT_LOG.info("put {} ({}) schemes from db to es", successList.size(), Jsons.toJson(successList));
                 }
             }
         }
@@ -108,18 +112,27 @@ public class EsRepository {
     public Future<Boolean> saveDataToEs(List<Document> documents) {
         if (A.isNotEmpty(documents)) {
             List<Document> successList = A.lists();
+
             for (Document doc : documents) {
                 try {
-                    IndexResponse response = client.prepareIndex(doc.getIndex(), doc.getType(), doc.getId())
-                            .setSource(Jsons.toJson(doc.getData()), XContentType.JSON).get();
-                    if (Logs.ROOT_LOG.isDebugEnabled()) {
-                        Logs.ROOT_LOG.debug("create or update date return : {}", response.status());
+                    DocWriteResponse response;
+                    boolean exists = client.exists(new GetRequest(doc.getIndex(), doc.getType(), doc.getId()));
+                    if (exists) {
+                        UpdateRequest request = new UpdateRequest(doc.getIndex(), doc.getType(), doc.getId())
+                                .doc(Jsons.toJson(doc.getData()), XContentType.JSON);
+                        response = client.update(request);
+                    } else {
+                        IndexRequest request = new IndexRequest(doc.getIndex(), doc.getType(), doc.getId())
+                                .source(Jsons.toJson(doc.getData()), XContentType.JSON);
+                        response = client.index(request);
                     }
-
+                    if (Logs.ROOT_LOG.isDebugEnabled()) {
+                        Logs.ROOT_LOG.debug("create or update date return : {}", response.getResult().getLowercase());
+                    }
                     successList.add(doc);
                 } catch (Exception e) {
-                    if (Logs.ROOT_LOG.isWarnEnabled()) {
-                        Logs.ROOT_LOG.warn("create or update data es exception", e);
+                    if (Logs.ROOT_LOG.isErrorEnabled()) {
+                        Logs.ROOT_LOG.error("create or update data es exception", e);
                     }
                 }
             }
