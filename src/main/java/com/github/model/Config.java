@@ -23,7 +23,7 @@ import java.util.List;
 @Accessors(chain = true)
 public class Config {
 
-    List<String> ipPort = A.lists("127.0.0.1:9300");
+    List<String> ipPort = A.lists("127.0.0.1:9200");
 
     /** ES index <==> database Name */
     String index;
