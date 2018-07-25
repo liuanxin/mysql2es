@@ -23,10 +23,10 @@ import java.util.List;
 @Accessors(chain = true)
 public class Config {
 
-    List<String> ipPort = A.lists("127.0.0.1:9200");
+    private List<String> ipPort = A.lists("127.0.0.1:9200");
 
     /** ES index <==> database Name */
-    String index;
+    private String index;
 
     /**
      * <pre>
@@ -42,7 +42,7 @@ public class Config {
      *
      * @see org.springframework.scheduling.support.CronSequenceGenerator#parse(java.lang.String)
      */
-    String cron = "0 * * * * *"; // every minutes with default
+    private String cron = "0 * * * * *"; // every minutes with default
 
     /**
      * <pre>
@@ -67,11 +67,21 @@ public class Config {
      * ]
      * </pre>
      */
-    List<Relation> relation;
+    private List<Relation> relation;
+
+    private static final int MAX_COUNT = 500;
+    /** Total number of single operations */
+    private Integer count = MAX_COUNT;
 
     public void check() {
         U.assertNil(index, "must set (es index name) <==> database name");
         U.assertException(A.isEmpty(relation), "must set [db es] relation");
+        if (U.isNotBlank(count)) {
+            U.assert0(count, "Total number of single operations must greater 0");
+            if (count > MAX_COUNT) {
+                count = MAX_COUNT;
+            }
+        }
         for (Relation relation1 : relation) {
             relation1.check();
         }
