@@ -1,7 +1,7 @@
 package com.github.repository;
 
-import com.github.model.Document;
 import com.github.model.Config;
+import com.github.model.Document;
 import com.github.model.Relation;
 import com.github.model.Scheme;
 import com.github.util.*;

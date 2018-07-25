@@ -82,7 +82,7 @@
 
         <!--
             https://github.com/spring-projects/spring-data-elasticsearch/wiki   ->   Spring Boot SDE matrix
-            因为版本兼容的问题, 不使用 spring 提供的 start, 用原生的 transport 来操作以跟随 es 的新版本
+            因为版本兼容的问题, 不使用 spring 提供的 start, 用原生的 client 来操作以跟随 es 的新版本
             https://www.elastic.co/guide/en/elasticsearch/client/java-api/current/transport-client.html
                 https://www.elastic.co/guide/en/elasticsearch/client/java-api/2.0/transport-client.html
         -->
@@ -91,21 +91,14 @@
             <artifactId>spring-boot-starter-data-elasticsearch</artifactId>
         </dependency>-->
 
-        <!--<dependency>
-            <groupId>org.elasticsearch.client</groupId>
-            <artifactId>elasticsearch-rest-high-level-client</artifactId>
-        </dependency>-->
-
         <dependency>
             <groupId>org.elasticsearch.client</groupId>
-            <artifactId>transport</artifactId>
+            <artifactId>elasticsearch-rest-high-level-client</artifactId>
         </dependency>
-        <!--
-            es 必须, 不是很懂 es 为什么直接写死了 log4j2 而不是 slf4j: https://github.com/elastic/elasticsearch/issues/19415
-        -->
+
         <!--<dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
+            <groupId>org.elasticsearch.client</groupId>
+            <artifactId>transport</artifactId>
         </dependency>-->
 
         <dependency>
