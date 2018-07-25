@@ -1,7 +1,7 @@
 package com.github.service;
 
 import com.github.repository.DataRepository;
-import com.github.repository.EsNewRepository;
+import com.github.repository.EsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -12,10 +12,11 @@ import java.util.concurrent.Future;
 public class BondingService {
 
     @Autowired
-//    private EsRepository esRepository;
-    private EsNewRepository esRepository;
+    private EsRepository esRepository;
+
     @Autowired
     private DataRepository dataRepository;
+
 
     public boolean createScheme() {
         Future<Boolean> result = esRepository.saveScheme(dataRepository.dbToEsScheme());

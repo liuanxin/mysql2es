@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -116,16 +117,27 @@ public class DataRepository {
             // must have primary key
             if (A.isNotEmpty(keyList)) {
                 // read last id from temp file
-                String sql = relation.querySql(Files.read(config.getIndex(), relation.useType()));
-                List<Map<String, Object>> dataList = jdbcTemplate.queryForList(sql);
-                if (A.isNotEmpty(dataList)) {
-                    // write last id to temp file
-                    String last = getLast(relation.getIncrementColumn(), dataList);
-                    if (U.isNotBlank(last)) {
-                        Files.write(config.getIndex(), relation.useType(), last);
+                String tmpColumnValue = Files.read(config.getIndex(), relation.useType());
+                String countSql = relation.countSql(tmpColumnValue);
+                Integer count = A.first(jdbcTemplate.queryForList(countSql, Integer.class));
+                if (U.greater0(count)) {
+                    int loopCount = relation.loopCount(count);
+                    List<Map<String, Object>> dataList = new ArrayList<>();
+                    for (int i = 0; i < loopCount; i++) {
+                        // Total number of single operations can't exceed set value
+                        if (dataList.size() < config.getCount()) {
+                            String pageSql = relation.querySql(i, tmpColumnValue);
+                            dataList.addAll(jdbcTemplate.queryForList(pageSql));
+                        }
                     }
-
-                    documents.addAll(fixDocument(relation, keyList, dataList));
+                    if (A.isNotEmpty(dataList)) {
+                        // write last id to temp file
+                        String last = getLast(relation.getIncrementColumn(), dataList);
+                        if (U.isNotBlank(last)) {
+                            Files.write(config.getIndex(), relation.useType(), last);
+                        }
+                        documents.addAll(fixDocument(relation, keyList, dataList));
+                    }
                 }
             }
         }
