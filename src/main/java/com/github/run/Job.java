@@ -12,7 +12,6 @@ import org.springframework.scheduling.support.CronTrigger;
 
 @Profile("!test")
 @Configuration
-@EnableScheduling
 public class Job implements SchedulingConfigurer {
 
     @Autowired
