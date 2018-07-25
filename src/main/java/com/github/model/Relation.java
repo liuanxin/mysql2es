@@ -95,7 +95,7 @@ public class Relation {
     public String countSql(String param) {
         StringBuilder querySql = new StringBuilder();
         querySql.append(U.isNotBlank(sql)
-                ? sql.toUpperCase().replaceFirst("SELECT (.*?) FROM ", "SELECT count(*) FROM")
+                ? sql.trim().toUpperCase().replaceFirst("SELECT (.*?) FROM ", "SELECT COUNT(*) FROM ")
                 : String.format("SELECT count(*) FROM `%s`", table));
         appendWhere(param, querySql);
 
