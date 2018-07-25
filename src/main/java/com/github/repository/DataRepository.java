@@ -117,7 +117,8 @@ public class DataRepository {
             // must have primary key
             if (A.isNotEmpty(keyList)) {
                 // read last id from temp file
-                String tmpColumnValue = Files.read(config.getIndex(), relation.useType());
+                String index = relation.useType();
+                String tmpColumnValue = Files.read(index);
                 String countSql = relation.countSql(tmpColumnValue);
                 Integer count = A.first(jdbcTemplate.queryForList(countSql, Integer.class));
                 if (U.greater0(count)) {
@@ -134,7 +135,7 @@ public class DataRepository {
                         // write last id to temp file
                         String last = getLast(relation.getIncrementColumn(), dataList);
                         if (U.isNotBlank(last)) {
-                            Files.write(config.getIndex(), relation.useType(), last);
+                            Files.write(index, last);
                         }
                         documents.addAll(fixDocument(relation, keyList, dataList));
                     }
@@ -196,7 +197,7 @@ public class DataRepository {
 
     public void deleteTempFile() {
         for (Relation relation : config.getRelation()) {
-            Files.delete(config.getIndex(), relation.useType());
+            Files.delete(relation.useType());
         }
     }
 }
