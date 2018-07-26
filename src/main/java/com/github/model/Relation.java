@@ -91,7 +91,6 @@ public class Relation {
         return loop;
     }
 
-    /** generate query sql */
     public String countSql(String param) {
         StringBuilder querySql = new StringBuilder();
         querySql.append(U.isNotBlank(sql)
@@ -131,7 +130,6 @@ public class Relation {
         }
     }
 
-    /** generate query sql */
     public String querySql(int page, String param) {
         StringBuilder querySql = new StringBuilder();
         querySql.append(U.isNotBlank(sql) ? sql : String.format("SELECT * FROM `%s`", table));
