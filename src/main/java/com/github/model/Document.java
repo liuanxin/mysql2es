@@ -16,10 +16,10 @@ public class Document {
     // begin with 6.0, type will be remove, replace with _doc
     // https://www.elastic.co/guide/en/elasticsearch/reference/current/removal-of-types.html
 
-    String index;
-    String type = "_doc";
-    String id;
-    Map<String, Object> data;
+    private String index;
+    private String type = "_doc";
+    private String id;
+    private Map<String, Object> data;
 
     @Override
     public String toString() {
