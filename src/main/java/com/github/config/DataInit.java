@@ -1,4 +1,4 @@
-package com.github.db;
+package com.github.config;
 
 import com.github.model.Config;
 import com.github.util.U;
