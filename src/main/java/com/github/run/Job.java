@@ -22,13 +22,13 @@ public class Job implements SchedulingConfigurer {
 
     @Override
     public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
-        final boolean flag = bondingService.createScheme();
+        // final boolean flag = bondingService.createScheme();
         taskRegistrar.addTriggerTask(new Runnable() {
             @Override
             public void run() {
-                if (flag) {
+                // if (flag) {
                     bondingService.syncData();
-                }
+                // }
             }
         }, new CronTrigger(config.getCron()));
     }
