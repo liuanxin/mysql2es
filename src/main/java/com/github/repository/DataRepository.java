@@ -152,7 +152,7 @@ public class DataRepository {
             for (String column : incrementColumnList) {
                 Object obj = last.get(column);
                 if (U.isNotBlank(obj)) {
-                    // if was Date return timeMillis, else return toStr
+                    // if was Date return 'yyyy-MM-dd HH:mm:ss', else return toStr
                     lastList.add((obj instanceof Date) ? Dates.format((Date) obj, Dates.Type.YYYY_MM_DD_HH_MM_SS) : obj.toString());
                 }
             }
