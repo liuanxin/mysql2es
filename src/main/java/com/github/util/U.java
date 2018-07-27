@@ -6,6 +6,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 /** util */
 public final class U {
@@ -15,6 +16,12 @@ public final class U {
     public static final String SPLIT = ",|，";
     public static final Random RANDOM = new Random();
     public static final Charset UTF8 = StandardCharsets.UTF_8;
+    private static final Pattern BLANK_REGEX = Pattern.compile("\\s{2,}");
+
+
+    public static String replaceBlank(String str) {
+        return BLANK_REGEX.matcher(str).replaceAll(" ");
+    }
 
 
     public static String random(int length) {
