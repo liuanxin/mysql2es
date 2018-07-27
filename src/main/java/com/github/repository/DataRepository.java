@@ -5,6 +5,7 @@ import com.github.model.Document;
 import com.github.model.Relation;
 import com.github.model.Scheme;
 import com.github.util.*;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -48,15 +49,20 @@ public class DataRepository {
                         }
                     }
                 }
-                if (A.isEmpty(keyList)) {
+
+                U.assertException(A.isEmpty(keyList), String.format("table (%s) no primary key, " +
+                        "can't create index in es!", relation.getTable()));
+                if (keyList.size() > 1) {
                     if (Logs.ROOT_LOG.isWarnEnabled()) {
-                        Logs.ROOT_LOG.warn("table ({}) no primary key, can't create index in es!", relation.getTable());
+                        Logs.ROOT_LOG.warn("table ({}) has multi primary key, " +
+                                "increment data may be query for duplicate data, but will not miss !",
+                                relation.getTable());
                     }
-                } else {
-                    relation.setKeyList(keyList);
-                    if (scheme) {
-                        schemeList.add(new Scheme().setIndex(relation.useType()).setProperties(propertyMap));
-                    }
+                }
+
+                relation.setKeyList(keyList);
+                if (scheme) {
+                    schemeList.add(new Scheme().setIndex(relation.useType()).setProperties(propertyMap));
                 }
             }
         }
@@ -133,7 +139,8 @@ public class DataRepository {
                     }
                     if (A.isNotEmpty(dataList)) {
                         // write last id to temp file
-                        String last = getLast(relation.getIncrementColumn(), dataList);
+                        List<String> incrementColumn = relation.getIncrementColumn();
+                        String last = getLast(keyList, incrementColumn, dataList);
                         if (U.isNotBlank(last)) {
                             Files.write(index, last);
                         }
@@ -145,20 +152,64 @@ public class DataRepository {
         return documents;
     }
     /** return last record */
-    private String getLast(List<String> incrementColumnList, List<Map<String, Object>> dataList) {
+    private String getLast(List<String> keyList, List<String> columnList, List<Map<String, Object>> dataList) {
         Map<String, Object> last = A.last(dataList);
         if (A.isNotEmpty(last)) {
             List<String> lastList = A.lists();
-            for (String column : incrementColumnList) {
+            for (String column : columnList) {
                 Object obj = last.get(column);
                 if (U.isNotBlank(obj)) {
                     // if was Date return 'yyyy-MM-dd HH:mm:ss', else return toStr
-                    lastList.add((obj instanceof Date) ? Dates.format((Date) obj, Dates.Type.YYYY_MM_DD_HH_MM_SS) : obj.toString());
+                    lastList.add(dataToStr(obj));
                 }
             }
-            return A.toStr(lastList);
+            String lastValue = A.toStr(lastList, U.FIRST_SPLIT);
+
+            if (keyList.size() == 1 && columnList.size() == 1) {
+                String increment = columnList.get(0);
+                String key = keyList.get(0);
+
+                List<Object> columnValueList = A.lists();
+                for (Map<String, Object> data : dataList) {
+                    String column = dataToStr(data.get(increment));
+                    // append (last data)'s (increment data) equals's data to tmp file
+                    if (lastValue.equals(column)) {
+                        String tmp = dataToStr(data.get(key));
+                        if (U.isNotBlank(tmp)) {
+                            columnValueList.add(tmp);
+                        }
+                    }
+                }
+                if (A.isNotEmpty(columnValueList)) {
+                    StringBuilder sbd = new StringBuilder(U.SECOND_SPLIT + "AND " + key);
+                    // multi use NOT IN, single use !=
+                    if (columnValueList.size() > 1) {
+                        sbd.append(" NOT IN (");
+                        for (Object obj : columnValueList) {
+                            sbd.append(sqlData(obj)).append(",");
+                        }
+                        if (sbd.toString().endsWith(",")) {
+                            sbd.delete(sbd.length() - 1, sbd.length());
+                        }
+                        sbd.append(")");
+                    } else {
+                        sbd.append(" != ").append(sqlData(columnValueList.get(0)));
+                    }
+                    lastValue += sbd.toString();
+                }
+            }
+            return lastValue;
         }
         return U.EMPTY;
+    }
+    private String sqlData(Object obj) {
+        return (NumberUtils.isNumber(obj.toString())) ? obj.toString() : ("'" + obj + "'");
+    }
+    private String dataToStr(Object obj) {
+        if (obj instanceof Date) {
+            return Dates.format((Date) obj, Dates.Type.YYYY_MM_DD_HH_MM_SS);
+        }
+        return obj.toString();
     }
     /** traverse the Database Result and organize into es Document */
     private List<Document> fixDocument(Relation relation, List<String> keyList,
