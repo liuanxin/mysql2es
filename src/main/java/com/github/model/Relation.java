@@ -107,7 +107,7 @@ public class Relation {
     private void appendWhere(String param, StringBuilder querySql) {
         // param split length = increment column size
         if (U.isNotBlank(param)) {
-            String params[] = param.split(U.SPLIT);
+            String params[] = param.split(U.FIRST_SPLIT);
             if (incrementColumn.size() != params.length) {
                 if (Logs.ROOT_LOG.isErrorEnabled()) {
                     Logs.ROOT_LOG.error("increment ({}) != param ({})", A.toStr(incrementColumn), param);
@@ -116,13 +116,21 @@ public class Relation {
                 querySql.append(querySql.toString().toUpperCase().contains(" WHERE ") ? " AND" : " WHERE");
 
                 for (int i = 0; i < incrementColumn.size(); i++) {
-                    String p = params[i];
-                    if (U.isNotBlank(p)) {
+                    String tmp = params[i];
+                    if (U.isNotBlank(tmp)) {
+                        String[] arr = tmp.split(U.SECOND_SPLIT);
+
+                        String value = arr[0];
                         String column = incrementColumn.get(i);
-                        if (NumberUtils.isNumber(p)) {
-                            querySql.append(String.format(" `%s` > %d", column, NumberUtils.toLong(p)));
+                        // gte(>=) This will query for duplicate data, but will not miss, exclude by the following conditions
+                        if (NumberUtils.isNumber(value)) {
+                            querySql.append(String.format(" `%s` >= %d", column, NumberUtils.toLong(value)));
                         } else {
-                            querySql.append(String.format(" `%s` > '%s'", column, p));
+                            querySql.append(String.format(" `%s` >= '%s'", column, value));
+                        }
+                        // use < id not in(x, xx, xxx) >  to exclude duplicate data. above gte(>=)
+                        if (arr.length > 1) {
+                            querySql.append(" ").append(arr[1]);
                         }
                         if ((i + 1) != incrementColumn.size()) {
                             querySql.append(" AND");
