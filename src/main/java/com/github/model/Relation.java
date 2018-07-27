@@ -50,6 +50,9 @@ public class Relation {
         if (U.isNotBlank(limit)) {
             U.assert0(limit, "limit must greater 0");
         }
+        if (U.isNotBlank(sql)) {
+            sql = U.replaceBlank(sql);
+        }
     }
 
     /** if not set the 「type」, generate from 「table name」 */
@@ -94,7 +97,7 @@ public class Relation {
     public String countSql(String param) {
         StringBuilder querySql = new StringBuilder();
         querySql.append(U.isNotBlank(sql)
-                ? sql.trim().toUpperCase().replaceFirst("SELECT (.*?) FROM ", "SELECT COUNT(*) FROM ")
+                ? sql.trim().replaceFirst("(?i)SELECT (.*?) FROM ", "SELECT COUNT(*) FROM ")
                 : String.format("SELECT count(*) FROM `%s`", table));
         appendWhere(param, querySql);
 
@@ -119,7 +122,7 @@ public class Relation {
                         if (NumberUtils.isNumber(p)) {
                             querySql.append(String.format(" `%s` > %d", column, NumberUtils.toLong(p)));
                         } else {
-                            querySql.append(String.format(" `%s` >= '%s'", column, p));
+                            querySql.append(String.format(" `%s` > '%s'", column, p));
                         }
                         if ((i + 1) != incrementColumn.size()) {
                             querySql.append(" AND");
