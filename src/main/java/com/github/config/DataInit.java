@@ -45,6 +45,8 @@ public class DataInit {
 //        return client;
 //    }
 
+    // https://www.elastic.co/guide/en/elasticsearch/client/index.html
+
     @Bean
     public RestHighLevelClient search() {
         Config config = config();
