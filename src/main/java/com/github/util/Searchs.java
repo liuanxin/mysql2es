@@ -69,10 +69,11 @@ public final class Searchs {
         if (STRING_TYPE.equals(type) && U.isNotBlank(needAnalyzer)) {
             if (needAnalyzer.aggregation()) {
                 map.put("type", "keyword");
+            } else {
+                map.put("analyzer", "ik_synonym");
+                map.put("search_analyzer", "ik_synonym_smart");
+                map.put("fields", A.maps("pinyin", A.maps("type", STRING_TYPE, "analyzer", "pinyin")));
             }
-            map.put("analyzer", "ik_synonym");
-            map.put("search_analyzer", "ik_synonym_smart");
-            map.put("fields", A.maps("pinyin", A.maps("type", STRING_TYPE, "analyzer", "pinyin")));
         }
         else if (DATE_TYPE.equals(type)) {
             map.put("format", "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss SSS||yyyy-MM-dd||epoch_millis");
