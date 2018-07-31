@@ -90,7 +90,10 @@ public final class U {
     }
     public static void assertException(Boolean flag, String msg) {
         if (flag != null && flag) {
-            throw new RuntimeException(msg);
+            assertException(msg);
         }
+    }
+    public static void assertException(String msg) {
+        throw new RuntimeException(msg);
     }
 }
