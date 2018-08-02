@@ -82,7 +82,9 @@ public final class Searchs {
                 fieldMap.put("full_pinyin", A.maps("type", STRING_TYPE, "analyzer", "full_pinyin"));
             }
             if (needAnalyzer.suggest()) {
-                fieldMap.put("suggest", A.maps("type", "completion", "analyzer", "ik_max_word"));
+                fieldMap.put("suggest", A.maps("type", "completion", "analyzer", "ik_synonym", "search_analyzer", "ik_synonym_smart"));
+            }
+            if (needAnalyzer.suggest() && needAnalyzer.pinyin()) {
                 fieldMap.put("suggest_pinyin", A.maps("type", "completion", "analyzer", "simple_pinyin"));
                 fieldMap.put("suggest_full_pinyin", A.maps("type", "completion", "analyzer", "full_pinyin"));
             }
