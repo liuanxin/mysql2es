@@ -6,6 +6,7 @@ import com.github.model.Scheme;
 import com.github.util.A;
 import com.github.util.Jsons;
 import com.github.util.Logs;
+import com.google.common.collect.Maps;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Future;
 
 @Component
@@ -111,29 +113,25 @@ public class EsRepository {
     @Async
     public Future<Boolean> saveDataToEs(List<Document> documents) {
         if (A.isNotEmpty(documents)) {
-            List<Document> successList = A.lists();
+            Map<String, String> statusMap = Maps.newHashMap();
 
             for (Document doc : documents) {
+                String index = doc.getIndex();
+                String type = doc.getType();
+                String id = doc.getId();
                 try {
                     DocWriteResponse response;
-                    boolean exists = client.exists(new GetRequest(doc.getIndex(), doc.getType(), doc.getId()));
+                    boolean exists = client.exists(new GetRequest(index, type, id));
                     if (exists) {
-                        UpdateRequest request = new UpdateRequest(doc.getIndex(), doc.getType(), doc.getId())
+                        UpdateRequest request = new UpdateRequest(index, type, id)
                                 .doc(Jsons.toJson(doc.getData()), XContentType.JSON);
                         response = client.update(request);
                     } else {
-                        IndexRequest request = new IndexRequest(doc.getIndex(), doc.getType(), doc.getId())
+                        IndexRequest request = new IndexRequest(index, type, id)
                                 .source(Jsons.toJson(doc.getData()), XContentType.JSON);
                         response = client.index(request);
                     }
-                    if (Logs.ROOT_LOG.isDebugEnabled()) {
-                        Logs.ROOT_LOG.debug("create or update date return : {}", response.getResult().getLowercase());
-                    }
-
-                    if (response.getResult() != DocWriteResponse.Result.NOOP
-                            && response.getResult() != DocWriteResponse.Result.NOT_FOUND) {
-                        successList.add(doc);
-                    }
+                    statusMap.put(id, response.getResult().getLowercase());
                 } catch (Exception e) {
                     // <= 6.3.1 version, suggest field if empty will throw IAE(write is good)
                     // org.elasticsearch.index.mapper.CompletionFieldMapper.parse(443)
@@ -144,9 +142,9 @@ public class EsRepository {
                 }
             }
 
-            if (A.isNotEmpty(successList)) {
+            if (A.isNotEmpty(statusMap)) {
                 if (Logs.ROOT_LOG.isInfoEnabled()) {
-                    Logs.ROOT_LOG.info("put {} {} documents from db to es", successList.size(), successList);
+                    Logs.ROOT_LOG.info("db to es({})", Jsons.toJson(statusMap));
                 }
             }
         }
