@@ -12,10 +12,9 @@ import java.lang.annotation.*;
 @Documented
 public @interface NeedAnalysis {
 
-    /**
-     * aggregation ? keyword : text
-     *
-     * text will use: Chinese word segmentation, pinyin, synonym
-     */
-    boolean aggregation() default false;
+    /** text will use: Chinese word segmentation, pinyin, synonym, keyword with aggregation */
+    boolean keyword() default false;
+
+    /** when field need suggest(String), set true, ignore when keyword = true */
+    boolean suggest() default false;
 }
