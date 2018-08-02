@@ -135,6 +135,9 @@ public class EsRepository {
                         successList.add(doc);
                     }
                 } catch (Exception e) {
+                    // <= 6.3.1 version, suggest field if empty will throw IAE(write is good)
+                    // org.elasticsearch.index.mapper.CompletionFieldMapper.parse(443)
+                    // https://github.com/elastic/elasticsearch/pull/30713/files
                     if (Logs.ROOT_LOG.isErrorEnabled()) {
                         Logs.ROOT_LOG.error("create or update data es exception", e);
                     }

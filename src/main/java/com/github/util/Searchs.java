@@ -3,6 +3,7 @@ package com.github.util;
 import com.github.annotation.NeedAnalysis;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
@@ -69,21 +70,23 @@ public final class Searchs {
         if (STRING_TYPE.equals(type) && U.isNotBlank(needAnalyzer)) {
             if (needAnalyzer.keyword()) {
                 map.put("type", "keyword");
-            } else {
+            }
+            if (needAnalyzer.chinese()) {
                 map.put("analyzer", "ik_synonym");
                 map.put("search_analyzer", "ik_synonym_smart");
-
-                Map<Object, Object> m = A.maps(
-                        "pinyin", A.maps("type", STRING_TYPE, "analyzer", "pinyin_analyzer")
-                );
-                if (needAnalyzer.suggest()) {
-                    m.putAll(A.maps(
-                            "suggest", A.maps("type", "completion", "analyzer", "ik_max_word"),
-                            "suggest_pinyin", A.maps("type", "completion", "analyzer", "pinyin_suggest")
-                    ));
-                }
-                map.put("fields", m);
             }
+
+            Map<Object, Object> fieldMap = A.maps();
+            if (needAnalyzer.pinyin()) {
+                fieldMap.put("pinyin", A.maps("type", STRING_TYPE, "analyzer", "simple_pinyin"));
+                fieldMap.put("full_pinyin", A.maps("type", STRING_TYPE, "analyzer", "full_pinyin"));
+            }
+            if (needAnalyzer.suggest()) {
+                fieldMap.put("suggest", A.maps("type", "completion", "analyzer", "ik_max_word"));
+                fieldMap.put("suggest_pinyin", A.maps("type", "completion", "analyzer", "simple_pinyin"));
+                fieldMap.put("suggest_full_pinyin", A.maps("type", "completion", "analyzer", "full_pinyin"));
+            }
+            map.put("fields", fieldMap);
         }
         else if (DATE_TYPE.equals(type)) {
             map.put("format", "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss SSS||yyyy-MM-dd||epoch_millis");
@@ -114,31 +117,30 @@ public final class Searchs {
                 "          \"tokenizer\" : \"ik_smart\",\n" +
                 "          \"filter\" : [\"synonym_filter\"]\n" +
                 "        }\n" +
-                "        , \"pinyin_analyzer\" : {\n" +
-                "          \"tokenizer\" : \"pinyin_tokenizer\"\n" +
-                "        }\n" +
-                "        , \"pinyin_suggest\": {\n" +
-                "          \"tokenizer\": \"keyword\",\n" +
-                "          \"filter\": [\"lowercase\", \"pinyin_filter\"]\n" +
+                "        , \"simple_pinyin\": {\n" +
+                "          \"tokenizer\" : \"whitespace\",\n" +
+                "          \"filter\" : [\"lowercase\", \"simple_pinyin_filter\"]\n" +
                 "        }" +
-                "      }\n" +
-                // see https://github.com/medcl/elasticsearch-analysis-pinyin
-                "      , \"tokenizer\" : {\n" +
-                "        \"pinyin_tokenizer\" : {\n" +
-                "          \"type\" : \"pinyin\",\n" +
-                "          \"keep_joined_full_pinyin\" : true,\n" +
-                "          \"remove_duplicated_term\" : true\n" +
-                "        }\n" +
+                "        , \"full_pinyin\": {\n" +
+                "          \"tokenizer\" : \"whitespace\",\n" +
+                "          \"filter\" : [\"lowercase\", \"full_pinyin_filter\"]\n" +
+                "        }" +
                 "      }\n" +
                 "      , \"filter\" : {\n" +
                 "        \"synonym_filter\" : {\n" +
                 "          \"type\" : \"synonym\",\n" +
                 "          \"synonyms_path\" : \"analysis/synonym.txt\"\n" +
                 "        }\n" +
-                "        , \"pinyin_filter\": {\n" +
+                // see https://github.com/medcl/elasticsearch-analysis-pinyin
+                "        , \"simple_pinyin_filter\": {\n" +
                 "          \"type\": \"pinyin\",\n" +
-                "          \"first_letter\": \"none\",\n" +
-                "          \"padding_char\": \"\"\n" +
+                "          \"keep_first_letter\": true,\n" +
+                "          \"keep_full_pinyin\": false\n" +
+                "        },\n" +
+                "        \"full_pinyin_filter\": {\n" +
+                "          \"type\": \"pinyin\",\n" +
+                "          \"keep_first_letter\": false,\n" +
+                "          \"keep_full_pinyin\": true\n" +
                 "        }\n" +
                 "      }\n" +
                 "    }\n" +
@@ -203,48 +205,51 @@ public final class Searchs {
     private static Map<String, Map> collectScheme(Class clazz) {
         Map<String, Map> propertyMap = A.maps();
         for (Field field : clazz.getDeclaredFields()) {
-            Class<?> fieldType = field.getType();
-            String fieldName = field.getName();
-            NeedAnalysis needAnalyzer = field.getAnnotation(NeedAnalysis.class);
+            int mod = field.getModifiers();
+            if (!Modifier.isStatic(mod) && !Modifier.isFinal(mod)) {
+                Class<?> fieldType = field.getType();
+                String fieldName = field.getName();
+                NeedAnalysis needAnalyzer = field.getAnnotation(NeedAnalysis.class);
 
-            String mapping = TYPE_MAPPING.get(fieldType);
-            if (U.isNotBlank(mapping)) {
-                propertyMap.put(fieldName, mappingType(mapping, needAnalyzer));
-            } else {
-                if (Map.class.isAssignableFrom(fieldType)) {
-                    U.assertException(fieldName + " ==> please use Object or List to replace Map");
-                }
-                else if (Collection.class.isAssignableFrom(fieldType)) {
-                    Type type = field.getGenericType();
-                    if (type instanceof ParameterizedType) {
-                        Type args = ((ParameterizedType) type).getActualTypeArguments()[0];
-                        if (args instanceof Class) {
-                            mapping = TYPE_MAPPING.get(args);
-                            if (U.isNotBlank(mapping)) {
-                                propertyMap.put(fieldName, mappingType(mapping, needAnalyzer));
+                String mapping = TYPE_MAPPING.get(fieldType);
+                if (U.isNotBlank(mapping)) {
+                    propertyMap.put(fieldName, mappingType(mapping, needAnalyzer));
+                } else {
+                    if (Map.class.isAssignableFrom(fieldType)) {
+                        U.assertException(fieldName + " ==> please use Object or List to replace Map");
+                    } else if (Collection.class.isAssignableFrom(fieldType)) {
+                        Type type = field.getGenericType();
+                        if (type instanceof ParameterizedType) {
+                            Type args = ((ParameterizedType) type).getActualTypeArguments()[0];
+                            if (args instanceof Class) {
+                                mapping = TYPE_MAPPING.get(args);
+                                if (U.isNotBlank(mapping)) {
+                                    propertyMap.put(fieldName, mappingType(mapping, needAnalyzer));
+                                } else {
+                                    Map map = A.maps("type", "nested", "properties", collectScheme((Class) args));
+                                    propertyMap.put(fieldName, map);
+                                }
                             } else {
-                                propertyMap.put(fieldName, A.maps("type", "nested", "properties", collectScheme((Class) args)));
+                                U.assertException("please set Generic in List<xxx>, don't use Generic like: List<T>");
                             }
-                        } else {
-                            U.assertException("please set Generic in List<xxx>, don't use Generic like: List<T>");
                         }
+                    } else if (fieldType.isArray()) {
+                        String generic = field.toGenericString();
+                        generic = generic.substring(0, generic.indexOf("[]"));
+                        if (generic.contains(" ")) {
+                            generic = generic.substring(generic.indexOf(" "), generic.length()).trim();
+                        }
+                        try {
+                            Class<?> arrayType = Class.forName(generic);
+                            Map map = A.maps("type", "nested", "properties", collectScheme(arrayType));
+                            propertyMap.put(fieldName, map);
+                        } catch (ClassNotFoundException e) {
+                            U.assertException(String.format("class(%s) not found", generic));
+                        }
+                    } else {
+                        Map map = A.maps("type", "nested", "properties", collectScheme(fieldType));
+                        propertyMap.put(fieldName, map);
                     }
-                }
-                else if (fieldType.isArray()) {
-                    String generic = field.toGenericString();
-                    generic = generic.substring(0, generic.indexOf("[]"));
-                    if (generic.contains(" ")) {
-                        generic = generic.substring(generic.indexOf(" "), generic.length()).trim();
-                    }
-                    try {
-                        Class<?> arrayType = Class.forName(generic);
-                        propertyMap.put(fieldName, A.maps("type", "nested", "properties", collectScheme(arrayType)));
-                    } catch (ClassNotFoundException e) {
-                        U.assertException(String.format("class(%s) not found", generic));
-                    }
-                }
-                else {
-                    propertyMap.put(fieldName, A.maps("type", "nested", "properties", collectScheme(fieldType)));
                 }
             }
         }
