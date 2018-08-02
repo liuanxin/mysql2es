@@ -67,12 +67,22 @@ public final class Searchs {
     private static Map<String, Object> mappingType(String type, NeedAnalysis needAnalyzer) {
         Map<String, Object> map = A.maps("type", type);
         if (STRING_TYPE.equals(type) && U.isNotBlank(needAnalyzer)) {
-            if (needAnalyzer.aggregation()) {
+            if (needAnalyzer.keyword()) {
                 map.put("type", "keyword");
             } else {
                 map.put("analyzer", "ik_synonym");
                 map.put("search_analyzer", "ik_synonym_smart");
-                map.put("fields", A.maps("pinyin", A.maps("type", STRING_TYPE, "analyzer", "pinyin")));
+
+                Map<Object, Object> m = A.maps(
+                        "pinyin", A.maps("type", STRING_TYPE, "analyzer", "pinyin_analyzer")
+                );
+                if (needAnalyzer.suggest()) {
+                    m.putAll(A.maps(
+                            "suggest", A.maps("type", "completion", "analyzer", "ik_max_word"),
+                            "suggest_pinyin", A.maps("type", "completion", "analyzer", "pinyin_suggest")
+                    ));
+                }
+                map.put("fields", m);
             }
         }
         else if (DATE_TYPE.equals(type)) {
@@ -97,18 +107,38 @@ public final class Searchs {
                 "        \"ik_synonym\" : {\n" +
                 "          \"type\" : \"custom\",\n" +
                 "          \"tokenizer\" : \"ik_max_word\",\n" +
-                "          \"filter\" : [\"synonym\"]\n" +
-                "        },\n" +
-                "        \"ik_synonym_smart\" : {\n" +
+                "          \"filter\" : [\"synonym_filter\"]\n" +
+                "        }\n" +
+                "        , \"ik_synonym_smart\" : {\n" +
                 "          \"type\" : \"custom\",\n" +
                 "          \"tokenizer\" : \"ik_smart\",\n" +
-                "          \"filter\" : [\"synonym\"]\n" +
+                "          \"filter\" : [\"synonym_filter\"]\n" +
                 "        }\n" +
-                "      },\n" +
-                "      \"filter\" : {\n" +
-                "        \"synonym\" : {\n" +
+                "        , \"pinyin_analyzer\" : {\n" +
+                "          \"tokenizer\" : \"pinyin_tokenizer\"\n" +
+                "        }\n" +
+                "        , \"pinyin_suggest\": {\n" +
+                "          \"tokenizer\": \"keyword\",\n" +
+                "          \"filter\": [\"lowercase\", \"pinyin_filter\"]\n" +
+                "        }" +
+                "      }\n" +
+                // see https://github.com/medcl/elasticsearch-analysis-pinyin
+                "      , \"tokenizer\" : {\n" +
+                "        \"pinyin_tokenizer\" : {\n" +
+                "          \"type\" : \"pinyin\",\n" +
+                "          \"keep_joined_full_pinyin\" : true,\n" +
+                "          \"remove_duplicated_term\" : true\n" +
+                "        }\n" +
+                "      }\n" +
+                "      , \"filter\" : {\n" +
+                "        \"synonym_filter\" : {\n" +
                 "          \"type\" : \"synonym\",\n" +
                 "          \"synonyms_path\" : \"analysis/synonym.txt\"\n" +
+                "        }\n" +
+                "        , \"pinyin_filter\": {\n" +
+                "          \"type\": \"pinyin\",\n" +
+                "          \"first_letter\": \"none\",\n" +
+                "          \"padding_char\": \"\"\n" +
                 "        }\n" +
                 "      }\n" +
                 "    }\n" +
