@@ -84,29 +84,27 @@ public class DataRepository {
         else if (fieldType.contains("date") || fieldType.contains("time")) {
             return A.maps("type", "date");
         }
-        /*
-        else if () {
-            return A.maps("type", "nested");
+        else if (fieldType.contains("float")) {
+            return A.maps("type", "float");
         }
-        else if () {
-            return A.maps("type", "object");
+        else if (fieldType.contains("decimal") || fieldType.contains("double")) {
+            return A.maps("type", "double");
         }
-        */
         else {
-            // if use ik, global set like next line, scheme mapping set with text, ik config don't need
+            // if use ik or pinyin or synonym etc... please customize the configuration, don't configure automatically
             /*
-            curl -XPOST http://ip:port/index/fulltext/_mapping -H 'Content-Type:application/json' -d '
-                {
-                  "properties": {
-                    "content": {
-                      "type": "text",
-                      "analyzer": "ik_max_word",
-                      "search_analyzer": "ik_max_word"
-                    }
-                  }
-                }'
+            Map fieldMap = A.maps(
+                "pinyin", A.maps("type", "text", "analyzer", "pinyin_analysis"),
+                "suggest", A.maps("type", "completion", "analyzer", "ik_synonym", "search_analyzer", "ik_synonym_smart"),
+                "suggest_pinyin", A.maps("type", "completion", "analyzer", "pinyin_analysis")
+            );
+            return A.maps(
+                "type", "text",
+                "analyzer", "ik_synonym",
+                "search_analyzer", "ik_synonym_smart",
+                "fields", fieldMap
+            );
             */
-            // return A.maps("type", "text", "analyzer", "ik_max_word", "search_analyzer", "ik_max_word");
             return A.maps("type", "text");
         }
     }

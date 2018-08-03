@@ -13,7 +13,6 @@ import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequest;
-import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -68,46 +67,82 @@ public class EsRepository {
     @Async
     public Future<Boolean> saveScheme(List<Scheme> schemes) {
         if (A.isNotEmpty(schemes)) {
-            List<Scheme> successList = A.lists();
+            Map<String, Boolean> map = A.maps();
 
             IndicesClient indices = client.indices();
             for (Scheme scheme : schemes) {
                 String index = scheme.getIndex();
                 String type = scheme.getType();
-                try {
-                    // create index if not exists
-                    if (!indices.exists(new GetIndexRequest().indices(index))) {
-                        indices.create(new CreateIndexRequest(index));
-                    }
 
-                    String source = Jsons.toJson(A.maps("properties", scheme.getProperties()));
-                    if (Logs.ROOT_LOG.isDebugEnabled()) {
-                        Logs.ROOT_LOG.debug("curl -XPUT \"http://{}/{}/{}/_mapping\" -d '{}'",
-                                config.ipAndPort(), index, type, source);
-                    }
-                    PutMappingRequest put = new PutMappingRequest(index).type(type).source(source, XContentType.JSON);
-                    PutMappingResponse response = indices.putMapping(put);
-                    boolean flag = response.isAcknowledged();
-                    if (flag) {
-                        successList.add(scheme);
-                    }
-                    if (Logs.ROOT_LOG.isDebugEnabled()) {
-                        Logs.ROOT_LOG.debug("put scheme ({}/{}) return: ({})", index, type, flag);
-                    }
-                } catch (Exception e) {
-                    if (Logs.ROOT_LOG.isWarnEnabled()) {
-                        Logs.ROOT_LOG.warn(String.format("put scheme (%s/%s) es exception", index, type), e);
+                if (!exists(indices, index)) {
+                    if (createIndex(indices, index)) {
+                        try {
+                            boolean ack = createScheme(indices, scheme);
+                            map.put(index + "/" + type, ack);
+                        } catch (IOException e) {
+                            if (Logs.ROOT_LOG.isErrorEnabled()) {
+                                Logs.ROOT_LOG.error(String.format("create index(%s) exception", index), e);
+                            }
+                        }
                     }
                 }
             }
 
-            if (A.isNotEmpty(successList)) {
+            if (A.isNotEmpty(map)) {
                 if (Logs.ROOT_LOG.isInfoEnabled()) {
-                    Logs.ROOT_LOG.info("put {} ({}) schemes from db to es", successList.size(), Jsons.toJson(successList));
+                    Logs.ROOT_LOG.info("put {} ({}) schemes from db to es", map.size(), Jsons.toJson(map));
                 }
             }
         }
         return new AsyncResult<>(true);
+    }
+
+    private boolean exists(IndicesClient indices, String index) {
+        try {
+            return indices.exists(new GetIndexRequest().indices(index));
+        } catch (IOException e) {
+            if (Logs.ROOT_LOG.isErrorEnabled()) {
+                Logs.ROOT_LOG.error(String.format("query index(%s) exists exception", index), e);
+            }
+            return true;
+        }
+    }
+
+    private boolean createIndex(IndicesClient indices, String index) {
+        CreateIndexRequest request = new CreateIndexRequest(index);
+        /*
+        String settings = Searchs.getSettings();
+        request.settings(settings, XContentType.JSON);
+        */
+        try {
+            boolean ack = indices.create(request).isAcknowledged();
+            if (Logs.ROOT_LOG.isDebugEnabled()) {
+                Logs.ROOT_LOG.debug("create index({}): {}", index, ack);
+            }
+            return ack;
+        } catch (IOException e) {
+            if (Logs.ROOT_LOG.isErrorEnabled()) {
+                Logs.ROOT_LOG.error(String.format("create index(%s) exception", index), e);
+            }
+            return false;
+        }
+    }
+
+    private boolean createScheme(IndicesClient indices, Scheme scheme) throws IOException {
+        String index = scheme.getIndex();
+        String type = scheme.getType();
+
+        String source = Jsons.toJson(A.maps("properties", scheme.getProperties()));
+        if (Logs.ROOT_LOG.isDebugEnabled()) {
+            Logs.ROOT_LOG.debug("curl -XPUT \"http://{}/{}/{}/_mapping\" -d '{}'", config.ipAndPort(), index, type, source);
+        }
+
+        PutMappingRequest request = new PutMappingRequest(index).type(type).source(source, XContentType.JSON);
+        boolean ack = indices.putMapping(request).isAcknowledged();
+        if (Logs.ROOT_LOG.isDebugEnabled()) {
+            Logs.ROOT_LOG.debug("put ({}/{}) mapping: {}", index, type, ack);
+        }
+        return ack;
     }
 
     @Async
