@@ -40,7 +40,7 @@ public class DataRepository {
 
                     if (U.isNotBlank(column) && U.isNotBlank(type)) {
                         if (scheme) {
-                            propertyMap.put(relation.useField(column.toString()), dbToEsType(type.toString()));
+                            propertyMap.put(relation.useField(column.toString()), Searchs.dbToEsType(type.toString()));
                         }
 
                         Object key = map.get("Key");
@@ -67,46 +67,6 @@ public class DataRepository {
             }
         }
         return schemeList;
-    }
-    private static Map<String, Map> dbToEsType(String fieldType) {
-        fieldType = fieldType.toLowerCase();
-
-        // https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html
-        if ("tinyint(1)".equals(fieldType)) {
-            return A.maps("type", "boolean");
-        }
-        else if (fieldType.contains("bigint")) {
-            return A.maps("type", "long");
-        }
-        else if (fieldType.contains("int")) {
-            return A.maps("type", "integer");
-        }
-        else if (fieldType.contains("date") || fieldType.contains("time")) {
-            return A.maps("type", "date");
-        }
-        else if (fieldType.contains("float")) {
-            return A.maps("type", "float");
-        }
-        else if (fieldType.contains("decimal") || fieldType.contains("double")) {
-            return A.maps("type", "double");
-        }
-        else {
-            // if use ik or pinyin or synonym etc... please customize the configuration, don't configure automatically
-            /*
-            Map fieldMap = A.maps(
-                "pinyin", A.maps("type", "text", "analyzer", "pinyin_analysis"),
-                "suggest", A.maps("type", "completion", "analyzer", "ik_synonym", "search_analyzer", "ik_synonym_smart"),
-                "suggest_pinyin", A.maps("type", "completion", "analyzer", "pinyin_analysis")
-            );
-            return A.maps(
-                "type", "text",
-                "analyzer", "ik_synonym",
-                "search_analyzer", "ik_synonym_smart",
-                "fields", fieldMap
-            );
-            */
-            return A.maps("type", "text");
-        }
     }
 
     /** increment data: read temp file -> query data -> write last record in temp file */
@@ -136,13 +96,13 @@ public class DataRepository {
                         }
                     }
                     if (A.isNotEmpty(dataList)) {
+                        documents.addAll(fixDocument(relation, keyList, dataList));
                         // write last id to temp file
                         List<String> incrementColumn = relation.getIncrementColumn();
                         String last = getLast(keyList, incrementColumn, dataList);
                         if (U.isNotBlank(last)) {
                             Files.write(index, last);
                         }
-                        documents.addAll(fixDocument(relation, keyList, dataList));
                     }
                 }
             }
