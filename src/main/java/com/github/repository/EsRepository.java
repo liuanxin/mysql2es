@@ -39,7 +39,7 @@ public class EsRepository {
     private RestHighLevelClient client;
 
     @Async
-    public Future<Boolean> deleteScheme(List<Scheme> schemes) {
+    public boolean deleteScheme(List<Scheme> schemes) {
         if (A.isNotEmpty(schemes)) {
             IndicesClient indices = client.indices();
 
@@ -61,11 +61,10 @@ public class EsRepository {
                 }
             }
         }
-        return new AsyncResult<>(true);
+        return true;
     }
 
-    @Async
-    public Future<Boolean> saveScheme(List<Scheme> schemes) {
+    public boolean saveScheme(List<Scheme> schemes) {
         if (A.isNotEmpty(schemes)) {
             Map<String, Boolean> map = A.maps();
 
@@ -94,7 +93,7 @@ public class EsRepository {
                 }
             }
         }
-        return new AsyncResult<>(true);
+        return true;
     }
 
     private boolean exists(IndicesClient indices, String index) {
@@ -145,8 +144,7 @@ public class EsRepository {
         return ack;
     }
 
-    @Async
-    public Future<Boolean> saveDataToEs(List<Document> documents) {
+    public boolean saveDataToEs(List<Document> documents) {
         if (A.isNotEmpty(documents)) {
             Map<String, String> statusMap = Maps.newHashMap();
 
@@ -183,6 +181,6 @@ public class EsRepository {
                 }
             }
         }
-        return new AsyncResult<>(true);
+        return true;
     }
 }

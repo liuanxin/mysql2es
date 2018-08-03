@@ -100,6 +100,49 @@ public final class Searchs {
         return map;
     }
 
+    public static Map<String, Map> dbToEsType(String fieldType) {
+        fieldType = fieldType.toLowerCase();
+
+        if ("tinyint(1)".equals(fieldType)) {
+            return A.maps("type", "boolean");
+        }
+        else if (fieldType.contains("bigint")) {
+            return A.maps("type", "long");
+        }
+        else if (fieldType.contains("int")) {
+            return A.maps("type", "integer");
+        }
+        else if (fieldType.contains("date") || fieldType.contains("time")) {
+            return A.maps(
+                    "type", "date",
+                    "format", "epoch_millis||yyyy-MM-dd HH:mm:ss SSS||yyyy-MM-dd||yyyy-MM-dd HH:mm:ss"
+            );
+        }
+        else if (fieldType.contains("float")) {
+            return A.maps("type", "float");
+        }
+        else if (fieldType.contains("decimal") || fieldType.contains("double")) {
+            return A.maps("type", "double");
+        }
+        else {
+            // if use ik or pinyin or synonym etc... please customize the configuration, don't configure automatically
+            /*
+            Map fieldMap = A.maps(
+                "pinyin", A.maps("type", "text", "analyzer", "pinyin_analysis"),
+                "suggest", A.maps("type", "completion", "analyzer", "ik_synonym", "search_analyzer", "ik_synonym_smart"),
+                "suggest_pinyin", A.maps("type", "completion", "analyzer", "pinyin_analysis")
+            );
+            return A.maps(
+                "type", "text",
+                "analyzer", "ik_synonym",
+                "search_analyzer", "ik_synonym_smart",
+                "fields", fieldMap
+            );
+            */
+            return A.maps("type", "text");
+        }
+    }
+
     /**
      * install ik and pinyin, use synonym
      *
