@@ -82,7 +82,11 @@ public final class Searchs {
                 fieldMap.put("full_pinyin", A.maps("type", STRING_TYPE, "analyzer", "full_pinyin"));
             }
             if (needAnalyzer.suggest()) {
-                fieldMap.put("suggest", A.maps("type", "completion", "analyzer", "ik_synonym", "search_analyzer", "ik_synonym_smart"));
+                fieldMap.put("suggest", A.maps(
+                        "type", "completion",
+                        "analyzer", "ik_synonym",
+                        "search_analyzer", "ik_synonym_smart"
+                ));
             }
             if (needAnalyzer.suggest() && needAnalyzer.pinyin()) {
                 fieldMap.put("suggest_pinyin", A.maps("type", "completion", "analyzer", "simple_pinyin"));
@@ -91,7 +95,7 @@ public final class Searchs {
             map.put("fields", fieldMap);
         }
         else if (DATE_TYPE.equals(type)) {
-            map.put("format", "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss SSS||yyyy-MM-dd||epoch_millis");
+            map.put("format", "epoch_millis||yyyy-MM-dd HH:mm:ss SSS||yyyy-MM-dd||yyyy-MM-dd HH:mm:ss");
         }
         return map;
     }
