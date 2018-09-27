@@ -14,6 +14,7 @@ config:
   ip-port: ["127.0.0.1:9200"]     # 可以不设定, 默认是 127.0.0.1:9200
   cron: 0 * * * * *               # 可以不设定, 默认是每分钟执行一次
 
+  # 6.0 开, type 将被移, 替换成 _doc, es 中的 index 直接对应数据库表名
   index: platform                 # *** 必须设定. 表示 es 中 /index/type/id 的 index, 与 database name 对应
   relation:
     -
