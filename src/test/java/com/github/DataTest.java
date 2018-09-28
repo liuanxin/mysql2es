@@ -20,6 +20,9 @@ public class DataTest {
     @Autowired
     private EsRepository esRepository;
 
+    // @Autowired
+    // private EsTransportClientRepository esTransportClientRepository;
+
     @Autowired
     private DataRepository dataRepository;
 
@@ -36,5 +39,17 @@ public class DataTest {
                 dataRepository.deleteTempFile();
             }
         }
+
+        /*
+        List<Document> documents = dataRepository.incrementData();
+        boolean saveDataToEsFlag = esTransportClientRepository.saveDataToEs(documents);
+        if (saveDataToEsFlag) {
+            List<Scheme> schemeList = dataRepository.dbToEsScheme();
+            boolean deleteSchemeFlag = esTransportClientRepository.deleteScheme(schemeList);
+            if (deleteSchemeFlag) {
+                dataRepository.deleteTempFile();
+            }
+        }
+        */
     }
 }

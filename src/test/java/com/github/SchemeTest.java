@@ -19,6 +19,9 @@ public class SchemeTest {
     @Autowired
     private EsRepository esRepository;
 
+    // @Autowired
+    // private EsTransportClientRepository esTransportClientRepository;
+
     @Autowired
     private DataRepository dataRepository;
 
@@ -32,5 +35,10 @@ public class SchemeTest {
         if (flag) {
             esRepository.deleteScheme(schemeList);
         }
+
+        // boolean flag = esTransportClientRepository.saveScheme(schemeList);
+        // if (flag) {
+        //     esTransportClientRepository.deleteScheme(schemeList);
+        // }
     }
 }

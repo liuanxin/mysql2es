@@ -21,9 +21,13 @@ public class Runner implements ApplicationRunner {
     @Autowired
     private DataRepository dataRepository;
 
+    // @Autowired
+    // private EsTransportClientRepository esTransportClientRepository;
+
     @Override
     public void run(ApplicationArguments args) throws Exception {
         List<Scheme> schemeList = dataRepository.dbToEsScheme();
         esRepository.saveScheme(schemeList);
+        // esRepository.saveScheme(schemeList);
     }
 }
