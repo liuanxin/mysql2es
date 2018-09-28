@@ -23,6 +23,9 @@ public class Job implements SchedulingConfigurer {
     @Autowired
     private EsRepository esRepository;
 
+    // @Autowired
+    // private EsTransportClientRepository esTransportClientRepository;
+
     @Autowired
     private DataRepository dataRepository;
 
@@ -33,6 +36,7 @@ public class Job implements SchedulingConfigurer {
             public void run() {
                 List<Document> documents = dataRepository.incrementData();
                 esRepository.saveDataToEs(documents);
+                // esTransportClientRepository.saveDataToEs(documents);
             }
         }, new CronTrigger(config.getCron()));
     }
