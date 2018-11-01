@@ -39,7 +39,7 @@ public class EsRepository {
     private RestHighLevelClient client;
 
     @Async
-    public boolean deleteScheme(List<Scheme> schemes) {
+    public Future<Boolean> deleteScheme(List<Scheme> schemes) {
         if (A.isNotEmpty(schemes)) {
             IndicesClient indices = client.indices();
 
@@ -61,7 +61,7 @@ public class EsRepository {
                 }
             }
         }
-        return true;
+        return new AsyncResult<>(true);
     }
 
     public boolean saveScheme(List<Scheme> schemes) {
