@@ -90,8 +90,8 @@ public class EsRepository {
             }
 
             if (A.isNotEmpty(map)) {
-                if (Logs.ROOT_LOG.isInfoEnabled()) {
-                    Logs.ROOT_LOG.info("put {} ({}) schemes from db to es", map.size(), Jsons.toJson(map));
+                if (Logs.ROOT_LOG.isDebugEnabled()) {
+                    Logs.ROOT_LOG.debug("put {} ({}) schemes from db to es", map.size(), Jsons.toJson(map));
                 }
             }
         }
@@ -183,8 +183,8 @@ public class EsRepository {
             }
 
             if (A.isNotEmpty(statusMap)) {
-                if (Logs.ROOT_LOG.isInfoEnabled()) {
-                    Logs.ROOT_LOG.info("db to es({})", Jsons.toJson(statusMap));
+                if (Logs.ROOT_LOG.isDebugEnabled()) {
+                    Logs.ROOT_LOG.debug("db to es({})", Jsons.toJson(statusMap));
                 }
             }
         }

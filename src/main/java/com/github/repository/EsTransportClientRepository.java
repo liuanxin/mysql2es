@@ -91,8 +91,8 @@ public class EsTransportClientRepository {
             }
 
             if (A.isNotEmpty(successList)) {
-                if (Logs.ROOT_LOG.isInfoEnabled()) {
-                    Logs.ROOT_LOG.info("put {} schemes ({}) from db to es", successList.size(), Jsons.toJson(successList));
+                if (Logs.ROOT_LOG.isDebugEnabled()) {
+                    Logs.ROOT_LOG.debug("put {} schemes ({}) from db to es", successList.size(), Jsons.toJson(successList));
                 }
             }
         }
@@ -119,8 +119,8 @@ public class EsTransportClientRepository {
             }
 
             if (A.isNotEmpty(successList)) {
-                if (Logs.ROOT_LOG.isInfoEnabled()) {
-                    Logs.ROOT_LOG.info("put {} {} documents from db to es", successList.size(), successList);
+                if (Logs.ROOT_LOG.isDebugEnabled()) {
+                    Logs.ROOT_LOG.debug("put {} {} documents from db to es", successList.size(), successList);
                 }
             }
         }

@@ -43,8 +43,8 @@ public class DataTest {
                     dataRepository.deleteTempFile();
                 }
             } catch (InterruptedException | ExecutionException e) {
-                if (Logs.ROOT_LOG.isInfoEnabled()) {
-                    Logs.ROOT_LOG.info(String.format("delete scheme(%s) exception", Jsons.toJson(schemeList)), e);
+                if (Logs.ROOT_LOG.isErrorEnabled()) {
+                    Logs.ROOT_LOG.error(String.format("delete scheme(%s) exception", Jsons.toJson(schemeList)), e);
                 }
             }
         }
