@@ -209,7 +209,7 @@ public final class Searchs {
      *   
      * private boolean exists(IndicesClient indices, String index) {
      *   try {
-     *     return indices.exists(new GetIndexRequest().indices(index));
+     *     return indices.exists(new GetIndexRequest().indices(index), RequestOptions.DEFAULT);
      *   } catch (IOException e) {
      *     if (LOG.isErrorEnabled()) {
      *       LOG.error(String.format("query index(%s) exists exception", index), e);
@@ -222,7 +222,7 @@ public final class Searchs {
      *   String settings = Searchs.getSettings();
      *   request.settings(settings, XContentType.JSON);
      *   try {
-     *     return indices.create(request).isAcknowledged();
+     *     return indices.create(request, RequestOptions.DEFAULT).isAcknowledged();
      *   } catch (IOException e) {
      *     if (LOG.isErrorEnabled()) {
      *       LOG.error(String.format("create index(%s) exception", index), e);
@@ -235,7 +235,7 @@ public final class Searchs {
      *   String mapping = Searchs.getMapping(clazz);
      *   request.type(type).source(mapping, XContentType.JSON);
      *   try {
-     *     PutMappingResponse response = indices.putMapping(request);
+     *     PutMappingResponse response = indices.putMapping(request, RequestOptions.DEFAULT);
      *     if (LOG.isDebugEnabled()) {
      *       LOG.debug("put ({}/{}) mapping: {}", index, type, response.isAcknowledged());
      *     }

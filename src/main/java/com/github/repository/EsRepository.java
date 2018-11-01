@@ -6,6 +6,7 @@ import com.github.model.Scheme;
 import com.github.util.A;
 import com.github.util.Jsons;
 import com.github.util.Logs;
+import com.github.util.U;
 import com.google.common.collect.Maps;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
@@ -17,6 +18,7 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.IndicesClient;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,8 +49,8 @@ public class EsRepository {
                 String index = scheme.getIndex();
                 String type = scheme.getType();
                 try {
-                    if (indices.exists(new GetIndexRequest().indices(index))) {
-                        DeleteIndexResponse resp = indices.delete(new DeleteIndexRequest(index));
+                    if (indices.exists(new GetIndexRequest().indices(index), RequestOptions.DEFAULT)) {
+                        DeleteIndexResponse resp = indices.delete(new DeleteIndexRequest(index), RequestOptions.DEFAULT);
                         boolean flag = resp.isAcknowledged();
                         if (Logs.ROOT_LOG.isDebugEnabled()) {
                             Logs.ROOT_LOG.debug("delete scheme ({}/{}) return: ({})", index, type, flag);
@@ -98,7 +100,7 @@ public class EsRepository {
 
     private boolean exists(IndicesClient indices, String index) {
         try {
-            return indices.exists(new GetIndexRequest().indices(index));
+            return indices.exists(new GetIndexRequest().indices(index), RequestOptions.DEFAULT);
         } catch (IOException e) {
             if (Logs.ROOT_LOG.isErrorEnabled()) {
                 Logs.ROOT_LOG.error(String.format("query index(%s) exists exception", index), e);
@@ -114,7 +116,7 @@ public class EsRepository {
         request.settings(settings, XContentType.JSON);
         */
         try {
-            boolean ack = indices.create(request).isAcknowledged();
+            boolean ack = indices.create(request, RequestOptions.DEFAULT).isAcknowledged();
             if (Logs.ROOT_LOG.isDebugEnabled()) {
                 Logs.ROOT_LOG.debug("create index({}): {}", index, ack);
             }
@@ -136,12 +138,16 @@ public class EsRepository {
             Logs.ROOT_LOG.debug("curl -XPUT \"http://{}/{}/{}/_mapping\" -d '{}'", config.ipAndPort(), index, type, source);
         }
 
-        PutMappingRequest request = new PutMappingRequest(index).type(type).source(source, XContentType.JSON);
-        boolean ack = indices.putMapping(request).isAcknowledged();
-        if (Logs.ROOT_LOG.isDebugEnabled()) {
-            Logs.ROOT_LOG.debug("put ({}/{}) mapping: {}", index, type, ack);
+        if (U.isBlank(source)) {
+            return false;
+        } else {
+            PutMappingRequest request = new PutMappingRequest(index).type(type).source(source, XContentType.JSON);
+            boolean ack = indices.putMapping(request, RequestOptions.DEFAULT).isAcknowledged();
+            if (Logs.ROOT_LOG.isDebugEnabled()) {
+                Logs.ROOT_LOG.debug("put ({}/{}) mapping: {}", index, type, ack);
+            }
+            return ack;
         }
-        return ack;
     }
 
     public boolean saveDataToEs(List<Document> documents) {
@@ -154,17 +160,18 @@ public class EsRepository {
                 String id = doc.getId();
                 try {
                     DocWriteResponse response;
-                    boolean exists = client.exists(new GetRequest(index, type, id));
-                    if (exists) {
-                        UpdateRequest request = new UpdateRequest(index, type, id)
-                                .doc(Jsons.toJson(doc.getData()), XContentType.JSON);
-                        response = client.update(request);
-                    } else {
-                        IndexRequest request = new IndexRequest(index, type, id)
-                                .source(Jsons.toJson(doc.getData()), XContentType.JSON);
-                        response = client.index(request);
+                    String source = Jsons.toJson(doc.getData());
+                    if (U.isNotBlank(source)) {
+                        boolean exists = client.exists(new GetRequest(index, type, id), RequestOptions.DEFAULT);
+                        if (exists) {
+                            UpdateRequest request = new UpdateRequest(index, type, id).doc(source, XContentType.JSON);
+                            response = client.update(request, RequestOptions.DEFAULT);
+                        } else {
+                            IndexRequest request = new IndexRequest(index, type, id).source(source, XContentType.JSON);
+                            response = client.index(request, RequestOptions.DEFAULT);
+                        }
+                        statusMap.put(id, response.getResult().getLowercase());
                     }
-                    statusMap.put(id, response.getResult().getLowercase());
                 } catch (Exception e) {
                     // <= 6.3.1 version, suggest field if empty will throw IAE(write is good)
                     // org.elasticsearch.index.mapper.CompletionFieldMapper.parse(443)
