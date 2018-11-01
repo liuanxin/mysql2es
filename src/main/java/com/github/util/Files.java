@@ -21,8 +21,8 @@ public class Files {
                 Logs.ROOT_LOG.debug("no file ({})", fileName);
             }
         } catch (IOException e) {
-            if (Logs.ROOT_LOG.isInfoEnabled()) {
-                Logs.ROOT_LOG.info(String.format("read from file(%s) exception", fileName), e);
+            if (Logs.ROOT_LOG.isErrorEnabled()) {
+                Logs.ROOT_LOG.error(String.format("read from file(%s) exception", fileName), e);
             }
         }
         return U.EMPTY;
@@ -34,8 +34,8 @@ public class Files {
             com.google.common.io.Files.asCharSink(new File(fileName), U.UTF8).write(content);
             return true;
         } catch (IOException e) {
-            if (Logs.ROOT_LOG.isInfoEnabled()) {
-                Logs.ROOT_LOG.info(String.format("write to file(%s) exception", fileName), e);
+            if (Logs.ROOT_LOG.isErrorEnabled()) {
+                Logs.ROOT_LOG.error(String.format("write to file(%s) exception", fileName), e);
             }
             return false;
         }
@@ -44,8 +44,8 @@ public class Files {
     public static boolean delete(String index) {
         String fileName = getFileName(index);
         boolean flag = new File(fileName).delete();
-        if (Logs.ROOT_LOG.isInfoEnabled()) {
-            Logs.ROOT_LOG.info("delete ({}) {}", fileName, flag);
+        if (Logs.ROOT_LOG.isDebugEnabled()) {
+            Logs.ROOT_LOG.debug("delete ({}) {}", fileName, flag);
         }
         return flag;
     }
