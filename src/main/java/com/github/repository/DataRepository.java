@@ -195,8 +195,6 @@ public class DataRepository {
                 // if (A.isNotEmpty(dataMap)) {
                 documents.add(new Document()
                         .setIndex(relation.useType())
-                        // index use old type, type use default: _doc
-                        // .setIndex(config.getIndex()).setType(relation.useType())
                         .setId(id).setData(dataMap));
                 // }
             }
