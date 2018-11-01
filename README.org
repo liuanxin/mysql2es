@@ -51,9 +51,9 @@ cron 的说明如下
 ** 运行
 #+BEGIN_SRC conf
 mvn clean package -DskipTests
-nohup java -jar -Dspring.profiles.active=prod target/mysql2es-1.0-SNAPSHOT.jar >/dev/null 2>&1 &
+nohup java -jar -Dspring.profiles.active=prod target/mysql2es.jar >/dev/null 2>&1 &
 # 要指定外部文件, 这样运行即可
-nohup java -jar -Dspring.config.location=/x/y.yml target/mysql2es-1.0-SNAPSHOT.jar >/dev/null 2>&1 &
+nohup java -jar -Dspring.config.location=/x/y.yml target/mysql2es.jar >/dev/null 2>&1 &
 #+END_SRC
 
 or

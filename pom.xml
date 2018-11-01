@@ -150,6 +150,7 @@
     </dependencies>
 
     <build>
+        <finalName>mysql2es</finalName>
         <plugins>
             <plugin>
                 <artifactId>maven-source-plugin</artifactId>
