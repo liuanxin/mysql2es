@@ -161,7 +161,7 @@ public class DataRepository {
         return U.EMPTY;
     }
     private String sqlData(Object obj) {
-        return (NumberUtils.isNumber(obj.toString())) ? obj.toString() : ("'" + obj + "'");
+        return (NumberUtils.isCreatable(obj.toString())) ? obj.toString() : ("'" + obj + "'");
     }
     private String dataToStr(Object obj) {
         if (obj instanceof Date) {
