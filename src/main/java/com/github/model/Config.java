@@ -14,6 +14,8 @@ import java.util.List;
  * <pre>
  * DB：Databases --> Tables --> Rows      --> Columns
  * ES：Indices   --> Types  --> Documents --> Fields
+ *
+ * new es changes: Indices to Tables, 'Types' use default: _doc
  * </pre>
  */
 @Getter
@@ -24,9 +26,6 @@ import java.util.List;
 public class Config {
 
     private List<String> ipPort = A.lists("127.0.0.1:9200");
-
-    /** ES index <==> database Name */
-    private String index;
 
     /**
      * <pre>
@@ -74,7 +73,6 @@ public class Config {
     private Integer count = MAX_COUNT;
 
     public void check() {
-        U.assertNil(index, "must set (es index name) <==> database name");
         U.assertException(A.isEmpty(relation), "must set [db es] relation");
         if (U.isNotBlank(count)) {
             U.assert0(count, "Total number of single operations must greater 0");
