@@ -4,6 +4,8 @@ import com.github.model.Document;
 import com.github.model.Scheme;
 import com.github.repository.DataRepository;
 import com.github.repository.EsRepository;
+import com.github.util.Jsons;
+import com.github.util.Logs;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +14,7 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 @SpringBootTest
 @RunWith(SpringRunner.class)
@@ -34,9 +37,15 @@ public class DataTest {
         boolean saveDataToEsFlag = esRepository.saveDataToEs(documents);
         if (saveDataToEsFlag) {
             List<Scheme> schemeList = dataRepository.dbToEsScheme();
-            boolean deleteSchemeFlag = esRepository.deleteScheme(schemeList);
-            if (deleteSchemeFlag) {
-                dataRepository.deleteTempFile();
+            try {
+                boolean deleteSchemeFlag = esRepository.deleteScheme(schemeList).get();
+                if (deleteSchemeFlag) {
+                    dataRepository.deleteTempFile();
+                }
+            } catch (InterruptedException | ExecutionException e) {
+                if (Logs.ROOT_LOG.isInfoEnabled()) {
+                    Logs.ROOT_LOG.info(String.format("delete scheme(%s) exception", Jsons.toJson(schemeList)), e);
+                }
             }
         }
 
