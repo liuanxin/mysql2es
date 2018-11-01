@@ -8,12 +8,14 @@ import com.github.util.*;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 @Component
 public class DataRepository {
@@ -23,6 +25,9 @@ public class DataRepository {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private EsRepository esRepository;
 
     /** generate scheme of es on the database table structure */
     public List<Scheme> dbToEsScheme() {
@@ -69,37 +74,51 @@ public class DataRepository {
         return schemeList;
     }
 
-    /** increment data: read temp file -> query data -> write last record in temp file */
-    public List<Document> incrementData() {
-        List<Document> documents = A.lists();
-        for (Relation relation : config.getRelation()) {
-            List<String> keyList = relation.getKeyList();
-            if (A.isEmpty(keyList)) {
-                dbToEsScheme();
-                keyList = relation.getKeyList();
-            }
-            // must have primary key
-            if (A.isNotEmpty(keyList)) {
-                // read last id from temp file
-                String index = relation.useType();
-                String tmpColumnValue = Files.read(index);
-                String countSql = relation.countSql(tmpColumnValue);
-                Integer count = A.first(jdbcTemplate.queryForList(countSql, Integer.class));
-                if (U.greater0(count)) {
-                    int loopCount = relation.loopCount(count);
-                    List<Map<String, Object>> dataList = new ArrayList<>();
-                    for (int i = 0; i < loopCount; i++) {
-                        // Total number of single operations can't exceed set value
-                        if (dataList.size() < config.getCount()) {
-                            String pageSql = relation.querySql(i, tmpColumnValue);
-                            dataList.addAll(jdbcTemplate.queryForList(pageSql));
+    /** async data to es */
+    @Async
+    public Future<Boolean> asyncData(Relation relation) {
+        List<String> keyList = relation.getKeyList();
+        if (A.isEmpty(keyList)) {
+            dbToEsScheme();
+            keyList = relation.getKeyList();
+        }
+        // must have primary key
+        if (A.isNotEmpty(keyList)) {
+            // read last id from temp file
+            String index = relation.useType();
+            String tmpColumnValue = Files.read(index);
+            String countSql = relation.countSql(tmpColumnValue);
+            Integer count = A.first(jdbcTemplate.queryForList(countSql, Integer.class));
+            if (U.greater0(count)) {
+                List<Document> documents = A.lists();
+                List<Map<String, Object>> dataList = null;
+
+                int loopCount = relation.loopCount(count);
+                for (int i = 0; i < loopCount; i++) {
+                    String pageSql = relation.querySql(i, tmpColumnValue);
+                    dataList = jdbcTemplate.queryForList(pageSql);
+
+                    documents.addAll(fixDocument(relation, keyList, dataList));
+                    // batch insert
+                    if (documents.size() >= config.getCount()) {
+                        esRepository.saveDataToEs(documents);
+                        documents.clear();
+
+                        // write last id to temp file
+                        String last = getLast(keyList, relation.getIncrementColumn(), dataList);
+                        if (U.isNotBlank(last)) {
+                            Files.write(index, last);
                         }
                     }
-                    if (A.isNotEmpty(dataList)) {
-                        documents.addAll(fixDocument(relation, keyList, dataList));
+                }
+
+                // save last data
+                if (A.isNotEmpty(documents)) {
+                    esRepository.saveDataToEs(documents);
+
+                    if (A.isNotEmpty(documents)) {
                         // write last id to temp file
-                        List<String> incrementColumn = relation.getIncrementColumn();
-                        String last = getLast(keyList, incrementColumn, dataList);
+                        String last = getLast(keyList, relation.getIncrementColumn(), dataList);
                         if (U.isNotBlank(last)) {
                             Files.write(index, last);
                         }
@@ -107,7 +126,7 @@ public class DataRepository {
                 }
             }
         }
-        return documents;
+        return new AsyncResult<>(true);
     }
     /** return last record */
     private String getLast(List<String> keyList, List<String> columnList, List<Map<String, Object>> dataList) {
