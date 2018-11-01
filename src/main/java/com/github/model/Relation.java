@@ -123,7 +123,7 @@ public class Relation {
                         String value = arr[0];
                         String column = incrementColumn.get(i);
                         // gte(>=) This will query for duplicate data, but will not miss, exclude by the following conditions
-                        if (NumberUtils.isNumber(value)) {
+                        if (NumberUtils.isCreatable(value)) {
                             querySql.append(String.format(" `%s` >= %d", column, NumberUtils.toLong(value)));
                         } else {
                             querySql.append(String.format(" `%s` >= '%s'", column, value));
