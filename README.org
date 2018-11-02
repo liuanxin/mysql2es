@@ -60,10 +60,10 @@ or
 mvn clean package -DskipTests
 add your ~/application.yml
 nohup java -jar -Dspring.config.location=~/application.yml target/mysql2es.jar >/dev/null 2>&1 &
-#+END_SRC
 
 
 log in ~/logs/mysql2es.log
+#+END_SRC
 
 
 ** Comment
