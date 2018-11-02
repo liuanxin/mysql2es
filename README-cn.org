@@ -21,7 +21,7 @@ config:
 
       # 6.0 开始, type 默认是 _doc, es 中的 index 直接对应数据库表名
       index: some                 # 表示 es 中 /index/type/id 的 index, 不设定将会从数据库表名生成(t_some_one ==> someOne)
-      scheme: false               # 是否事先基于 数据库表结构 生成 es 的 scheme, 默认是 true
+      scheme: false               # 是否事先基于 数据库表结构 生成 es 的 scheme, 默认是 true, 建议先去 es 建好 scheme 并把此处设置为 false, 基于表结构生成的 scheme 会给 varchar 类型设置 text 和 keyword 两个类型
       sql: select * from t_some   # 自定义的 sql 语句, 不设定将会自动从数据库表拼装. 如果只想生成指定字段, 上面的 scheme 设置为 false 并查询指定的字段即可
       limit: 10                   # 一次从数据库获取的条数, 默认是 50
       mapping:                    # 对应关系.「table column」:「es field」, 不设定将会从表字段生成(c_some_type ==> someType), 只设置特殊情况即可
