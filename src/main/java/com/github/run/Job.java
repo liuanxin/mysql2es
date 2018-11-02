@@ -31,6 +31,9 @@ public class Job implements SchedulingConfigurer {
         taskRegistrar.addTriggerTask(new Runnable() {
             @Override
             public void run() {
+                if (Logs.ROOT_LOG.isInfoEnabled()) {
+                    Logs.ROOT_LOG.info("begin to run task");
+                }
                 List<Future<Boolean>> resultList = Lists.newArrayList();
                 for (Relation relation : config.getRelation()) {
                     resultList.add(dataRepository.asyncData(relation));
@@ -43,6 +46,9 @@ public class Job implements SchedulingConfigurer {
                             Logs.ROOT_LOG.error("async db data to es exception", e);
                         }
                     }
+                }
+                if (Logs.ROOT_LOG.isInfoEnabled()) {
+                    Logs.ROOT_LOG.info("end of task run");
                 }
             }
         }, new CronTrigger(config.getCron()));
