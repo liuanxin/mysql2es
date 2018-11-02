@@ -139,7 +139,9 @@ public final class Searchs {
                 "fields", fieldMap
             );
             */
-            return A.maps("type", "text");
+
+            // default : "type": "text", "fields": { "keyword": { "type": "keyword" } }
+            return A.maps("type", "text", "fields", A.maps("keyword", A.maps("type", "keyword")));
         }
     }
 
