@@ -29,7 +29,7 @@ config:
 #      sql: select * from t_simple
 #      limit: 10
 #      mapping:
-#        id: id                      # mapping alias. key = db column, value = es field
+#        id: id                      # mapping alias. key(db column) : value(es field)
 #        user_name: userName
 #        create_time: createTime
 #        update_time: updateTime
