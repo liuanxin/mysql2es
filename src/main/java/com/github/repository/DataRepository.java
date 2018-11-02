@@ -67,7 +67,7 @@ public class DataRepository {
 
                 relation.setKeyList(keyList);
                 if (scheme) {
-                    schemeList.add(new Scheme().setIndex(relation.useType()).setProperties(propertyMap));
+                    schemeList.add(new Scheme().setIndex(relation.useIndex()).setProperties(propertyMap));
                 }
             }
         }
@@ -85,7 +85,7 @@ public class DataRepository {
         // must have primary key
         if (A.isNotEmpty(keyList)) {
             // read last id from temp file
-            String index = relation.useType();
+            String index = relation.useIndex();
             String tmpColumnValue = Files.read(index);
             String countSql = relation.countSql(tmpColumnValue);
             Integer count = A.first(jdbcTemplate.queryForList(countSql, Integer.class));
@@ -103,26 +103,17 @@ public class DataRepository {
                     if (documents.size() >= config.getCount()) {
                         esRepository.saveDataToEs(documents);
                         documents.clear();
-
-                        // write last id to temp file
-                        String last = getLast(keyList, relation.getIncrementColumn(), dataList);
-                        if (U.isNotBlank(last)) {
-                            Files.write(index, last);
-                        }
                     }
                 }
 
                 // save last data
                 if (A.isNotEmpty(documents)) {
                     esRepository.saveDataToEs(documents);
-
-                    if (A.isNotEmpty(documents)) {
-                        // write last id to temp file
-                        String last = getLast(keyList, relation.getIncrementColumn(), dataList);
-                        if (U.isNotBlank(last)) {
-                            Files.write(index, last);
-                        }
-                    }
+                }
+                // write last id to temp file
+                String last = getLast(keyList, relation.getIncrementColumn(), dataList);
+                if (U.isNotBlank(last)) {
+                    Files.write(index, last);
                 }
             }
         }
@@ -213,7 +204,7 @@ public class DataRepository {
                 // Document no data, don't need to save? or update to nil?
                 // if (A.isNotEmpty(dataMap)) {
                 documents.add(new Document()
-                        .setIndex(relation.useType())
+                        .setIndex(relation.useIndex())
                         .setId(id).setData(dataMap));
                 // }
             }
@@ -223,7 +214,7 @@ public class DataRepository {
 
     public void deleteTempFile() {
         for (Relation relation : config.getRelation()) {
-            Files.delete(relation.useType());
+            Files.delete(relation.useIndex());
         }
     }
 }
