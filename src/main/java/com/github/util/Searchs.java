@@ -128,6 +128,7 @@ public final class Searchs {
             // if use ik or pinyin or synonym etc... please customize the configuration, don't configure automatically
             /*
             Map fieldMap = A.maps(
+                "keyword", A.maps("type", "keyword"),
                 "pinyin", A.maps("type", "text", "analyzer", "pinyin_analysis"),
                 "suggest", A.maps("type", "completion", "analyzer", "ik_synonym", "search_analyzer", "ik_synonym_smart"),
                 "suggest_pinyin", A.maps("type", "completion", "analyzer", "pinyin_analysis")
