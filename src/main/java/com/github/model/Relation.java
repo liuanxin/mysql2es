@@ -22,8 +22,8 @@ public class Relation {
 
     // above two properties must be set, the following don't need.
 
-    /** es type <==> database table name. it not, will generate by table name(t_some_one ==> someOne) */
-    private String type;
+    /** es index <==> database table name. it not, will generate by table name(t_some_one ==> someOne) */
+    private String index;
 
     /** whether to generate scheme of es on the database table structure */
     private boolean scheme = true;
@@ -56,9 +56,9 @@ public class Relation {
     }
 
     /** if not set the 「type」, generate from 「table name」 */
-    public String useType() {
-        if (U.isNotBlank(type)) {
-            return type;
+    public String useIndex() {
+        if (U.isNotBlank(index)) {
+            return index;
         }
         if (U.isNotBlank(table)) {
             return U.tableToType(table);
