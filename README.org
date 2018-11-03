@@ -29,7 +29,7 @@ config:
       sql: select * from t_some   # Custom sql statement, no setting will automatically assemble from the database table
       limit: 10                   # The number of times to get from the database, the default is 50
       mapping:                    # 「table column」:「es field」, no setting will be generated from the table field (c_some_type ==> someType), only special cases can be set
-        x_type: type
+        c_type: type
 #+END_SRC
 
 about cron
