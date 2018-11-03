@@ -8,6 +8,7 @@ spring.datasource:
   hikari:
     minimumIdle: 1
     maximumPoolSize: 1
+    maxLifetime: 1500000
 
 
 config:
