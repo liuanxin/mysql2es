@@ -21,13 +21,12 @@
         <appender-ref ref ="PROJECT"/>
     </appender>
 
-    <logger name="io.netty" level="warn"/>
-    <logger name="com.zaxxer" level="warn"/>
-    <logger name="org.apache" level="warn"/>
-    <logger name="com.github" level="warn"/>
-    <logger name="com.alibaba" level="warn"/>
-    <logger name="org.elasticsearch" level="warn"/>
-    <logger name="org.springframework" level="warn"/>
+    <logger name="io.netty" level="error"/>
+    <logger name="com.github" level="error"/>
+    <logger name="com.zaxxer" level="error"/>
+    <logger name="org.apache" level="error"/>
+    <logger name="org.elasticsearch" level="error"/>
+    <logger name="org.springframework" level="error"/>
 
     <root level="info">
         <appender-ref ref="ASYNC"/>
