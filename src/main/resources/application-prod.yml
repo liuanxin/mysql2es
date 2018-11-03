@@ -8,6 +8,7 @@ spring.datasource:
   hikari:
     minimumIdle: 3
     maximumPoolSize: 6
+    maxLifetime: 1500000
     dataSourceProperties:
       prepStmtCacheSize: 9
       prepStmtCacheSqlLimit: 12
