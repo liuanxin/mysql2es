@@ -15,20 +15,20 @@ The relevant configuration instructions are as follows:
 # for db...
 
 config:
-  ip-port: ["127.0.0.1:9200"]     # the default is 127.0.0.1:9200
-  cron: 0/5 * * * * *             # the default is to execute once per minute
+  ip-port: ["127.0.0.1:9200"]      # the default is 127.0.0.1:9200
+  cron: 0/5 * * * * *              # the default is to execute once per minute
 
   relation:
     -
-      table: t_product            # *** Must be set and have a primary key. The primary key will generate the id of /index/type/id in es
-      increment-column: ["id"]    # *** Must be set. Indicates that it is used for data increment operations, using increment `id` or `update_time`
+      table: t_product             # *** Must be set and have a primary key. The primary key will generate the id of /index/type/id in es
+      increment-column: ["id"]     # *** Must be set. Indicates that it is used for data increment operations, using increment `id` or `update_time`
 
       # Starting with es 6.0, type defaults to _doc, and the index in es directly corresponds to the database table name.
-      index: some                 # Indicates the index of /index/type/id in es, not set will be generated from the database table name (t_some_one ==> some-one), greate version 6.0, index name must be lowercase
-      scheme: false               # Whether to generate the scheme of es based on the database table structure in advance, the default is true, It is recommended to go to es to build the scheme and set this to false. The scheme generated based on the table structure will set the text and keyword types for the varchar type.
-      sql: select * from t_some   # Custom sql statement, no setting will automatically assemble from the database table
-      limit: 10                   # The number of times to get from the database, the default is 50
-      mapping:                    # 「table column」:「es field」, no setting will be generated from the table field (c_some_type ==> someType), only special cases can be set
+      index: product               # Indicates the index of /index/type/id in es, not set will be generated from the database table name (t_some_one ==> some-one), greate version 6.0, index name must be lowercase
+      scheme: false                # Whether to generate the scheme of es based on the database table structure in advance, the default is true, It is recommended to go to es to build the scheme and set this to false. The scheme generated based on the table structure will set the text and keyword types for the varchar type.
+      sql: select * from t_product # Custom sql statement, no setting will automatically assemble from the database table
+      limit: 10                    # The number of times to get from the database, the default is 50
+      mapping:                     # 「table column」:「es field」, no setting will be generated from the table field (c_some_type ==> someType), only special cases can be set
         c_type: type
 #+END_SRC
 
