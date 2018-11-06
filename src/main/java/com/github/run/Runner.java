@@ -3,6 +3,7 @@ package com.github.run;
 import com.github.model.Scheme;
 import com.github.repository.DataRepository;
 import com.github.repository.EsRepository;
+import com.github.util.Logs;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -26,8 +27,17 @@ public class Runner implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        List<Scheme> schemeList = dataRepository.dbToEsScheme();
-        esRepository.saveScheme(schemeList);
-        // esRepository.saveScheme(schemeList);
+        if (Logs.ROOT_LOG.isInfoEnabled()) {
+            Logs.ROOT_LOG.info("begin to generate scheme");
+        }
+        try {
+            List<Scheme> schemeList = dataRepository.dbToEsScheme();
+            esRepository.saveScheme(schemeList);
+            // esRepository.saveScheme(schemeList);
+        } finally {
+            if (Logs.ROOT_LOG.isInfoEnabled()) {
+                Logs.ROOT_LOG.info("end of generate scheme");
+            }
+        }
     }
 }
