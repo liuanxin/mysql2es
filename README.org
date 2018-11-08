@@ -7,7 +7,7 @@
    does not support physical deletion (physical deletion needs to be processed according to binlog),
    it is recommended to use logical deletion.
 
-   Based on jdk 8 and spring boot 2.0, support es 6.4.2 (2018/11)
+   Based on jdk 8 and spring boot 2.0, support es 6.3.2
 
 
 The relevant configuration instructions are as follows:
