@@ -12,6 +12,7 @@ import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequest;
+import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.get.GetRequest;
@@ -176,7 +177,13 @@ public class EsRepository {
             try {
                 BulkResponse bulk = client.bulk(batchRequest);
                 if (Logs.ROOT_LOG.isDebugEnabled()) {
-                    Logs.ROOT_LOG.debug("batch run index return code: {}", bulk.status().getStatus());
+                    StringBuilder sbd = new StringBuilder("batch run: ");
+                    for (BulkItemResponse response : bulk) {
+                        sbd.append("(").append(response.getIndex()).append("/")
+                                .append(response.getType()).append("/")
+                                .append(response.getId()).append(" -> ").append(!response.isFailed()).append(")");
+                    }
+                    Logs.ROOT_LOG.debug(sbd.toString());
                 }
             } catch (IOException e) {
                 // <= 6.3.1 version, suggest field if empty will throw IAE(write is good)
