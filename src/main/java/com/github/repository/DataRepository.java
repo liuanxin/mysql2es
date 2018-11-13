@@ -5,7 +5,6 @@ import com.github.model.Document;
 import com.github.model.Relation;
 import com.github.model.Scheme;
 import com.github.util.*;
-import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -55,13 +54,10 @@ public class DataRepository {
                     }
                 }
 
-                U.assertException(A.isEmpty(keyList), String.format("table (%s) no primary key, " +
-                        "can't create index in es!", relation.getTable()));
+                U.assertException(A.isEmpty(keyList), String.format("table (%s) no primary key, can't create index in es!", relation.getTable()));
                 if (keyList.size() > 1) {
                     if (Logs.ROOT_LOG.isWarnEnabled()) {
-                        Logs.ROOT_LOG.warn("table ({}) has multi primary key, " +
-                                "increment data may be query for duplicate data, but will not miss !",
-                                relation.getTable());
+                        Logs.ROOT_LOG.warn("table ({}) has multi primary key, increment data may be query for duplicate data!", relation.getTable());
                     }
                 }
 
@@ -80,15 +76,20 @@ public class DataRepository {
         List<String> keyList = relation.getKeyList();
         if (A.isEmpty(keyList)) {
             dbToEsScheme();
-            keyList = relation.getKeyList();
         }
-        // must have primary key
-        if (A.isNotEmpty(keyList)) {
-            // read last id from temp file
-            String index = relation.useIndex();
+        saveData(relation);
+        return new AsyncResult<>(true);
+    }
+    private void saveData(Relation relation) {
+        List<String> keyList = relation.getKeyList();
+        if (A.isEmpty(keyList)) {
+            return;
+        }
+
+        String index = relation.useIndex();
+        for (;;) {
             String tmpColumnValue = Files.read(index);
-            String countSql = relation.countSql(tmpColumnValue);
-            Integer count = A.first(jdbcTemplate.queryForList(countSql, Integer.class));
+            Integer count = A.first(jdbcTemplate.queryForList(relation.countSql(tmpColumnValue), Integer.class));
             if (U.greater0(count)) {
                 List<Document> documents = A.lists();
                 List<Map<String, Object>> dataList = null;
@@ -98,7 +99,7 @@ public class DataRepository {
                     String pageSql = relation.querySql(i, tmpColumnValue);
                     dataList = jdbcTemplate.queryForList(pageSql);
 
-                    documents.addAll(fixDocument(relation, keyList, dataList));
+                    documents.addAll(fixDocument(relation, dataList));
                     // batch insert
                     if (documents.size() >= config.getCount()) {
                         esRepository.saveDataToEs(documents);
@@ -111,81 +112,58 @@ public class DataRepository {
                     esRepository.saveDataToEs(documents);
                 }
                 // write last id to temp file
-                String last = getLast(keyList, relation.getIncrementColumn(), dataList);
+                String last = getLast(relation, dataList);
                 if (U.isNotBlank(last)) {
                     Files.write(index, last);
                 }
+            } else {
+                return;
             }
         }
-        return new AsyncResult<>(true);
     }
     /** return last record */
-    private String getLast(List<String> keyList, List<String> columnList, List<Map<String, Object>> dataList) {
+    private String getLast(Relation relation, List<Map<String, Object>> dataList) {
         Map<String, Object> last = A.last(dataList);
-        if (A.isNotEmpty(last)) {
+        if (A.isEmpty(last)) {
+            return U.EMPTY;
+        } else {
             List<String> lastList = A.lists();
+
+            List<String> keyList = relation.getKeyList();
+            List<String> columnList = relation.getIncrementColumn();
+
             for (String column : columnList) {
-                Object obj = last.get(column);
+                String obj = dataToStr(last.get(column));
                 if (U.isNotBlank(obj)) {
                     // if was Date return 'yyyy-MM-dd HH:mm:ss', else return toStr
-                    lastList.add(dataToStr(obj));
+                    lastList.add(obj);
                 }
             }
             String lastValue = A.toStr(lastList, U.FIRST_SPLIT);
 
+            // multi primary key can't generate query
             if (keyList.size() == 1 && columnList.size() == 1) {
-                String increment = columnList.get(0);
-                String key = keyList.get(0);
-
-                List<Object> columnValueList = A.lists();
-                for (Map<String, Object> data : dataList) {
-                    String column = dataToStr(data.get(increment));
-                    // append (last data)'s (increment data) equals's data to tmp file
-                    if (lastValue.equals(column)) {
-                        String tmp = dataToStr(data.get(key));
-                        if (U.isNotBlank(tmp)) {
-                            columnValueList.add(tmp);
-                        }
-                    }
-                }
-                if (A.isNotEmpty(columnValueList)) {
-                    StringBuilder sbd = new StringBuilder(U.SECOND_SPLIT + "AND " + key);
-                    // multi use NOT IN, single use !=
-                    if (columnValueList.size() > 1) {
-                        sbd.append(" NOT IN (");
-                        for (Object obj : columnValueList) {
-                            sbd.append(sqlData(obj)).append(",");
-                        }
-                        if (sbd.toString().endsWith(",")) {
-                            sbd.delete(sbd.length() - 1, sbd.length());
-                        }
-                        sbd.append(")");
-                    } else {
-                        sbd.append(" != ").append(sqlData(columnValueList.get(0)));
-                    }
-                    lastValue += sbd.toString();
-                }
+                lastValue += String.format("%sAND `%s` NOT IN (%s)",
+                        U.SECOND_SPLIT, keyList.get(0), relation.lastSql(lastList));
             }
             return lastValue;
         }
-        return U.EMPTY;
-    }
-    private String sqlData(Object obj) {
-        return (NumberUtils.isCreatable(obj.toString())) ? obj.toString() : ("'" + obj + "'");
     }
     private String dataToStr(Object obj) {
-        if (obj instanceof Date) {
+        if (U.isBlank(obj)) {
+            return null;
+        } else if (obj instanceof Date) {
             return Dates.format((Date) obj, Dates.Type.YYYY_MM_DD_HH_MM_SS);
+        } else {
+            return obj.toString();
         }
-        return obj.toString();
     }
     /** traverse the Database Result and organize into es Document */
-    private List<Document> fixDocument(Relation relation, List<String> keyList,
-                                       List<Map<String, Object>> dataList) {
+    private List<Document> fixDocument(Relation relation, List<Map<String, Object>> dataList) {
         List<Document> documents = A.lists();
         for (Map<String, Object> objMap : dataList) {
             StringBuilder sbd = new StringBuilder();
-            for (String primary : keyList) {
+            for (String primary : relation.getKeyList()) {
                 sbd.append(objMap.get(primary)).append("-");
             }
             if (sbd.toString().endsWith("-")) {
