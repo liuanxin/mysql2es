@@ -7,13 +7,13 @@ import com.github.util.A;
 import com.github.util.Jsons;
 import com.github.util.Logs;
 import com.github.util.U;
-import com.google.common.collect.Maps;
-import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequest;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -151,39 +151,39 @@ public class EsRepository {
 
     public boolean saveDataToEs(List<Document> documents) {
         if (A.isNotEmpty(documents)) {
-            Map<String, String> statusMap = Maps.newHashMap();
-
+            BulkRequest batchRequest = new BulkRequest();
             for (Document doc : documents) {
                 String index = doc.getIndex();
                 String type = doc.getType();
                 String id = doc.getId();
-                try {
-                    DocWriteResponse response;
-                    String source = Jsons.toJson(doc.getData());
-                    if (U.isNotBlank(source)) {
+                String source = Jsons.toJson(doc.getData());
+                if (U.isNotBlank(source)) {
+                    try {
+                        // es not have: (add in not exists, update if exists)'s api...
                         boolean exists = client.exists(new GetRequest(index, type, id));
                         if (exists) {
-                            UpdateRequest request = new UpdateRequest(index, type, id).doc(source, XContentType.JSON);
-                            response = client.update(request);
+                            batchRequest.add(new UpdateRequest(index, type, id).doc(source, XContentType.JSON));
                         } else {
-                            IndexRequest request = new IndexRequest(index, type, id).source(source, XContentType.JSON);
-                            response = client.index(request);
+                            batchRequest.add(new IndexRequest(index, type, id).source(source, XContentType.JSON));
                         }
-                        statusMap.put(id, response.getResult().getLowercase());
-                    }
-                } catch (Exception e) {
-                    // <= 6.3.1 version, suggest field if empty will throw IAE(write is good)
-                    // org.elasticsearch.index.mapper.CompletionFieldMapper.parse(443)
-                    // https://github.com/elastic/elasticsearch/pull/30713/files
-                    if (Logs.ROOT_LOG.isErrorEnabled()) {
-                        Logs.ROOT_LOG.error("create or update data es exception", e);
+                    } catch (Exception e) {
+                        if (Logs.ROOT_LOG.isErrorEnabled()) {
+                            Logs.ROOT_LOG.error(String.format("es query %s/%s/%s exists exception", index, type, id), e);
+                        }
                     }
                 }
             }
-
-            if (A.isNotEmpty(statusMap)) {
+            try {
+                BulkResponse bulk = client.bulk(batchRequest);
                 if (Logs.ROOT_LOG.isDebugEnabled()) {
-                    Logs.ROOT_LOG.debug("db to es({})", Jsons.toJson(statusMap));
+                    Logs.ROOT_LOG.debug("batch run index return code: {}", bulk.status().getStatus());
+                }
+            } catch (IOException e) {
+                // <= 6.3.1 version, suggest field if empty will throw IAE(write is good)
+                // org.elasticsearch.index.mapper.CompletionFieldMapper.parse(443)
+                // https://github.com/elastic/elasticsearch/pull/30713/files
+                if (Logs.ROOT_LOG.isErrorEnabled()) {
+                    Logs.ROOT_LOG.error("create or update data es exception", e);
                 }
             }
         }

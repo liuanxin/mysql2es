@@ -98,7 +98,7 @@ public class Relation {
         StringBuilder querySql = new StringBuilder();
         querySql.append(U.isNotBlank(sql)
                 ? sql.trim().replaceFirst("(?i)SELECT (.*?) FROM ", "SELECT COUNT(*) FROM ")
-                : String.format("SELECT count(*) FROM `%s`", table));
+                : String.format("SELECT COUNT(*) FROM `%s`", table));
         appendWhere(param, querySql);
 
         return querySql.toString();
@@ -152,7 +152,7 @@ public class Relation {
             String column = incrementColumn.get(i);
             querySql.append(String.format(" `%s` ASC", column));
             if (i + 1 != incrementColumn.size()) {
-                querySql.append(" ,");
+                querySql.append(",");
             }
         }
         querySql.append(" LIMIT ").append(page * limit).append(", ").append(limit);
