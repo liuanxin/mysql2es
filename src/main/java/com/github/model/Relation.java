@@ -104,30 +104,41 @@ public class Relation {
         return querySql.toString();
     }
 
+    public String lastSql(List<String> lastDataList) {
+        // multi primary key can't generate query...
+        int index = 0;
+        return String.format("SELECT `%s` FROM `%s` WHERE `%s` = %s",
+                keyList.get(index), table, incrementColumn.get(index), sqlData(lastDataList.get(index)));
+    }
+
+    private String sqlData(Object obj) {
+        return (NumberUtils.isCreatable(obj.toString())) ? obj.toString() : ("'" + obj + "'");
+    }
+
     private void appendWhere(String param, StringBuilder querySql) {
         // param split length = increment column size
         if (U.isNotBlank(param)) {
-            String params[] = param.split(U.FIRST_SPLIT);
+            String[] params = param.split(U.FIRST_SPLIT);
             if (incrementColumn.size() != params.length) {
                 if (Logs.ROOT_LOG.isErrorEnabled()) {
                     Logs.ROOT_LOG.error("increment ({}) != param ({})", A.toStr(incrementColumn), param);
                 }
             } else {
-                querySql.append(querySql.toString().toUpperCase().contains(" WHERE ") ? " AND" : " WHERE");
-
+                boolean where = querySql.toString().toUpperCase().contains(" WHERE ");
+                if (where) {
+                    querySql.append(" AND ( ");
+                } else {
+                    querySql.append(" WHERE");
+                }
                 for (int i = 0; i < incrementColumn.size(); i++) {
                     String tmp = params[i];
                     if (U.isNotBlank(tmp)) {
                         String[] arr = tmp.split(U.SECOND_SPLIT);
 
-                        String value = arr[0];
                         String column = incrementColumn.get(i);
                         // gte(>=) This will query for duplicate data, but will not miss, exclude by the following conditions
-                        if (NumberUtils.isCreatable(value)) {
-                            querySql.append(String.format(" `%s` >= %d", column, NumberUtils.toLong(value)));
-                        } else {
-                            querySql.append(String.format(" `%s` >= '%s'", column, value));
-                        }
+                        querySql.append(" `").append(column).append("` >= ").append(sqlData(arr[0]));
+
                         // use < id not in(x, xx, xxx) >  to exclude duplicate data. above gte(>=)
                         if (arr.length > 1) {
                             querySql.append(" ").append(arr[1]);
@@ -136,6 +147,9 @@ public class Relation {
                             querySql.append(" AND");
                         }
                     }
+                }
+                if (where) {
+                    querySql.append(" )");
                 }
             }
         }
