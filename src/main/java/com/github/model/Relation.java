@@ -45,7 +45,7 @@ public class Relation {
      *
      * @see org.elasticsearch.client.support.AbstractClient#prepareIndex(String, String, String)
      */
-    List<String> keyList;
+    List<String> keyColumn;
 
     void check() {
         U.assertNil(table, "must set (db table name)");
@@ -111,7 +111,7 @@ public class Relation {
         // multi primary key can't generate query...
         int index = 0;
 
-        String key = keyList.get(index);
+        String key = keyColumn.get(index);
         String increment = incrementColumn.get(index);
         String data = sqlData(lastDataList.get(index));
 
