@@ -118,12 +118,12 @@ public class Relation {
         // If you use actual data, return this and query with sql
         // return String.format("SELECT `%s` FROM `%s` WHERE `%s` = %s", key, table, increment, data);
 
-        // AND id NOT IN (SELECT id FROM x WHERE update_time = '2018-01-01 00:00:00')
+        // AND key NOT IN (SELECT key FROM x WHERE c = 'time')
         // return String.format("AND `%s` NOT IN (SELECT `%s` FROM `%s` WHERE `%s` = %s)", key, key, table, increment, data);
 
         // The following <exists statement> is better than the above <not in statement> performance
 
-        // AND NOT exists (SELECT o.id FROM t_order o WHERE o.update_time = '2018-01-01 00:00:00' and o.id = id)
+        // AND NOT exists (SELECT t.key FROM x t WHERE t.c = 'time' and t.key = key)
         return String.format("AND NOT exists (SELECT t.`%s` FROM `%s` t WHERE t.`%s` = %s and o.`%s` = %s)",
                 key, table, increment, data, key, key);
     }
