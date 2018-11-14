@@ -96,8 +96,7 @@ public class DataRepository {
 
                 int loopCount = relation.loopCount(count);
                 for (int i = 0; i < loopCount; i++) {
-                    String pageSql = relation.querySql(i, tmpColumnValue);
-                    dataList = jdbcTemplate.queryForList(pageSql);
+                    dataList = jdbcTemplate.queryForList(relation.querySql(i, tmpColumnValue));
 
                     documents.addAll(fixDocument(relation, dataList));
                     // batch insert
