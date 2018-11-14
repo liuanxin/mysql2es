@@ -34,6 +34,9 @@ public class Relation {
     /**  number of each operation. will append in sql(select ... limit 50) */
     private Integer limit = 50;
 
+    /** Whether the data has been increasing and will not be updated */
+    private boolean justAdd = false;
+
     /** table column -> es field. if not, will generate by column(c_some_type ==> someType) */
     private Map<String, String> mapping;
 
@@ -107,8 +110,22 @@ public class Relation {
     public String lastSql(List<String> lastDataList) {
         // multi primary key can't generate query...
         int index = 0;
-        return String.format("SELECT `%s` FROM `%s` WHERE `%s` = %s",
-                keyList.get(index), table, incrementColumn.get(index), sqlData(lastDataList.get(index)));
+
+        String key = keyList.get(index);
+        String increment = incrementColumn.get(index);
+        String data = sqlData(lastDataList.get(index));
+
+        // If you use actual data, return this and query with sql
+        // return String.format("SELECT `%s` FROM `%s` WHERE `%s` = %s", key, table, increment, data);
+
+        // AND id NOT IN (SELECT id FROM x WHERE update_time = '2018-01-01 00:00:00')
+        // return String.format("AND `%s` NOT IN (SELECT `%s` FROM `%s` WHERE `%s` = %s)", key, key, table, increment, data);
+
+        // The following <exists statement> is better than the above <not in statement> performance
+
+        // AND NOT exists (SELECT o.id FROM t_order o WHERE o.update_time = '2018-01-01 00:00:00' and o.id = id)
+        return String.format("AND NOT exists (SELECT t.`%s` FROM `%s` t WHERE t.`%s` = %s and o.`%s` = %s)",
+                key, table, increment, data, key, key);
     }
 
     private String sqlData(Object obj) {

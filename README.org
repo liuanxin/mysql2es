@@ -28,6 +28,7 @@ config:
       scheme: false                # Whether to generate the scheme of es based on the database table structure in advance, the default is true, It is recommended to go to es to build the scheme and set this to false. The scheme generated based on the table structure will set the text and keyword types for the varchar type.
       sql: select * from t_product # Custom sql statement, no setting will automatically assemble from the database table
       limit: 10                    # The number of times to get from the database, the default is 50
+      justAdd: true                # Whether the data has been increasing and will not be updated, the default is false, true will not check whether the data exists to decide whether to add or update will be added directly
       mapping:                     # 「table column」:「es field」, no setting will be generated from the table field (c_some_type ==> someType), only special cases can be set
         c_type: type
 #+END_SRC
