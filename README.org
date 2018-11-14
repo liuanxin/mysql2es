@@ -29,6 +29,7 @@ config:
       key-column: ["id"]           # key column, if null will query for table, table has multi primary key, id where append with "-", this config can be set specific column(if set, please use one column, and ensure the column must be unique)
       sql: select * from t_product # Custom sql statement, no setting will automatically assemble from the database table
       limit: 10                    # The number of times to get from the database, the default is 50
+      just-add: true                # Whether the data has been increasing and will not be updated, the default is false, true will not check whether the data exists to decide whether to add or update will be added directly
       mapping:                     # 「table column」:「es field」, no setting will be generated from the table field (c_some_type ==> someType), only special cases can be set
         c_type: type
 #+END_SRC
