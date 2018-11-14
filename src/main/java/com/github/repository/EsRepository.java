@@ -160,7 +160,7 @@ public class EsRepository {
                 String source = Jsons.toJson(doc.getData());
                 if (U.isNotBlank(source)) {
                     try {
-                        // es not have: (add in not exists, update if exists)'s api...
+                        // es not have (add if not exists, update if exists)'s api...
                         boolean exists = client.exists(new GetRequest(index, type, id));
                         if (exists) {
                             batchRequest.add(new UpdateRequest(index, type, id).doc(source, XContentType.JSON));
