@@ -150,7 +150,7 @@ public class EsRepository {
         }
     }
 
-    public boolean saveDataToEs(boolean justAdd, List<Document> documents) {
+    public void saveDataToEs(boolean justAdd, List<Document> documents) {
         if (A.isNotEmpty(documents)) {
             BulkRequest batchRequest = new BulkRequest();
             for (Document doc : documents) {
@@ -198,6 +198,5 @@ public class EsRepository {
                 }
             }
         }
-        return true;
     }
 }
