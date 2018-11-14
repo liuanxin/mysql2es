@@ -150,7 +150,7 @@ public class EsRepository {
         }
     }
 
-    public boolean saveDataToEs(List<Document> documents) {
+    public boolean saveDataToEs(boolean justAdd, List<Document> documents) {
         if (A.isNotEmpty(documents)) {
             BulkRequest batchRequest = new BulkRequest();
             for (Document doc : documents) {
@@ -159,17 +159,21 @@ public class EsRepository {
                 String id = doc.getId();
                 String source = Jsons.toJson(doc.getData());
                 if (U.isNotBlank(source)) {
-                    try {
-                        // es not have (add if not exists, update if exists)'s api...
-                        boolean exists = client.exists(new GetRequest(index, type, id));
-                        if (exists) {
-                            batchRequest.add(new UpdateRequest(index, type, id).doc(source, XContentType.JSON));
-                        } else {
-                            batchRequest.add(new IndexRequest(index, type, id).source(source, XContentType.JSON));
-                        }
-                    } catch (Exception e) {
-                        if (Logs.ROOT_LOG.isErrorEnabled()) {
-                            Logs.ROOT_LOG.error(String.format("es query %s/%s/%s exists exception", index, type, id), e);
+                    if (justAdd) {
+                        batchRequest.add(new IndexRequest(index, type, id).source(source, XContentType.JSON));
+                    } else {
+                        try {
+                            // es not have (add if not exists, update if exists)'s api...
+                            boolean exists = client.exists(new GetRequest(index, type, id));
+                            if (exists) {
+                                batchRequest.add(new UpdateRequest(index, type, id).doc(source, XContentType.JSON));
+                            } else {
+                                batchRequest.add(new IndexRequest(index, type, id).source(source, XContentType.JSON));
+                            }
+                        } catch (Exception e) {
+                            if (Logs.ROOT_LOG.isErrorEnabled()) {
+                                Logs.ROOT_LOG.error(String.format("es query %s/%s/%s exists exception", index, type, id), e);
+                            }
                         }
                     }
                 }

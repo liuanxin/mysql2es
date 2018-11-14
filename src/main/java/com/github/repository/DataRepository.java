@@ -87,6 +87,7 @@ public class DataRepository {
         }
 
         String index = relation.useIndex();
+        boolean justAdd = relation.isJustAdd();
         for (;;) {
             String tmpColumnValue = Files.read(index);
             Integer count = A.first(jdbcTemplate.queryForList(relation.countSql(tmpColumnValue), Integer.class));
@@ -101,14 +102,14 @@ public class DataRepository {
                     documents.addAll(fixDocument(relation, dataList));
                     // batch insert
                     if (documents.size() >= config.getCount()) {
-                        esRepository.saveDataToEs(documents);
+                        esRepository.saveDataToEs(justAdd, documents);
                         documents.clear();
                     }
                 }
 
                 // save last data
                 if (A.isNotEmpty(documents)) {
-                    esRepository.saveDataToEs(documents);
+                    esRepository.saveDataToEs(justAdd, documents);
                 }
                 // write last id to temp file
                 String last = getLast(relation, dataList);
@@ -142,8 +143,7 @@ public class DataRepository {
 
             // multi primary key can't generate query
             if (keyList.size() == 1 && columnList.size() == 1) {
-                lastValue += String.format("%sAND `%s` NOT IN (%s)",
-                        U.SECOND_SPLIT, keyList.get(0), relation.lastSql(lastList));
+                lastValue += U.SECOND_SPLIT + relation.lastSql(lastList);
             }
             return lastValue;
         }
