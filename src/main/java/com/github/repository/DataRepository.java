@@ -54,14 +54,17 @@ public class DataRepository {
                     }
                 }
 
-                U.assertException(A.isEmpty(keyList), String.format("table (%s) no primary key, can't create index in es!", relation.getTable()));
+                U.assertException(A.isEmpty(keyList),
+                        String.format("table (%s) no primary key, can't create index in es!", relation.getTable()));
                 if (keyList.size() > 1) {
                     if (Logs.ROOT_LOG.isWarnEnabled()) {
-                        Logs.ROOT_LOG.warn("table ({}) has multi primary key, increment data may be query for duplicate data!", relation.getTable());
+                        Logs.ROOT_LOG.warn("table ({}) has multi primary key, " +
+                                "increment data may be query for duplicate data!", relation.getTable());
                     }
                 }
-
-                relation.setKeyList(keyList);
+                if (A.isEmpty(relation.getKeyColumn())) {
+                    relation.setKeyColumn(keyList);
+                }
                 if (scheme) {
                     schemeList.add(new Scheme().setIndex(relation.useIndex()).setProperties(propertyMap));
                 }
@@ -73,19 +76,13 @@ public class DataRepository {
     /** async data to es */
     @Async
     public Future<Boolean> asyncData(Relation relation) {
-        List<String> keyList = relation.getKeyList();
-        if (A.isEmpty(keyList)) {
+        if (A.isEmpty(relation.getKeyColumn())) {
             dbToEsScheme();
         }
         saveData(relation);
         return new AsyncResult<>(true);
     }
     private void saveData(Relation relation) {
-        List<String> keyList = relation.getKeyList();
-        if (A.isEmpty(keyList)) {
-            return;
-        }
-
         String index = relation.useIndex();
         boolean justAdd = relation.isJustAdd();
         for (;;) {
@@ -139,7 +136,7 @@ public class DataRepository {
         } else {
             List<String> lastList = A.lists();
 
-            List<String> keyList = relation.getKeyList();
+            List<String> keyList = relation.getKeyColumn();
             List<String> columnList = relation.getIncrementColumn();
 
             for (String column : columnList) {
@@ -172,7 +169,7 @@ public class DataRepository {
         List<Document> documents = A.lists();
         for (Map<String, Object> objMap : dataList) {
             StringBuilder sbd = new StringBuilder();
-            for (String primary : relation.getKeyList()) {
+            for (String primary : relation.getKeyColumn()) {
                 sbd.append(objMap.get(primary)).append("-");
             }
             if (sbd.toString().endsWith("-")) {
