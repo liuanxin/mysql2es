@@ -96,6 +96,7 @@ public class DataRepository {
                 List<Map<String, Object>> dataList = null;
 
                 int loopCount = relation.loopCount(count);
+                int writeCount = 0;
                 for (int i = 0; i < loopCount; i++) {
                     dataList = jdbcTemplate.queryForList(relation.querySql(i, tmpColumnValue));
 
@@ -104,6 +105,15 @@ public class DataRepository {
                     if (documents.size() >= config.getCount()) {
                         esRepository.saveDataToEs(justAdd, documents);
                         documents.clear();
+                        writeCount++;
+                    }
+
+                    // save count * 10 data to es, then write last in temp file.
+                    if (writeCount > 0 && writeCount % 10 == 0) {
+                        String last = getLast(relation, dataList);
+                        if (U.isNotBlank(last)) {
+                            Files.write(index, last);
+                        }
                     }
                 }
 
