@@ -124,7 +124,7 @@ public class Relation {
         // The following <exists statement> is better than the above <not in statement> performance
 
         // AND NOT exists (SELECT t.key FROM x t WHERE t.c = 'time' and t.key = key)
-        return String.format("AND NOT exists (SELECT t.`%s` FROM `%s` t WHERE t.`%s` = %s and o.`%s` = %s)",
+        return String.format("AND NOT exists (SELECT t.`%s` FROM `%s` t WHERE t.`%s` = %s and t.`%s` = %s)",
                 key, table, increment, data, key, key);
     }
 
