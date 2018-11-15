@@ -115,17 +115,9 @@ public class Relation {
         String increment = incrementColumn.get(index);
         String data = sqlData(lastDataList.get(index));
 
-        // If you use actual data, return this and query with sql
-        // return String.format("SELECT `%s` FROM `%s` WHERE `%s` = %s", key, table, increment, data);
-
-        // AND key NOT IN (SELECT key FROM x WHERE c = 'time')
-        // return String.format("AND `%s` NOT IN (SELECT `%s` FROM `%s` WHERE `%s` = %s)", key, key, table, increment, data);
-
-        // The following <exists statement> is better than the above <not in statement> performance
-
-        // AND NOT exists (SELECT t.key FROM x t WHERE t.c = 'time' and t.key = key)
-        return String.format("AND NOT exists (SELECT t.`%s` FROM `%s` t WHERE t.`%s` = %s and t.`%s` = %s)",
-                key, table, increment, data, key, key);
+        // AND key NOT IN (SELECT key FROM x WHERE increment = data)
+        return String.format("AND `%s` NOT IN (SELECT t.`%s` FROM `%s` t WHERE t.`%s` = %s)",
+                key, key, table, increment, data);
     }
 
     private String sqlData(Object obj) {
