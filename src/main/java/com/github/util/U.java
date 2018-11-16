@@ -5,17 +5,13 @@ import com.google.common.base.CaseFormat;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Random;
-import java.util.UUID;
 import java.util.regex.Pattern;
 
 /** util */
 public final class U {
 
     public static final String EMPTY = "";
-    public static final String SPACE = " ";
-    public static final String SPLIT = ",|，";
     public static final String FIRST_SPLIT = "!~!";
-    public static final String SECOND_SPLIT = "~";
     public static final Random RANDOM = new Random();
     public static final Charset UTF8 = StandardCharsets.UTF_8;
     private static final Pattern BLANK_REGEX = Pattern.compile("\\s{2,}");
@@ -62,6 +58,37 @@ public final class U {
     }
 
 
+    public static boolean isNumber(Object obj) {
+        if (isBlank(obj)) {
+            return false;
+        }
+        try {
+            Double.parseDouble(obj.toString());
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+    public static int toInt(Object obj) {
+        if (isBlank(obj)) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(obj.toString());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+    public static long toLong(Object obj) {
+        if (isBlank(obj)) {
+            return 0L;
+        }
+        try {
+            return Long.parseLong(obj.toString());
+        } catch (NumberFormatException e) {
+            return 0L;
+        }
+    }
     public static boolean greater0(Number obj) {
         return obj != null && obj.doubleValue() > 0;
     }
@@ -75,11 +102,6 @@ public final class U {
     }
     public static boolean isNotBlank(Object obj) {
         return !isBlank(obj);
-    }
-
-
-    public static String uuid() {
-        return UUID.randomUUID().toString().replace("-", "");
     }
 
     public static void assertNil(Object obj, String msg) {

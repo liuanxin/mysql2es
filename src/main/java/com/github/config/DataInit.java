@@ -35,7 +35,7 @@ public class DataInit {
 //            String[] ipPort = ipAndPort.split(":");
 //            if (U.isNotBlank(ipPort) && ipPort.length >= 2) {
 //                String ip = ipPort[0];
-//                int port = NumberUtils.toInt(ipPort[1]);
+//                int port = U.toInt(ipPort[1]);
 //
 //                if (U.isNotBlank(ip) && U.greater0(port)) {
 //                    client.addTransportAddress(new TransportAddress(new InetSocketAddress(ip, port)));

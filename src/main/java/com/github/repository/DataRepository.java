@@ -135,27 +135,17 @@ public class DataRepository {
             return U.EMPTY;
         } else {
             List<String> lastList = A.lists();
-
-            List<String> keyList = relation.getKeyColumn();
-            List<String> columnList = relation.getIncrementColumn();
-
-            for (String column : columnList) {
+            for (String column : relation.getIncrementColumn()) {
                 String obj = dataToStr(last.get(column));
                 if (U.isNotBlank(obj)) {
-                    // if was Date return 'yyyy-MM-dd HH:mm:ss', else return toStr
                     lastList.add(obj);
                 }
             }
-            String lastValue = A.toStr(lastList, U.FIRST_SPLIT);
-
-            // multi primary key can't generate query
-            if (keyList.size() == 1 && columnList.size() == 1) {
-                lastValue += U.SECOND_SPLIT + relation.lastSql(lastList);
-            }
-            return lastValue;
+            return A.toStr(lastList, U.FIRST_SPLIT);
         }
     }
     private String dataToStr(Object obj) {
+        // if was Date return 'yyyy-MM-dd HH:mm:ss', else return toStr
         if (U.isBlank(obj)) {
             return null;
         } else if (obj instanceof Date) {
