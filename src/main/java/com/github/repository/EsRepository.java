@@ -14,9 +14,7 @@ import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.IndicesClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -149,38 +147,22 @@ public class EsRepository {
         }
     }
 
-    public void saveDataToEs(boolean justAdd, List<Document> documents) {
+    public void saveDataToEs(List<Document> documents) {
         if (A.isNotEmpty(documents)) {
             BulkRequest batchRequest = new BulkRequest();
             for (Document doc : documents) {
-                String index = doc.getIndex();
-                String type = doc.getType();
                 String id = doc.getId();
                 String source = Jsons.toJson(doc.getData());
-                if (U.isNotBlank(source)) {
-                    if (justAdd) {
-                        batchRequest.add(new IndexRequest(index, type, id).source(source, XContentType.JSON));
-                    } else {
-                        try {
-                            // es not have (add if not exists, update if exists)'s api...
-                            boolean exists = client.exists(new GetRequest(index, type, id));
-                            if (exists) {
-                                batchRequest.add(new UpdateRequest(index, type, id).doc(source, XContentType.JSON));
-                            } else {
-                                batchRequest.add(new IndexRequest(index, type, id).source(source, XContentType.JSON));
-                            }
-                        } catch (Exception e) {
-                            if (Logs.ROOT_LOG.isErrorEnabled()) {
-                                Logs.ROOT_LOG.error(String.format("es query %s/%s/%s exists exception", index, type, id), e);
-                            }
-                        }
-                    }
+                if (U.isNotBlank(id) && U.isNotBlank(source)) {
+                    String index = doc.getIndex();
+                    String type = doc.getType();
+                    batchRequest.add(new IndexRequest(index, type, id).source(source, XContentType.JSON));
                 }
             }
             try {
                 BulkResponse bulk = client.bulk(batchRequest);
                 if (Logs.ROOT_LOG.isDebugEnabled()) {
-                    Logs.ROOT_LOG.debug("batch(" + bulk.getItems().length + ") success.");
+                    Logs.ROOT_LOG.debug("batch(" + bulk.getItems().length + ") success");
                 }
             } catch (IOException e) {
                 // <= 6.3.1 version, suggest field if empty will throw IAE(write is good)
