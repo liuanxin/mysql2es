@@ -103,13 +103,13 @@ public class DataRepository {
                         esRepository.saveDataToEs(justAdd, documents);
                         documents.clear();
                         writeCount++;
-                    }
 
-                    // save count * 10 data to es, then write last in temp file.
-                    if (writeCount > 0 && writeCount % 10 == 0) {
-                        String last = getLast(relation, dataList);
-                        if (U.isNotBlank(last)) {
-                            Files.write(index, last);
+                        // save count * 100 data to es, then write last in temp file.
+                        if (writeCount % 100 == 0) {
+                            String last = getLast(relation, dataList);
+                            if (U.isNotBlank(last)) {
+                                Files.write(index, last);
+                            }
                         }
                     }
                 }

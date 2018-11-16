@@ -106,19 +106,6 @@ public class Relation {
         return querySql.toString();
     }
 
-    public String lastSql(List<String> lastDataList) {
-        // multi primary key can't generate query...
-        int index = 0;
-
-        String key = keyColumn.get(index);
-        String increment = incrementColumn.get(index);
-        String data = sqlData(lastDataList.get(index));
-
-        // AND key NOT IN (SELECT key FROM x WHERE increment = data)
-        return String.format("AND `%s` NOT IN (SELECT t.`%s` FROM `%s` t WHERE t.`%s` = %s)",
-                key, key, table, increment, data);
-    }
-
     private String sqlData(Object obj) {
         return U.isNumber(obj.toString()) ? obj.toString() : ("'" + obj + "'");
     }
