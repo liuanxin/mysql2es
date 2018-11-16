@@ -68,7 +68,7 @@ public class Config {
      */
     private List<Relation> relation;
 
-    private static final int MAX_COUNT = 500;
+    private static final int MAX_COUNT = 10000;
     /** Total number of single operations */
     private Integer count = MAX_COUNT;
 
