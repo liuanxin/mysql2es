@@ -104,7 +104,7 @@ public class DataRepository {
                         documents.clear();
                         writeCount++;
 
-                        // save count * 100 data to es, then write last in temp file.
+                        // save count * 100 data to es, then write last in temp file
                         if (writeCount % 100 == 0) {
                             String last = getLast(relation, dataList);
                             if (U.isNotBlank(last)) {
@@ -118,7 +118,7 @@ public class DataRepository {
                 if (A.isNotEmpty(documents)) {
                     esRepository.saveDataToEs(justAdd, documents);
                 }
-                // write last id to temp file
+                // write last in temp file
                 String last = getLast(relation, dataList);
                 if (U.isNotBlank(last)) {
                     Files.write(index, last);
