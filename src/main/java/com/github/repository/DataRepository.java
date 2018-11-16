@@ -104,8 +104,8 @@ public class DataRepository {
                         documents.clear();
                         writeCount++;
 
-                        // save count * 100 data to es, then write last in temp file
-                        if (writeCount % 100 == 0) {
+                        // save count * 20 data to es, then write last in temp file
+                        if (writeCount % 20 == 0) {
                             String last = getLast(relation, dataList);
                             if (U.isNotBlank(last)) {
                                 Files.write(index, last);
