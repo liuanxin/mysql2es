@@ -30,11 +30,8 @@ public class Relation {
     /** operate sql statement. if not, will generate by table name(select * from table_name) */
     private String sql;
 
-    /**  number of each operation. will append in sql(select ... limit 50) */
-    private Integer limit = 50;
-
-    /** Whether the data has been increasing and will not be updated */
-    private boolean justAdd = false;
+    /**  number of each operation. will append in sql(select ... limit 500) */
+    private Integer limit = 500;
 
     /** table column -> es field. if not, will generate by column(c_some_type ==> someType) */
     private Map<String, String> mapping;

@@ -84,7 +84,6 @@ public class DataRepository {
     }
     private void saveData(Relation relation) {
         String index = relation.useIndex();
-        boolean justAdd = relation.isJustAdd();
         for (;;) {
             String tmpColumnValue = Files.read(index);
             Integer count = A.first(jdbcTemplate.queryForList(relation.countSql(tmpColumnValue), Integer.class));
@@ -100,7 +99,7 @@ public class DataRepository {
                     documents.addAll(fixDocument(relation, dataList));
                     // batch insert
                     if (documents.size() >= config.getCount()) {
-                        esRepository.saveDataToEs(justAdd, documents);
+                        esRepository.saveDataToEs(documents);
                         documents.clear();
                         writeCount++;
 
@@ -116,7 +115,7 @@ public class DataRepository {
 
                 // save last data
                 if (A.isNotEmpty(documents)) {
-                    esRepository.saveDataToEs(justAdd, documents);
+                    esRepository.saveDataToEs(documents);
                 }
                 // write last in temp file
                 String last = getLast(relation, dataList);
