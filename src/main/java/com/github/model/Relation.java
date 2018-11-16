@@ -5,7 +5,6 @@ import com.github.util.Logs;
 import com.github.util.U;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.commons.lang3.math.NumberUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -121,7 +120,7 @@ public class Relation {
     }
 
     private String sqlData(Object obj) {
-        return (NumberUtils.isCreatable(obj.toString())) ? obj.toString() : ("'" + obj + "'");
+        return U.isNumber(obj.toString()) ? obj.toString() : ("'" + obj + "'");
     }
 
     private void appendWhere(String param, StringBuilder querySql) {
@@ -142,20 +141,12 @@ public class Relation {
                 for (int i = 0; i < incrementColumn.size(); i++) {
                     String tmp = params[i];
                     if (U.isNotBlank(tmp)) {
-                        String[] arr = tmp.split(U.SECOND_SPLIT);
-
-                        String column = incrementColumn.get(i);
                         // gte(>=) This will query for duplicate data, but will not miss, exclude by the following conditions
-                        querySql.append(" `").append(column).append("` >= ").append(sqlData(arr[0]));
-
-                        // use < id not in(x, xx, xxx) >  to exclude duplicate data. above gte(>=)
-                        if (arr.length > 1) {
-                            querySql.append(" ").append(arr[1]);
-                        }
-                        if ((i + 1) != incrementColumn.size()) {
-                            querySql.append(" AND");
-                        }
+                        querySql.append(" `").append(incrementColumn.get(i)).append("` >= ").append(sqlData(tmp)).append(" AND");
                     }
+                }
+                if (querySql.toString().endsWith(" AND")) {
+                    querySql.delete(querySql.length() - 4, querySql.length());
                 }
                 if (where) {
                     querySql.append(" )");
