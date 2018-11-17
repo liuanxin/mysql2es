@@ -24,13 +24,13 @@ config:
       table: t_product             # *** Must be set and have a primary key. The primary key will generate the id of /index/type/id in es
       increment-column: ["id"]     # *** Must be set. Indicates that it is used for data increment operations, using increment `id` or `update_time`
 
-      # Starting with es 6.0, type defaults to _doc, and the index in es directly corresponds to the database table name.
+      # Starting with es 6.0, type defaults to _doc, and the index in es directly corresponds to the database table name
       index: product               # Indicates the index of /index/type/id in es, not set will be generated from the database table name (t_some_one ==> some-one), greate version 6.0, index name must be lowercase
-      scheme: false                # Whether to generate the scheme of es based on the database table structure in advance, the default is true, It is recommended to go to es to build the scheme and set this to false. The scheme generated based on the table structure will set the text and keyword types for the varchar type.
-      key-column: ["id"]           # key column, if null will query for table, table has multi primary key, id where append with "-", this config can be set specific column(if set, please use one column, and ensure the column must be unique)
+      scheme: false                # Whether to generate the scheme of es based on the database table structure in advance, the default is true
+      key-column: ["id"]           # key column, if null will query for table, table has multi primary key, id where append with "-"
       sql: select * from t_product # Custom sql statement, no setting will automatically assemble from the database table
       limit: 200                   # The number of times to get from the database, the default is 500
-      mapping:                     # 「table column」:「es field」, no setting will be generated from the table field (c_some_type ==> someType), only special cases can be set
+      mapping:                     # 「table column」:「es field」, no setting will be generated from the table field (c_some_type ==> someType)
         c_type: type
 #+END_SRC
 
@@ -66,10 +66,3 @@ nohup java -jar -Dspring.config.location=~/application.yml target/mysql2es.jar >
 
 log in ~/logs/mysql2es.log
 #+END_SRC
-
-
-** Comment
-Project will query the database based on the configuration at startup, and save the relevant table structure to es.\\
-The timer then reads the last processed value from the temporary file based on the set task period (incremental value, first empty),
-then starts the database query and synchronizes to es and writes the last value to the temporary file.
-
