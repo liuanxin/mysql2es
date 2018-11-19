@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <property name="LOG_PATTERN" value="[%X{receiveTime}%d] [${PID:- } %t\\(%logger\\) : %p] [%X{requestInfo} %X{headInfo}] %class{30}#%method\\(%file:%line\\)%n%m%n%n"/>
+    <property name="LOG_PATTERN" value="[%d] [${PID:- } %t\\(%logger\\) : %p] %class{30}#%method\\(%file:%line\\) %m%n%n"/>
     <property name="FILE_PATH" value="${user.home}/logs/mysql2es"/>
 
     <appender name="PROJECT" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${FILE_PATH}.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>${FILE_PATH}-%d{yyyy-MM-dd}.log</fileNamePattern>
-            <maxHistory>10</maxHistory>
+            <maxHistory>7</maxHistory>
         </rollingPolicy>
 
         <encoder>
