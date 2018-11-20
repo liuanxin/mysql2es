@@ -54,15 +54,16 @@ public class DataRepository {
                     }
                 }
 
-                U.assertException(A.isEmpty(keyList),
-                        String.format("table (%s) no primary key, can't create index in es!", relation.getTable()));
-                if (keyList.size() > 1) {
-                    if (Logs.ROOT_LOG.isWarnEnabled()) {
-                        Logs.ROOT_LOG.warn("table ({}) has multi primary key, " +
-                                "increment data may be query for duplicate data!", relation.getTable());
-                    }
-                }
                 if (A.isEmpty(relation.getKeyColumn())) {
+                    U.assertException(A.isEmpty(keyList),
+                            String.format("table (%s) no primary key, can't create index in es!", relation.getTable()));
+
+                    if (keyList.size() > 1) {
+                        if (Logs.ROOT_LOG.isWarnEnabled()) {
+                            Logs.ROOT_LOG.warn("table ({}) has multi primary key, " +
+                                    "increment data may be query for duplicate data!", relation.getTable());
+                        }
+                    }
                     relation.setKeyColumn(keyList);
                 }
                 if (scheme) {
