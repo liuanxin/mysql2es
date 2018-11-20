@@ -17,7 +17,7 @@ The relevant configuration instructions are as follows:
 config:
   ip-port: ["127.0.0.1:9200"]      # the default is 127.0.0.1:9200
   cron: 0/5 * * * * *              # the default is to execute once per minute
-  count: 400                      # the default is 1000, the number of batches of data to es operation
+  count: 400                       # the default is 1000, the number of batches of data to es operation
 
   relation:
     -
