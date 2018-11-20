@@ -38,33 +38,43 @@ public class DataRepository {
 
                 List<String> keyList = A.lists();
                 Map<String, Map> propertyMap = A.maps();
+                Map<String, Boolean> fieldMap = A.maps();
                 for (Map<String, Object> map : mapList) {
                     Object column = map.get("Field");
                     Object type = map.get("Type");
 
                     if (U.isNotBlank(column) && U.isNotBlank(type)) {
+                        String field = column.toString();
+                        fieldMap.put(field, true);
                         if (scheme) {
-                            propertyMap.put(relation.useField(column.toString()), Searchs.dbToEsType(type.toString()));
+                            propertyMap.put(relation.useField(field), Searchs.dbToEsType(type.toString()));
                         }
 
                         Object key = map.get("Key");
                         if (U.isNotBlank(key) && "PRI".equals(key)) {
-                            keyList.add(column.toString());
+                            keyList.add(field);
                         }
                     }
                 }
 
-                if (A.isEmpty(relation.getKeyColumn())) {
+                List<String> keyColumn = relation.getKeyColumn();
+                String table = relation.getTable();
+                if (A.isEmpty(keyColumn)) {
                     U.assertException(A.isEmpty(keyList),
-                            String.format("table (%s) no primary key, can't create index in es!", relation.getTable()));
+                            String.format("table (%s) no primary key, can't create index in es!", table));
 
                     if (keyList.size() > 1) {
                         if (Logs.ROOT_LOG.isWarnEnabled()) {
                             Logs.ROOT_LOG.warn("table ({}) has multi primary key, " +
-                                    "increment data may be query for duplicate data!", relation.getTable());
+                                    "increment data may be query for duplicate data!", table);
                         }
                     }
                     relation.setKeyColumn(keyList);
+                } else {
+                    for (String key : keyColumn) {
+                        U.assertNil(fieldMap.get(key),
+                                String.format("table (%s) don't have column (%s)", table, key));
+                    }
                 }
                 if (scheme) {
                     schemeList.add(new Scheme().setIndex(relation.useIndex()).setProperties(propertyMap));
