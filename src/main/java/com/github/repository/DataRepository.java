@@ -87,7 +87,7 @@ public class DataRepository {
         for (;;) {
             String tmpColumnValue = Files.read(index);
             Integer count = A.first(jdbcTemplate.queryForList(relation.countSql(tmpColumnValue), Integer.class));
-            if (U.greater0(count)) {
+            if (count != null && count > 1) {
                 List<Document> documents = A.lists();
                 List<Map<String, Object>> dataList = null;
 
