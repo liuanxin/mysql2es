@@ -169,6 +169,10 @@ public class DataRepository {
         List<Document> documents = A.lists();
         for (Map<String, Object> objMap : dataList) {
             StringBuilder sbd = new StringBuilder();
+            String idPrefix = relation.getIdPrefix();
+            if (U.isNotBlank(idPrefix)) {
+                sbd.append(idPrefix);
+            }
             for (String primary : relation.getKeyColumn()) {
                 sbd.append(objMap.get(primary)).append("-");
             }
@@ -186,11 +190,9 @@ public class DataRepository {
                     }
                 }
                 // Document no data, don't need to save? or update to nil?
-                // if (A.isNotEmpty(dataMap)) {
-                documents.add(new Document()
-                        .setIndex(relation.useIndex())
-                        .setId(id).setData(dataMap));
-                // }
+                if (A.isNotEmpty(dataMap)) {
+                    documents.add(new Document(relation.useIndex(), id, dataMap));
+                }
             }
         }
         return documents;

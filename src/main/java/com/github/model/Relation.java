@@ -41,7 +41,9 @@ public class Relation {
      *
      * @see org.elasticsearch.client.support.AbstractClient#prepareIndex(String, String, String)
      */
-    List<String> keyColumn;
+    private List<String> keyColumn;
+
+    private String idPrefix;
 
     void check() {
         U.assertNil(table, "must set (db table name)");
@@ -95,11 +97,12 @@ public class Relation {
 
     public String countSql(String param) {
         StringBuilder querySql = new StringBuilder();
-        querySql.append(U.isNotBlank(sql)
-                ? sql.trim().replaceFirst("(?i)SELECT (.*?) FROM ", "SELECT COUNT(*) FROM ")
-                : String.format("SELECT COUNT(*) FROM `%s`", table));
+        if (U.isNotBlank(sql)) {
+            querySql.append(sql.trim().replaceFirst("(?i)SELECT (.*?) FROM ", "SELECT COUNT(*) FROM "));
+        } else {
+            querySql.append("SELECT COUNT(*) FROM `").append(table).append("`");
+        }
         appendWhere(param, querySql);
-
         return querySql.toString();
     }
 
@@ -141,8 +144,11 @@ public class Relation {
 
     public String querySql(int page, String param) {
         StringBuilder querySql = new StringBuilder();
-        querySql.append(U.isNotBlank(sql) ? sql : String.format("SELECT * FROM `%s`", table));
-
+        if (U.isNotBlank(sql)) {
+            querySql.append(sql.trim());
+        } else {
+            querySql.append("SELECT * FROM `").append(table).append("`");
+        }
         // param split length = increment column size
         appendWhere(param, querySql);
         querySql.append(" ORDER BY");
