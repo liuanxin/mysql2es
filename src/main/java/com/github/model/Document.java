@@ -21,6 +21,12 @@ public class Document {
     private String id;
     private Map<String, Object> data;
 
+    public Document(String index, String id, Map<String, Object> data) {
+        this.index = index;
+        this.id = id;
+        this.data = data;
+    }
+
     @Override
     public String toString() {
         return String.format("/%s/%s/%s", index, type, id);
