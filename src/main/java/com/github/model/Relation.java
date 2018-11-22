@@ -44,6 +44,7 @@ public class Relation {
     private List<String> keyColumn;
 
     private String idPrefix;
+    private String idSuffix;
 
     void check() {
         U.assertNil(table, "must set (db table name)");
