@@ -179,6 +179,10 @@ public class DataRepository {
             if (sbd.toString().endsWith("-")) {
                 sbd.delete(sbd.length() - 1, sbd.length());
             }
+            String idSuffix = relation.getIdSuffix();
+            if (U.isNotBlank(idSuffix)) {
+                sbd.append(idSuffix);
+            }
             String id = sbd.toString();
             // Document no id, can't be save
             if (U.isNotBlank(id)) {
