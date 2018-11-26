@@ -31,8 +31,8 @@ public class Job implements SchedulingConfigurer {
         taskRegistrar.addTriggerTask(new Runnable() {
             @Override
             public void run() {
-                if (Logs.ROOT_LOG.isInfoEnabled()) {
-                    Logs.ROOT_LOG.info("begin to run task");
+                if (Logs.ROOT_LOG.isDebugEnabled()) {
+                    Logs.ROOT_LOG.debug("begin to run task");
                 }
                 try {
                     List<Future<Boolean>> resultList = Lists.newArrayList();
@@ -49,8 +49,8 @@ public class Job implements SchedulingConfigurer {
                         }
                     }
                 } finally {
-                    if (Logs.ROOT_LOG.isInfoEnabled()) {
-                        Logs.ROOT_LOG.info("end of task run");
+                    if (Logs.ROOT_LOG.isDebugEnabled()) {
+                        Logs.ROOT_LOG.debug("end of task run");
                     }
                 }
             }
