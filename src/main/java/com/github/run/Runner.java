@@ -27,16 +27,16 @@ public class Runner implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        if (Logs.ROOT_LOG.isDebugEnabled()) {
-            Logs.ROOT_LOG.debug("begin to generate scheme");
+        if (Logs.ROOT_LOG.isInfoEnabled()) {
+            Logs.ROOT_LOG.info("begin to generate scheme");
         }
         try {
             List<Scheme> schemeList = dataRepository.dbToEsScheme();
             esRepository.saveScheme(schemeList);
             // esRepository.saveScheme(schemeList);
         } finally {
-            if (Logs.ROOT_LOG.isDebugEnabled()) {
-                Logs.ROOT_LOG.debug("end of generate scheme");
+            if (Logs.ROOT_LOG.isInfoEnabled()) {
+                Logs.ROOT_LOG.info("end of generate scheme");
             }
         }
     }
