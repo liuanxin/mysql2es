@@ -30,6 +30,9 @@ public class Relation {
     /** operate sql statement. if not, will generate by table name(select * from table_name) */
     private String sql;
 
+    /** when the incremental field is in multiple tables, use the alias to distinguish */
+    private String incrementTableAlias;
+
     /**  number of each operation. will append in sql(select ... limit 500) */
     private Integer limit = 500;
 
@@ -130,7 +133,12 @@ public class Relation {
                     String tmp = params[i];
                     if (U.isNotBlank(tmp)) {
                         // gte(>=) This will query for duplicate data, but will not miss, exclude by the following conditions
-                        querySql.append(" `").append(incrementColumn.get(i)).append("` >= ").append(sqlData(tmp)).append(" AND");
+                        querySql.append(" ");
+                        if (U.isNotBlank(incrementTableAlias)) {
+                            querySql.append(incrementTableAlias).append(".");
+                        }
+                        querySql.append("`").append(incrementColumn.get(i)).append("` >= ").append(sqlData(tmp));
+                        querySql.append(" AND");
                     }
                 }
                 if (querySql.toString().endsWith(" AND")) {
