@@ -22,7 +22,7 @@
 
         <commons-lang3.version>3.8.1</commons-lang3.version>
         <guava.version>27.0-jre</guava.version>
-        <jackson.version>2.9.6</jackson.version>
+        <jackson.version>2.9.7</jackson.version>
         <joda.version>2.10.1</joda.version>
     </properties>
     
