@@ -190,7 +190,10 @@ public class DataRepository {
                 for (Map.Entry<String, Object> entry : objMap.entrySet()) {
                     String key = relation.useField(entry.getKey());
                     if (U.isNotBlank(key)) {
-                        dataMap.put(key, entry.getValue());
+                        Object value = entry.getValue();
+                        // field has suggest and null, can't be write => https://elasticsearch.cn/question/4051
+                        // dataMap.put(key, U.isBlank(value) ? " " : value);
+                        dataMap.put(key, value);
                     }
                 }
                 // Document no data, don't need to save? or update to nil?
