@@ -25,7 +25,7 @@ config:
       scheme: false                # 是否事先基于 数据库表结构 生成 es 的 scheme, 默认是 true
       key-column: ["id"]           # 主键列, 如果不设置将会自动从表获取, 如果是多列主键会用 "-" 拼接
       sql: select * from t_product # 自定义的 sql 语句, 不设定将会自动从数据库表拼装
-      increment-table-alias: p     # 表别名, 如果增量字段名在多个表中时都有, 使用别名来区分
+      increment-table-alias: ta    # 表别名, 如果增量字段名在多个表中时都有, 使用别名来区分
       limit: 200                   # 一次从数据库获取的条数, 默认是 500
       mapping:                     # 「table column」:「es field」, 默认将会从表字段生成(c_some_type ==> someType), 只设置特殊情况即可
         c_type: type
