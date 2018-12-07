@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 public final class U {
 
     public static final String EMPTY = "";
-    public static final String FIRST_SPLIT = "!~!";
+    public static final String SPLIT = "!~!";
     public static final Random RANDOM = new Random();
     public static final Charset UTF8 = StandardCharsets.UTF_8;
     private static final Pattern BLANK_REGEX = Pattern.compile("\\s{2,}");
