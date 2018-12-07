@@ -117,7 +117,7 @@ public class Relation {
     private void appendWhere(String param, StringBuilder querySql) {
         // param split length = increment column size
         if (U.isNotBlank(param)) {
-            String[] params = param.split(U.FIRST_SPLIT);
+            String[] params = param.split(U.SPLIT);
             if (incrementColumn.size() != params.length) {
                 if (Logs.ROOT_LOG.isErrorEnabled()) {
                     Logs.ROOT_LOG.error("increment ({}) != param ({})", A.toStr(incrementColumn), param);

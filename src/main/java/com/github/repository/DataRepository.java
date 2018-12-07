@@ -151,7 +151,7 @@ public class DataRepository {
                     lastList.add(obj);
                 }
             }
-            return A.toStr(lastList, U.FIRST_SPLIT);
+            return A.toStr(lastList, U.SPLIT);
         }
     }
     private String dataToStr(Object obj) {
