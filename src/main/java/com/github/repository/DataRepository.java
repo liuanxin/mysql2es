@@ -145,8 +145,8 @@ public class DataRepository {
             return U.EMPTY;
         } else {
             List<String> lastList = A.lists();
-            for (String column : relation.getIncrementColumn()) {
-                String obj = dataToStr(last.get(column));
+            for (String columnAlias : relation.getIncrementColumnAlias()) {
+                String obj = dataToStr(last.get(columnAlias));
                 if (U.isNotBlank(obj)) {
                     lastList.add(obj);
                 }
