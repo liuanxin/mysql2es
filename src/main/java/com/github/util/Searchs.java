@@ -289,7 +289,7 @@ public final class Searchs {
                         String generic = field.toGenericString();
                         generic = generic.substring(0, generic.indexOf("[]"));
                         if (generic.contains(" ")) {
-                            generic = generic.substring(generic.indexOf(" "), generic.length()).trim();
+                            generic = generic.substring(generic.indexOf(" ")).trim();
                         }
                         try {
                             Class<?> arrayType = Class.forName(generic);
