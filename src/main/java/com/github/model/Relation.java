@@ -169,7 +169,7 @@ public class Relation {
         querySql.append(" ORDER BY");
         for (int i = 0; i < incrementColumn.size(); i++) {
             String column = incrementColumn.get(i);
-            querySql.append(String.format(" `%s` ASC", column));
+            querySql.append(String.format(" %s ASC", column));
             if (i + 1 != incrementColumn.size()) {
                 querySql.append(",");
             }
