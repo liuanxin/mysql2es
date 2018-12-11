@@ -29,7 +29,6 @@ config:
       scheme: false                # Whether to generate the scheme of es based on the database table structure in advance, the default is true
       key-column: ["id"]           # key column, if null will query for table, table has multi primary key, id where append with "-"
       sql: select * from t_product # Custom sql statement, no setting will automatically assemble from the database table
-      increment-table-alias: tp    # Table alias, when the incremental field is in multiple tables, use the alias to distinguish
       limit: 200                   # The number of times to get from the database, the default is 500
       mapping:                     # 「table column」:「es field」, no setting will be generated from the table field (c_some_type ==> someType)
         c_type: type

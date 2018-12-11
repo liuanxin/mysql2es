@@ -21,6 +21,9 @@ public class Relation {
 
     // above two properties must be set, the following don't need.
 
+    /** The field name for the increment in the table, if nil use incrementColumn */
+    private List<String> incrementColumnAlias;
+
     /** es index <==> database table name. it not, will generate by table name(t_some_one ==> someOne) */
     private String index;
 
@@ -29,9 +32,6 @@ public class Relation {
 
     /** operate sql statement. if not, will generate by table name(select * from table_name) */
     private String sql;
-
-    /** when the incremental field is in multiple tables, use the alias to distinguish */
-    private String incrementTableAlias;
 
     /**  number of each operation. will append in sql(select ... limit 500) */
     private Integer limit = 500;
@@ -51,7 +51,18 @@ public class Relation {
 
     void check() {
         U.assertNil(table, "must set (db table name)");
-        U.assertException(A.isEmpty(incrementColumn), "must set (db table increment-column)");
+        if (A.isEmpty(incrementColumn)) {
+            U.assertException("must set (db table increment-column)");
+        }
+        if (incrementColumn.size() > 0) {
+            if (A.isNotEmpty(incrementColumnAlias)) {
+                if (incrementColumn.size() != incrementColumnAlias.size()) {
+                    U.assertException("increment-column length must equals increment-column-alias length");
+                }
+            } else {
+                incrementColumnAlias = incrementColumn;
+            }
+        }
         if (U.isNotBlank(limit)) {
             U.assert0(limit, "limit must greater 0");
         }
@@ -127,22 +138,17 @@ public class Relation {
                 if (where) {
                     querySql.append(" AND ( ");
                 } else {
-                    querySql.append(" WHERE");
+                    querySql.append(" WHERE ");
                 }
                 for (int i = 0; i < incrementColumn.size(); i++) {
                     String tmp = params[i];
                     if (U.isNotBlank(tmp)) {
                         // gte(>=) This will query for duplicate data, but will not miss, exclude by the following conditions
-                        querySql.append(" ");
-                        if (U.isNotBlank(incrementTableAlias)) {
-                            querySql.append(incrementTableAlias).append(".");
-                        }
-                        querySql.append("`").append(incrementColumn.get(i)).append("` >= ").append(sqlData(tmp));
-                        querySql.append(" AND");
+                        querySql.append(incrementColumn.get(i)).append(" >= ").append(sqlData(tmp)).append(" AND ");
                     }
                 }
-                if (querySql.toString().endsWith(" AND")) {
-                    querySql.delete(querySql.length() - 4, querySql.length());
+                if (querySql.toString().endsWith(" AND ")) {
+                    querySql.delete(querySql.length() - 5, querySql.length());
                 }
                 if (where) {
                     querySql.append(" )");
