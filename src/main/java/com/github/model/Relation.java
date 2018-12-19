@@ -111,11 +111,13 @@ public class Relation {
     }
 
     public String countSql(String param) {
+        String count = "SELECT COUNT(*) FROM ";
+
         StringBuilder querySql = new StringBuilder();
         if (U.isNotBlank(sql)) {
-            querySql.append(sql.trim().replaceFirst("(?i)SELECT (.*?) FROM ", "SELECT COUNT(*) FROM "));
+            querySql.append(sql.trim().replaceFirst("(?i)SELECT (.*?) FROM ", count));
         } else {
-            querySql.append("SELECT COUNT(*) FROM `").append(table).append("`");
+            querySql.append(count).append("`").append(table).append("`");
         }
         appendWhere(param, querySql);
         return querySql.toString();
@@ -134,23 +136,26 @@ public class Relation {
                     Logs.ROOT_LOG.error("increment ({}) != param ({})", A.toStr(incrementColumn), param);
                 }
             } else {
-                boolean where = querySql.toString().toUpperCase().contains(" WHERE ");
-                if (where) {
-                    querySql.append(" AND ( ");
+                String and = " AND ";
+                String where = " WHERE ";
+
+                boolean flag = querySql.toString().toUpperCase().contains(where);
+                if (flag) {
+                    querySql.append(and).append("( ");
                 } else {
-                    querySql.append(" WHERE ");
+                    querySql.append(where);
                 }
                 for (int i = 0; i < incrementColumn.size(); i++) {
                     String tmp = params[i];
                     if (U.isNotBlank(tmp)) {
-                        // gte(>=) This will query for duplicate data, but will not miss, exclude by the following conditions
-                        querySql.append(incrementColumn.get(i)).append(" >= ").append(sqlData(tmp)).append(" AND ");
+                        // gte(>=) will query for duplicate data, but will not miss, exclude by the following conditions
+                        querySql.append(incrementColumn.get(i)).append(" >= ").append(sqlData(tmp)).append(and);
                     }
                 }
-                if (querySql.toString().endsWith(" AND ")) {
-                    querySql.delete(querySql.length() - 5, querySql.length());
+                if (querySql.toString().endsWith(and)) {
+                    querySql.delete(querySql.length() - and.length(), querySql.length());
                 }
-                if (where) {
+                if (flag) {
                     querySql.append(" )");
                 }
             }
