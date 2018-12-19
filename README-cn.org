@@ -24,7 +24,7 @@ config:
       index: product               # 表示 es 中 /index/type/id 的 index, 不设定将会从数据库表名生成(t_some_one ==> some-one), 6.0 开始 index name 必须是小写
       scheme: false                # 是否事先基于 数据库表结构 生成 es 的 scheme, 默认是 true
       key-column: ["id"]           # 主键列, 如果不设置将会自动从表获取, 如果是多列主键会用 "-" 拼接
-      sql: select * from t_product # 自定义的 sql 语句, 不设定将会自动从数据库表拼装
+      sql: select * from t_product # 自定义的 sql 语句(不要用 ORDER BY 和 LIMIT, 会基于 increment-column 自动添加), 不设定将会自动从数据库表拼装
       limit: 200                   # 一次从数据库获取的条数, 默认是 500
       mapping:                     # 「table column」:「es field」, 默认将会从表字段生成(c_some_type ==> someType), 只设置特殊情况即可
         c_type: type

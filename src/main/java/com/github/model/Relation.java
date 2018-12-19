@@ -172,12 +172,11 @@ public class Relation {
         // param split length = increment column size
         appendWhere(param, querySql);
         querySql.append(" ORDER BY");
-        for (int i = 0; i < incrementColumn.size(); i++) {
-            String column = incrementColumn.get(i);
-            querySql.append(String.format(" %s ASC", column));
-            if (i + 1 != incrementColumn.size()) {
-                querySql.append(",");
-            }
+        for (String column : incrementColumn) {
+            querySql.append(" ").append(column).append(" ASC,");
+        }
+        if (querySql.toString().endsWith(",")) {
+            querySql.delete(querySql.length() - 1, querySql.length());
         }
         querySql.append(" LIMIT ").append(page * limit).append(", ").append(limit);
         return querySql.toString();
