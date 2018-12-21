@@ -57,6 +57,6 @@ public class DataInit {
         for (String ipAndPort : config.getIpPort()) {
             hostList.add(HttpHost.create(ipAndPort));
         }
-        return new RestHighLevelClient(RestClient.builder(hostList.toArray(new HttpHost[hostList.size()])));
+        return new RestHighLevelClient(RestClient.builder(hostList.toArray(new HttpHost[0])));
     }
 }

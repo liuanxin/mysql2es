@@ -31,11 +31,14 @@ import java.util.concurrent.Future;
 @Component
 public class EsRepository {
 
-    @Autowired
-    private Config config;
+    private final Config config;
+    private final RestHighLevelClient client;
 
     @Autowired
-    private RestHighLevelClient client;
+    public EsRepository(Config config, RestHighLevelClient client) {
+        this.config = config;
+        this.client = client;
+    }
 
     @Async
     public Future<Boolean> deleteScheme(List<Scheme> schemes) {
@@ -132,7 +135,8 @@ public class EsRepository {
 
         String source = Jsons.toJson(A.maps("properties", scheme.getProperties()));
         if (Logs.ROOT_LOG.isDebugEnabled()) {
-            Logs.ROOT_LOG.debug("curl -XPUT \"http://{}/{}/{}/_mapping\" -d '{}'", config.ipAndPort(), index, type, source);
+            Logs.ROOT_LOG.debug("curl -XPUT \"http://{}/{}/{}/_mapping\" -d '{}'",
+                    config.ipAndPort(), index, type, source);
         }
 
         if (U.isBlank(source)) {

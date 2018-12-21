@@ -21,11 +21,14 @@ import java.util.concurrent.Future;
 @Configuration
 public class Job implements SchedulingConfigurer {
 
-    @Autowired
-    private Config config;
+    private final Config config;
+    private final DataRepository dataRepository;
 
     @Autowired
-    private DataRepository dataRepository;
+    public Job(Config config, DataRepository dataRepository) {
+        this.config = config;
+        this.dataRepository = dataRepository;
+    }
 
     @Override
     public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
