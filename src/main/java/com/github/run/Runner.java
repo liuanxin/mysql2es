@@ -16,11 +16,14 @@ import java.util.List;
 @Configuration
 public class Runner implements ApplicationRunner {
 
-    @Autowired
-    private EsRepository esRepository;
+    private final EsRepository esRepository;
+    private final DataRepository dataRepository;
 
     @Autowired
-    private DataRepository dataRepository;
+    public Runner(EsRepository esRepository, DataRepository dataRepository) {
+        this.esRepository = esRepository;
+        this.dataRepository = dataRepository;
+    }
 
     // @Autowired
     // private EsTransportClientRepository esTransportClientRepository;
@@ -33,7 +36,7 @@ public class Runner implements ApplicationRunner {
         try {
             List<Scheme> schemeList = dataRepository.dbToEsScheme();
             esRepository.saveScheme(schemeList);
-            // esRepository.saveScheme(schemeList);
+            // esTransportClientRepository.saveScheme(schemeList);
         } finally {
             if (Logs.ROOT_LOG.isInfoEnabled()) {
                 Logs.ROOT_LOG.info("end of generate scheme");

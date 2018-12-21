@@ -4,15 +4,15 @@ import com.google.common.base.CaseFormat;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Random;
 import java.util.regex.Pattern;
 
 /** util */
 public final class U {
 
+    public static final int PROCESSORS = Runtime.getRuntime().availableProcessors();
+
     public static final String EMPTY = "";
     public static final String SPLIT = "!~!";
-    public static final Random RANDOM = new Random();
     public static final Charset UTF8 = StandardCharsets.UTF_8;
     private static final Pattern BLANK_REGEX = Pattern.compile("\\s{2,}");
 
@@ -21,18 +21,6 @@ public final class U {
         return BLANK_REGEX.matcher(str).replaceAll(" ");
     }
 
-
-    public static String random(int length) {
-        if (length <= 0) {
-            return EMPTY;
-        }
-
-        StringBuilder sbd = new StringBuilder();
-        for (int i = 0; i < length; i++) {
-            sbd.append(RANDOM.nextInt(10));
-        }
-        return sbd.toString();
-    }
 
     public static String columnToField(String column) {
         return CaseFormat.UPPER_UNDERSCORE.converterTo(CaseFormat.LOWER_CAMEL)
@@ -103,6 +91,7 @@ public final class U {
     public static boolean isNotBlank(Object obj) {
         return !isBlank(obj);
     }
+
 
     public static void assertNil(Object obj, String msg) {
         assertException(isBlank(obj), msg);

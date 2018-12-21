@@ -19,14 +19,16 @@ import java.util.concurrent.Future;
 @Component
 public class DataRepository {
 
-    @Autowired
-    private Config config;
+    private final Config config;
+    private final JdbcTemplate jdbcTemplate;
+    private final EsRepository esRepository;
 
     @Autowired
-    private JdbcTemplate jdbcTemplate;
-
-    @Autowired
-    private EsRepository esRepository;
+    public DataRepository(Config config, JdbcTemplate jdbcTemplate, EsRepository esRepository) {
+        this.config = config;
+        this.jdbcTemplate = jdbcTemplate;
+        this.esRepository = esRepository;
+    }
 
     /** generate scheme of es on the database table structure */
     public List<Scheme> dbToEsScheme() {
