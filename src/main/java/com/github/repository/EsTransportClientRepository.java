@@ -13,20 +13,22 @@ import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.IndicesAdminClient;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
 // @Component
 public class EsTransportClientRepository {
 
-    @Autowired
-    private Config config;
+    private final Config config;
+    private final TransportClient client;
 
-    @Autowired
-    private TransportClient client;
+     // @Autowired
+     public EsTransportClientRepository(Config config, TransportClient client) {
+         this.config = config;
+         this.client = client;
+     }
 
-    public boolean deleteScheme(List<Scheme> schemes) {
+     public boolean deleteScheme(List<Scheme> schemes) {
         if (A.isNotEmpty(schemes)) {
             IndicesAdminClient indices = client.admin().indices();
 
@@ -38,12 +40,12 @@ public class EsTransportClientRepository {
                         DeleteIndexResponse resp = indices.prepareDelete(index).get();
                         boolean flag = resp.isAcknowledged();
                         if (Logs.ROOT_LOG.isDebugEnabled()) {
-                            Logs.ROOT_LOG.debug("delete scheme ({}/{}) return: ({})", index, type, flag);
+                            Logs.ROOT_LOG.debug("client => delete scheme ({}/{}) return: ({})", index, type, flag);
                         }
                     }
                 } catch (ElasticsearchException e) {
                     if (Logs.ROOT_LOG.isWarnEnabled()) {
-                        Logs.ROOT_LOG.warn(String.format("delete scheme (%s/%s) es exception", index, type), e);
+                        Logs.ROOT_LOG.warn(String.format("client => delete scheme (%s/%s) es exception", index, type), e);
                     }
                 }
             }
@@ -70,7 +72,7 @@ public class EsTransportClientRepository {
 
                     String source = Jsons.toJson(A.maps("properties", scheme.getProperties()));
                     if (Logs.ROOT_LOG.isDebugEnabled()) {
-                        Logs.ROOT_LOG.debug("curl -XPUT \"http://{}/{}/{}/_mapping\" -d '{}'",
+                        Logs.ROOT_LOG.debug("client => curl -XPUT \"http://{}/{}/{}/_mapping\" -d '{}'",
                                 config.ipAndPort(), index, type, source);
                     }
                     // create or update mapping
@@ -81,18 +83,19 @@ public class EsTransportClientRepository {
                         successList.add(scheme);
                     }
                     if (Logs.ROOT_LOG.isDebugEnabled()) {
-                        Logs.ROOT_LOG.debug("put scheme ({}/{}) return: ({})", index, type, flag);
+                        Logs.ROOT_LOG.debug("client => put scheme ({}/{}) return: ({})", index, type, flag);
                     }
                 } catch (Exception e) {
                     if (Logs.ROOT_LOG.isWarnEnabled()) {
-                        Logs.ROOT_LOG.warn(String.format("put scheme (%s/%s) es exception", index, type), e);
+                        Logs.ROOT_LOG.warn(String.format("client => put scheme (%s/%s) es exception", index, type), e);
                     }
                 }
             }
 
             if (A.isNotEmpty(successList)) {
                 if (Logs.ROOT_LOG.isDebugEnabled()) {
-                    Logs.ROOT_LOG.debug("put {} schemes ({}) from db to es", successList.size(), Jsons.toJson(successList));
+                    Logs.ROOT_LOG.debug("client => put {} schemes ({}) from db to es",
+                            successList.size(), Jsons.toJson(successList));
                 }
             }
         }
@@ -107,20 +110,20 @@ public class EsTransportClientRepository {
                     IndexResponse response = client.prepareIndex(doc.getIndex(), doc.getType(), doc.getId())
                             .setSource(Jsons.toJson(doc.getData()), XContentType.JSON).get();
                     if (Logs.ROOT_LOG.isDebugEnabled()) {
-                        Logs.ROOT_LOG.debug("create or update date return : {}", response.status());
+                        Logs.ROOT_LOG.debug("client => create or update date return : {}", response.status());
                     }
 
                     successList.add(doc);
                 } catch (Exception e) {
                     if (Logs.ROOT_LOG.isWarnEnabled()) {
-                        Logs.ROOT_LOG.warn("create or update data es exception", e);
+                        Logs.ROOT_LOG.warn("client => create or update data es exception", e);
                     }
                 }
             }
 
             if (A.isNotEmpty(successList)) {
                 if (Logs.ROOT_LOG.isDebugEnabled()) {
-                    Logs.ROOT_LOG.debug("put {} {} documents from db to es", successList.size(), successList);
+                    Logs.ROOT_LOG.debug("client => put {} {} documents from db to es", successList.size(), successList);
                 }
             }
         }

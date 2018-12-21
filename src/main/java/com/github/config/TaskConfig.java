@@ -17,18 +17,20 @@ import java.util.concurrent.Executor;
 @EnableAsync
 public class TaskConfig implements AsyncConfigurer {
 
-    static final int PROCESSORS = Runtime.getRuntime().availableProcessors();
+    private final Config config;
 
     @Autowired
-    private Config config;
+    public TaskConfig(Config config) {
+        this.config = config;
+    }
 
     @Override
     public Executor getAsyncExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         if (U.isBlank(config) || A.isEmpty(config.getRelation())) {
-            executor.setCorePoolSize(PROCESSORS);
-            executor.setMaxPoolSize(PROCESSORS << 2);
-            executor.setQueueCapacity(PROCESSORS);
+            executor.setCorePoolSize(U.PROCESSORS);
+            executor.setMaxPoolSize(U.PROCESSORS << 2);
+            executor.setQueueCapacity(U.PROCESSORS);
         } else {
             int size = config.getRelation().size();
             executor.setCorePoolSize(size);
