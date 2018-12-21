@@ -71,6 +71,10 @@ public class Relation {
         }
     }
 
+    public String useKey() {
+        return String.format("table(%s) <=> index(%s)", table, useIndex());
+    }
+
     /** if not set the 「type」, generate from 「table name」 */
     public String useIndex() {
         if (U.isNotBlank(index)) {

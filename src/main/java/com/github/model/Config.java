@@ -80,8 +80,8 @@ public class Config {
                 count = MAX_COUNT;
             }
         }
-        for (Relation relation1 : relation) {
-            relation1.check();
+        for (Relation r : relation) {
+            r.check();
         }
     }
     public String ipAndPort() {
