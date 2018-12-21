@@ -4,7 +4,8 @@ import com.github.model.Config;
 import com.github.model.Relation;
 import com.github.repository.DataRepository;
 import com.github.util.Logs;
-import com.google.common.collect.Lists;
+import com.github.util.U;
+import com.google.common.collect.Maps;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -12,7 +13,7 @@ import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.scheduling.support.CronTrigger;
 
-import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -35,13 +36,17 @@ public class Job implements SchedulingConfigurer {
                     Logs.ROOT_LOG.info("begin to run task");
                 }
                 try {
-                    List<Future<Boolean>> resultList = Lists.newArrayList();
+                    Map<String, Future<Boolean>> resultMap = Maps.newHashMap();
                     for (Relation relation : config.getRelation()) {
-                        resultList.add(dataRepository.asyncData(relation));
+                        resultMap.put(relation.useKey(), dataRepository.asyncData(relation));
                     }
-                    for (Future<Boolean> future : resultList) {
+                    for (Map.Entry<String, Future<Boolean>> entry : resultMap.entrySet()) {
                         try {
-                            future.get();
+                            Boolean flag = entry.getValue().get();
+                            if (Logs.ROOT_LOG.isDebugEnabled()) {
+                                String status = (U.isNotBlank(flag) && flag) ? "success" : "fail";
+                                Logs.ROOT_LOG.debug("async db to es({}) {}", entry.getKey(), status);
+                            }
                         } catch (InterruptedException | ExecutionException e) {
                             if (Logs.ROOT_LOG.isErrorEnabled()) {
                                 Logs.ROOT_LOG.error("async db data to es exception", e);
