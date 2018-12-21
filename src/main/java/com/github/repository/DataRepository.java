@@ -95,14 +95,12 @@ public class DataRepository {
     }
     private void saveData(Relation relation) {
         String index = relation.useIndex();
-        int lastCount = 0;
         for (;;) {
             String tmpColumnValue = Files.read(index);
             Integer count = A.first(jdbcTemplate.queryForList(relation.countSql(tmpColumnValue), Integer.class));
-            if (U.less0(count) || (count < relation.getLimit() && count == lastCount)) {
+            if (U.less0(count)) {
                 return;
             } else {
-                lastCount = count;
                 List<Document> documents = A.lists();
                 List<Map<String, Object>> dataList = null;
 
@@ -136,6 +134,10 @@ public class DataRepository {
                 String last = getLast(relation, dataList);
                 if (U.isNotBlank(last)) {
                     Files.write(index, last);
+                }
+
+                if (count < relation.getLimit()) {
+                    return;
                 }
             }
         }
