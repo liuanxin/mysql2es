@@ -74,8 +74,7 @@ public class DataRepository {
                     relation.setKeyColumn(keyList);
                 } else {
                     for (String key : keyColumn) {
-                        U.assertNil(fieldMap.get(key),
-                                String.format("table (%s) don't have column (%s)", table, key));
+                        U.assertNil(fieldMap.get(key), String.format("table (%s) don't have column (%s)", table, key));
                     }
                 }
                 if (scheme) {
