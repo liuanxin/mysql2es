@@ -1,13 +1,13 @@
 
 [[README-cn.org][中文说明]]
 
-** MariaDB/MySQL to es
+** MariaDB/MySQL to Elasticsearch
 
    Synchronize the MariaDB/MySQL table data to Elasticsearch, only supports adding and updating,
    does not support physical deletion (physical deletion needs to be processed according to binlog),
-   it is recommended to use logical deletion.
+   it is recommended to use logical deletion. For example, add the deleted(1 deleted, default 0) field to the table.
 
-   Based on jdk 8 and spring boot 2.0, support es 6.3.2
+   Based on jdk 8 and spring boot 2.0, support Elasticsearch 6.3.2
 
 
 The relevant configuration instructions are as follows:
@@ -17,20 +17,20 @@ The relevant configuration instructions are as follows:
 config:
   ip-port: ["127.0.0.1:9200"]      # the default is 127.0.0.1:9200
   cron: 0/5 * * * * *              # the default is to execute once per minute
-  count: 400                       # the default is 1000, the number of batches of data to es operation
+  count: 400                       # the default is 1000, the number of batches of data to Elasticsearch operation
 
   relation:
     -
-      table: t_product             # *** Must be set and have a primary key. The primary key will generate the id of /index/type/id in es, if has multi primary key, id where append with "-"
+      table: t_product             # *** Must be set and have a primary key. The primary key will generate the id of /index/type/id in Elasticsearch, if has multi primary key, id where append with "-"
       increment-column: ["id"]     # *** Must be set. Indicates that it is used for data increment operations, using increment `id` or `update_time`
 
-      # Starting with es 6.0, type defaults to _doc, and the index in es directly corresponds to the database table name
-      index: product               # Indicates the index of /index/type/id in es, not set will be generated from the database table name (t_some_one ==> some-one), greate version 6.0, index name must be lowercase
-      scheme: false                # Whether to generate the scheme of es based on the database table structure in advance, the default is true
+      # Starting with Elasticsearch 6.0, type defaults to _doc, and the index in Elasticsearch directly corresponds to the database table name
+      index: product               # Indicates the index of /index/type/id in Elasticsearch, not set will be generated from the database table name (t_some_one ==> some-one), greate version 6.0, index name must be lowercase
+      scheme: false                # Whether to generate the scheme of Elasticsearch based on the database table structure in advance, the default is true
       key-column: ["id"]           # key column, if null will query for table, Use this configuration when there are multiple columns of primary keys but you want to use only one column as the id of the data
       sql: select * from t_product # Custom sql statement(Do not use ORDER BY and LIMIT, it will be added automatically based on increment-column), no setting will automatically assemble from the database table
       limit: 200                   # The number of times to get from the database, the default is 500
-      mapping:                     # 「table column」:「es field」, no setting will be generated from the table field (c_some_type ==> someType)
+      mapping:                     # 「table column」:「Elasticsearch field」, no setting will be generated from the table field (c_some_type ==> someType)
         c_type: type
 #+END_SRC
 
@@ -66,3 +66,22 @@ nohup java -jar -Dspring.config.location=~/application.yml target/mysql2es.jar >
 
 log in ~/logs/mysql2es.log
 #+END_SRC
+
+
+** Comment
+
+The project will generate a scheme corresponding to index based on the table field at runtime，
+if you don't want to generate it automatically,
+please set it in Elasticsearch first and set this configuration to false).
+Then, the data is synchronized based on the timing rule.
+When synchronizing, the sql splicing increment field is used to obtain the paging data and write Elasticsearch in batches until there is no data.
+The value corresponding to the last increment field will be stored in the temporary file, which will be used in the next synchronization.
+
+PS:  \\
+If the amount of data is large, the first synchronization takes some time.
+Increasing the value of *count* and *limit* can increase the synchronization speed.
+Temporary files will be generated for each index, such as two indexes with ~product~ and ~order~,
+which will generate two temporary files ~/tmp/product~ and ~/tmp/order~.
+Windows in the ~C:\Users\current_user\AppData\Local\Temp~ directory,
+you can modify it by running ~-Djava.io.tmpdir=/path/to/tmpdir~ on the command line.
+If the temporary file is manually deleted, the full synchronization will be performed the next time it is run.
