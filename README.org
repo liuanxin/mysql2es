@@ -85,4 +85,5 @@ Temporary files will be generated for each index, such as two indexes with ~prod
 which will generate two temporary files ~/tmp/product~ and ~/tmp/order~.
 Windows in the ~C:\Users\current_user\AppData\Local\Temp~ directory,
 you can modify it by running ~-Djava.io.tmpdir=/path/to/tmpdir~ on the command line,
-If the temporary file is manually deleted, the next synchronization will be performed in full.
+If the temporary file corresponding to the index is manually deleted,
+the index will be fully manipulated the next time it is synchronized.
