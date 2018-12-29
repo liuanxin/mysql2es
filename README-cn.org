@@ -1,10 +1,10 @@
 
-** MariaDB/MySQL to es
+** MariaDB/MySQL to Elasticsearch
 
-  同步 MariaDB/MySQL 表的数据到 es 的精简版本, 只支持添加和更新, 不支持物理删除(物理删除需要根据 binlog 才能处理),
-  建议使用逻辑删除(业务系统使用逻辑删除本身就是一件很自然的事).
+  同步 MariaDB/MySQL 表的数据到 Elasticsearch 的精简版本, 只支持添加和更新, 不支持物理删除(物理删除需要根据 binlog 才能处理),
+  建议使用逻辑删除(业务系统使用逻辑删除本身就是一件很自然的事), 比如在表中添加 deleted(1 已删除, 默认是 0)字段.
 
-  基于 jdk 8 和 spring boot 2.0, 支持 es 6.3.2
+  基于 jdk 8 和 spring boot 2.0, 支持 Elasticsearch 6.3.2
 
 相关的配置如下:
 #+BEGIN_SRC yaml
@@ -13,20 +13,20 @@
 config:
   ip-port: ["127.0.0.1:9200"]      # 可以不设定, 默认是 127.0.0.1:9200
   cron: 0/5 * * * * *              # 可以不设定, 默认是每分钟执行一次
-  count: 400                       # 可以不设定, 默认是 1000, 一次往 es 操作数据的批量条数
+  count: 400                       # 可以不设定, 默认是 1000, 一次往 Elasticsearch 操作数据的批量条数
 
   relation:
     -
-      table: t_product             # *** 必须设定且要有主键. 主键会生成 es 中 /index/type/id 的 id, 如果是多列主键会用 "-" 拼接
+      table: t_product             # *** 必须设定且要有主键. 主键会生成 Elasticsearch 中 /index/type/id 的 id, 如果是多列主键会用 "-" 拼接
       increment-column: ["id"]     # *** 必须设定. 表示用来做数据增量操作时用, 一般使用自增 id 或 updateTime(更新时间戳)
 
-      # 6.0 开始, type 默认是 _doc, es 中的 index 直接对应数据库表名
-      index: product               # 表示 es 中 /index/type/id 的 index, 不设定将会从数据库表名生成(t_some_one ==> some-one), 6.0 开始 index name 必须是小写
-      scheme: false                # 是否事先基于 数据库表结构 生成 es 的 scheme, 默认是 true
+      # 6.0 开始, type 默认是 _doc, Elasticsearch 中的 index 直接对应数据库表名
+      index: product               # 表示 Elasticsearch 中 /index/type/id 的 index, 不设定将会从数据库表名生成(t_some_one ==> some-one), 6.0 开始 index name 必须是小写
+      scheme: false                # 是否事先基于 数据库表结构 生成 Elasticsearch 的 scheme, 默认是 true
       key-column: ["id"]           # 主键列, 如果不设置将会自动从表获取, 当有多列主键但是想只使用一个列来做为数据的 id 时使用此配置
       sql: select * from t_product # 自定义的 sql 语句(不要用 ORDER BY 和 LIMIT, 会基于 increment-column 自动添加), 不设定将会自动从数据库表拼装
       limit: 200                   # 一次从数据库获取的条数, 默认是 500
-      mapping:                     # 「table column」:「es field」, 默认将会从表字段生成(c_some_type ==> someType), 只设置特殊情况即可
+      mapping:                     # 「table column」:「Elasticsearch field」, 默认将会从表字段生成(c_some_type ==> someType), 只设置特殊情况即可
         c_type: type
 #+END_SRC
 
@@ -61,3 +61,16 @@ nohup mvn -DskipTests -Dspring.config.location=~/application.yml spring-boot:run
 
 日志在 ~/logs/mysql2es.log 中
 #+END_SRC
+
+
+** 说明
+
+项目在运行时会基于表字段来生成对应 index 的 scheme(如果不想自动生成请先在 Elasticsearch 中设置好并设置此配置为 false),
+而后会基于定时规则来同步数据, 同步时基于 sql 拼接增量字段来获取分页数据并批量写入 Elasticsearch 直到没有数据为止,
+最后的增量字段对应的值会存入临时文件, 下次同步时会用到
+
+PS:
+如果数据量很大, 第一次同步会耗费一点时间. 调整 *count* 和 *limit* 的值可以提升同步速度.
+临时文件会每个索引生成一个, 比如有 ~product~ 和 ~order~ 这样两个索引, 会生成两个临时文件 ~/tmp/product~ 和 ~/tmp/order~,
+windows 在 ~C:\Users\current_user\AppData\Local\Temp~ 目录下, 可以在运行的命令行加上 ~-Djava.io.tmpdir=/path/to/tmpdir~ 来修改，
+如果将临时文件手动删除, 下一次运行时将会进行全量同步
