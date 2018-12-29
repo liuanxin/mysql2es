@@ -67,7 +67,7 @@ nohup mvn -DskipTests -Dspring.config.location=~/application.yml spring-boot:run
 
 项目在运行时会基于表字段来生成对应 index 的 scheme(如果不想自动生成请先在 Elasticsearch 中建好并在 index 的配置中设置 scheme 为 false),
 而后会基于定时规则来同步数据, 同步时基于 sql 拼接增量字段来获取分页数据并批量写入 Elasticsearch 直到没有数据为止,
-最后的增量字段对应的值会存入临时文件, 下次同步时会用到
+最后的增量字段对应的值会存入临时文件(每个索引都是异步去同步数据的, 并不是顺序的先同步一个再同步下一个), 下次同步时会用到
 
 PS:  \\
 如果数据量很大, 第一次同步会耗费一点时间. 调整 *count* 和 *limit* 的值可以提升同步速度.
