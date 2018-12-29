@@ -69,7 +69,7 @@ nohup mvn -DskipTests -Dspring.config.location=~/application.yml spring-boot:run
 而后会基于定时规则来同步数据, 同步时基于 sql 拼接增量字段来获取分页数据并批量写入 Elasticsearch 直到没有数据为止,
 最后的增量字段对应的值会存入临时文件, 下次同步时会用到
 
-PS:
+PS:  \\
 如果数据量很大, 第一次同步会耗费一点时间. 调整 *count* 和 *limit* 的值可以提升同步速度.
 临时文件会每个索引生成一个, 比如有 ~product~ 和 ~order~ 这样两个索引, 会生成两个临时文件 ~/tmp/product~ 和 ~/tmp/order~,
 windows 在 ~C:\Users\current_user\AppData\Local\Temp~ 目录下, 可以在运行的命令行加上 ~-Djava.io.tmpdir=/path/to/tmpdir~ 来修改，
