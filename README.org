@@ -52,6 +52,7 @@ for example:  0/5 * * * * *  means that it runs every 5 seconds
 ** Run
 #+BEGIN_SRC conf
 git clone https://github.com/liuanxin/mysql2es.git
+cd mysql2es
 
 
 change application-prod.yml to your setting
