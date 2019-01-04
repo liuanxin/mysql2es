@@ -48,7 +48,7 @@ cron 的说明如下
 ** 运行
 #+BEGIN_SRC conf
 git clone https://github.com/liuanxin/mysql2es.git
-
+cd mysql2es
 
 更改 application-prod.yml 成你自己的配置
 mvn clean package -DskipTests
