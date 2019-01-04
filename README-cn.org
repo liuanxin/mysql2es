@@ -51,12 +51,14 @@ git clone https://github.com/liuanxin/mysql2es.git
 
 
 更改 application-prod.yml 成你自己的配置
-nohup mvn -DskipTests -Dspring.profiles.active=prod spring-boot:run >/dev/null 2>&1 &
+mvn clean package -DskipTests
+nohup java -jar -Dspring.profiles.active=prod target/mysql2es.jar >/dev/null 2>&1 &
 
 或者
 
-添加你的配置文件 ~/application.yml
-nohup mvn -DskipTests -Dspring.config.location=~/application.yml spring-boot:run >/dev/null 2>&1 &
+添加你的配置文件: ~/application.yml
+mvn clean package -DskipTests
+nohup java -jar -Dspring.config.location=~/application.yml target/mysql2es.jar >/dev/null 2>&1 &
 
 
 日志在 ~/logs/mysql2es.log 中
