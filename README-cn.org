@@ -1,4 +1,6 @@
 
+[[README.org][English Readme]]
+
 ** MariaDB/MySQL to Elasticsearch
 
   同步 MariaDB/MySQL 表的数据到 Elasticsearch 的精简版本, 只支持添加和更新, 不支持物理删除(物理删除需要根据 binlog 才能处理),
