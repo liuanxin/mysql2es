@@ -1,4 +1,6 @@
 
+[[README.org][English Readme]]
+
 ** MariaDB/MySQL to Elasticsearch
 
   同步 MariaDB/MySQL 表的数据到 Elasticsearch 的精简版本, 只支持添加和更新, 不支持物理删除(物理删除需要根据 binlog 才能处理),
@@ -48,15 +50,17 @@ cron 的说明如下
 ** 运行
 #+BEGIN_SRC conf
 git clone https://github.com/liuanxin/mysql2es.git
-
+cd mysql2es
 
 更改 application-prod.yml 成你自己的配置
-nohup mvn -DskipTests -Dspring.profiles.active=prod spring-boot:run >/dev/null 2>&1 &
+mvn clean package -DskipTests
+nohup java -jar -Dspring.profiles.active=prod target/mysql2es.jar >/dev/null 2>&1 &
 
 或者
 
-添加你的配置文件 ~/application.yml
-nohup mvn -DskipTests -Dspring.config.location=~/application.yml spring-boot:run >/dev/null 2>&1 &
+添加你的配置文件: ~/application.yml
+mvn clean package -DskipTests
+nohup java -jar -Dspring.config.location=~/application.yml target/mysql2es.jar >/dev/null 2>&1 &
 
 
 日志在 ~/logs/mysql2es.log 中
@@ -65,7 +69,7 @@ nohup mvn -DskipTests -Dspring.config.location=~/application.yml spring-boot:run
 
 ** 说明
 
-项目在运行时会基于表字段来生成对应 index 的 scheme(如果不想自动生成请先在 Elasticsearch 中建好并在 index 的配置中设置 scheme 为 false),
+项目在运行时会基于表字段来生成对应 index 的 scheme(如果不想自动生成请先在 Elasticsearch 中建好并在 index 的配置中设置 *scheme* 为 false),
 而后会基于定时规则来同步数据, 同步时基于 sql 拼接增量字段来获取分页数据并批量写入 Elasticsearch 直到没有数据为止,
 最后的增量字段对应的值会存入临时文件(每个索引都是异步去同步数据的, 并不是顺序的先同步一个再同步下一个),
 下次同步时会用到(如果到了下次运行时间但上次还没有运行结束将会顺延).
