@@ -144,8 +144,8 @@ public class EsRepository {
         } else {
             PutMappingRequest request = new PutMappingRequest(index).type(type).source(source, XContentType.JSON);
             boolean ack = indices.putMapping(request).isAcknowledged();
-            if (Logs.ROOT_LOG.isDebugEnabled()) {
-                Logs.ROOT_LOG.debug("put ({}/{}) mapping: {}", index, type, ack);
+            if (Logs.ROOT_LOG.isInfoEnabled()) {
+                Logs.ROOT_LOG.info("put ({}/{}) mapping: {}", index, type, ack);
             }
             return ack;
         }
@@ -165,8 +165,8 @@ public class EsRepository {
             }
             try {
                 BulkResponse bulk = client.bulk(batchRequest);
-                if (Logs.ROOT_LOG.isDebugEnabled()) {
-                    Logs.ROOT_LOG.debug("batch(" + bulk.getItems().length + ") success");
+                if (Logs.ROOT_LOG.isInfoEnabled()) {
+                    Logs.ROOT_LOG.info("batch(" + bulk.getItems().length + ") success");
                 }
             } catch (IOException e) {
                 // <= 6.3.1 version, suggest field if empty will throw IAE(write is good)
