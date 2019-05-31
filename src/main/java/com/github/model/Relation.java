@@ -117,21 +117,18 @@ public class Relation {
     public String countSql(String param) {
         String count = "SELECT COUNT(*) FROM ";
 
-        StringBuilder querySql = new StringBuilder();
+        StringBuilder sbd = new StringBuilder();
         if (U.isNotBlank(sql)) {
-            querySql.append(sql.trim().replaceFirst("(?i)SELECT (.*?) FROM ", count));
+            // ignore case, dot can match all(include wrap tab)
+            sbd.append(sql.trim().replaceFirst("(?is)SELECT (.*?) FROM ", count));
         } else {
-            querySql.append(count).append("`").append(table).append("`");
+            sbd.append(count).append("`").append(table).append("`");
         }
-        appendWhere(param, querySql);
-        return querySql.toString();
+        appendWhere(param, sbd);
+        return sbd.toString();
     }
 
-    private String sqlData(Object obj) {
-        return U.isNumber(obj.toString()) ? obj.toString() : ("'" + obj + "'");
-    }
-
-    private void appendWhere(String param, StringBuilder querySql) {
+    private void appendWhere(String param, StringBuilder sbd) {
         // param split length = increment column size
         if (U.isNotBlank(param)) {
             String[] params = param.split(U.SPLIT);
@@ -143,46 +140,52 @@ public class Relation {
                 String and = " AND ";
                 String where = " WHERE ";
 
-                boolean flag = querySql.toString().toUpperCase().contains(where);
+                boolean flag = sbd.toString().toUpperCase().contains(where);
                 if (flag) {
-                    querySql.append(and).append("( ");
+                    sbd.append(and).append("( ");
                 } else {
-                    querySql.append(where);
+                    sbd.append(where);
                 }
                 for (int i = 0; i < incrementColumn.size(); i++) {
                     String tmp = params[i];
                     if (U.isNotBlank(tmp)) {
-                        // gte(>=) will query for duplicate data, but will not miss, exclude by the following conditions
-                        querySql.append(incrementColumn.get(i)).append(" >= ").append(sqlData(tmp)).append(and);
+                        // number use gt(>), else use gte(>=). gte will query for duplicate data, but will not miss
+                        sbd.append(incrementColumn.get(i));
+                        if (U.isNumber(tmp)) {
+                            sbd.append(" > ").append(tmp);
+                        } else {
+                            sbd.append(" >= ").append("'").append(tmp).append("'");
+                        }
+                        sbd.append(and);
                     }
                 }
-                if (querySql.toString().endsWith(and)) {
-                    querySql.delete(querySql.length() - and.length(), querySql.length());
+                if (sbd.toString().endsWith(and)) {
+                    sbd.delete(sbd.length() - and.length(), sbd.length());
                 }
                 if (flag) {
-                    querySql.append(" )");
+                    sbd.append(" )");
                 }
             }
         }
     }
 
     public String querySql(int page, String param) {
-        StringBuilder querySql = new StringBuilder();
+        StringBuilder sbd = new StringBuilder();
         if (U.isNotBlank(sql)) {
-            querySql.append(sql.trim());
+            sbd.append(sql.trim());
         } else {
-            querySql.append("SELECT * FROM `").append(table).append("`");
+            sbd.append("SELECT * FROM `").append(table).append("`");
         }
         // param split length = increment column size
-        appendWhere(param, querySql);
-        querySql.append(" ORDER BY");
+        appendWhere(param, sbd);
+        sbd.append(" ORDER BY");
         for (String column : incrementColumn) {
-            querySql.append(" ").append(column).append(" ASC,");
+            sbd.append(" ").append(column).append(" ASC,");
         }
-        if (querySql.toString().endsWith(",")) {
-            querySql.delete(querySql.length() - 1, querySql.length());
+        if (sbd.toString().endsWith(",")) {
+            sbd.delete(sbd.length() - 1, sbd.length());
         }
-        querySql.append(" LIMIT ").append(page * limit).append(", ").append(limit);
-        return querySql.toString();
+        sbd.append(" LIMIT ").append(page * limit).append(", ").append(limit);
+        return sbd.toString();
     }
 }
