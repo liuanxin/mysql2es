@@ -69,18 +69,8 @@ public class Config {
      */
     private List<Relation> relation;
 
-    private static final int MAX_COUNT = 1000;
-    /** Total number of single operations */
-    private Integer count = MAX_COUNT;
-
     public void check() {
         U.assertException(A.isEmpty(relation), "must set [db es] relation");
-        if (U.isNotBlank(count)) {
-            U.assert0(count, "Total number of single operations must greater 0");
-            if (count > MAX_COUNT) {
-                count = MAX_COUNT;
-            }
-        }
         for (Relation r : relation) {
             r.check();
         }

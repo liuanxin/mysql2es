@@ -1,7 +1,6 @@
 package com.github.model;
 
 import com.github.util.A;
-import com.github.util.Logs;
 import com.github.util.U;
 import lombok.Getter;
 import lombok.Setter;
@@ -13,16 +12,19 @@ import java.util.Map;
 @Setter
 public class Relation {
 
+    private static final String GT = " > ";
+    private static final String EQUALS = " = ";
+
     /** database table name */
     private String table;
 
     /** The field name for the increment in the table */
-    private List<String> incrementColumn;
+    private String incrementColumn;
 
     // above two properties must be set, the following don't need.
 
     /** The field name for the increment in the table, if nil use incrementColumn */
-    private List<String> incrementColumnAlias;
+    private String incrementColumnAlias;
 
     /** es index <==> database table name. it not, will generate by table name(t_some_one ==> someOne) */
     private String index;
@@ -56,17 +58,10 @@ public class Relation {
 
     void check() {
         U.assertNil(table, "must set (db table name)");
-        if (A.isEmpty(incrementColumn)) {
-            U.assertException("must set (db table increment-column)");
-        }
-        if (incrementColumn.size() > 0) {
-            if (A.isNotEmpty(incrementColumnAlias)) {
-                if (incrementColumn.size() != incrementColumnAlias.size()) {
-                    U.assertException("increment-column length must equals increment-column-alias length");
-                }
-            } else {
-                incrementColumnAlias = incrementColumn;
-            }
+        U.assertNil(incrementColumn, "must set (db table increment-column)");
+
+        if (U.isBlank(incrementColumnAlias)) {
+            incrementColumnAlias = incrementColumn;
         }
         if (U.isNotBlank(limit)) {
             U.assert0(limit, "limit must greater 0");
@@ -108,7 +103,23 @@ public class Relation {
 
     /** generate desc sql */
     public String descSql() {
-        return String.format("DESC `%s`", table);
+        return String.format("DESC %s", table);
+    }
+
+    public String countSql(String param) {
+        return countSql(GT, param);
+    }
+    public String querySql(String param) {
+        return querySql(GT, param, 0);
+    }
+
+    // if use ... time > '2010-01-01 01:00:00', query: select count(*) ... time = '2010-01-01 01:00:00'
+
+    public String equalsCountSql(String param) {
+        return countSql(EQUALS, param);
+    }
+    public String equalsQuerySql(String param, int page) {
+        return querySql(EQUALS, param, page);
     }
 
     public int loopCount(int count) {
@@ -119,78 +130,58 @@ public class Relation {
         return loop;
     }
 
-    public String countSql(String param) {
+    private String countSql(String operate, String param) {
         String count = "SELECT COUNT(*) FROM ";
 
         StringBuilder sbd = new StringBuilder();
         if (U.isNotBlank(sql)) {
-            // ignore case, dot can match all(include wrap tab)
+            // ignore case, dot(.) can match all(include wrap tab)
             sbd.append(sql.trim().replaceFirst("(?is)SELECT (.*?) FROM ", count));
         } else {
-            sbd.append(count).append("`").append(table).append("`");
+            sbd.append(count).append(table);
         }
-        appendWhere(param, sbd);
+        appendWhere(operate, param, sbd);
         return sbd.toString();
     }
-
-    private void appendWhere(String param, StringBuilder sbd) {
+    private void appendWhere(String operate, String param, StringBuilder sbd) {
         // param split length = increment column size
         if (U.isNotBlank(param)) {
-            String[] params = param.split(U.SPLIT);
-            if (incrementColumn.size() != params.length) {
-                if (Logs.ROOT_LOG.isErrorEnabled()) {
-                    Logs.ROOT_LOG.error("increment ({}) != param ({})", A.toStr(incrementColumn), param);
-                }
-            } else {
-                String and = " AND ";
-                String where = " WHERE ";
+            String where = " WHERE ";
 
-                boolean flag = sbd.toString().toUpperCase().contains(where);
-                if (flag) {
-                    sbd.append(and).append("( ");
-                } else {
-                    sbd.append(where);
-                }
-                for (int i = 0; i < incrementColumn.size(); i++) {
-                    String tmp = params[i];
-                    if (U.isNotBlank(tmp)) {
-                        // number use gt(>), else use gte(>=). gte will query for duplicate data, but will not miss
-                        sbd.append(incrementColumn.get(i));
-                        if (U.isNumber(tmp)) {
-                            sbd.append(" > ").append(tmp);
-                        } else {
-                            sbd.append(" >= ").append("'").append(tmp).append("'");
-                        }
-                        sbd.append(and);
-                    }
-                }
-                if (sbd.toString().endsWith(and)) {
-                    sbd.delete(sbd.length() - and.length(), sbd.length());
-                }
-                if (flag) {
-                    sbd.append(" )");
-                }
+            boolean containsWhere = sbd.toString().toUpperCase().contains(where);
+            if (containsWhere) {
+                sbd.append(" AND ").append("( ");
+            } else {
+                sbd.append(where);
+            }
+            sbd.append(incrementColumn).append(operate);
+            if (U.isNumber(param)) {
+                sbd.append(param);
+            } else {
+                sbd.append("'").append(param).append("'");
+            }
+
+            if (containsWhere) {
+                sbd.append(" )");
             }
         }
     }
-
-    public String querySql(int page, String param) {
+    private String querySql(String operate, String param, int page) {
         StringBuilder sbd = new StringBuilder();
         if (U.isNotBlank(sql)) {
             sbd.append(sql.trim());
         } else {
-            sbd.append("SELECT * FROM `").append(table).append("`");
+            sbd.append("SELECT * FROM ").append(table);
         }
-        // param split length = increment column size
-        appendWhere(param, sbd);
-        sbd.append(" ORDER BY");
-        for (String column : incrementColumn) {
-            sbd.append(" ").append(column).append(" ASC,");
+        appendWhere(operate, param, sbd);
+        if (!EQUALS.equals(operate)) {
+            sbd.append(" ORDER BY ").append(incrementColumn);
         }
-        if (sbd.toString().endsWith(",")) {
-            sbd.delete(sbd.length() - 1, sbd.length());
+        sbd.append(" LIMIT ");
+        if (U.greater0(page)) {
+            sbd.append(page * limit).append(", ");
         }
-        sbd.append(" LIMIT ").append(page * limit).append(", ").append(limit);
+        sbd.append(limit);
         return sbd.toString();
     }
 }

@@ -98,90 +98,84 @@ public class DataRepository {
     private void saveData(Relation relation) {
         String index = relation.useIndex();
         String type = relation.getType();
+
+        String tmpColumnValue = Files.read(index, type);
+        // select count(*) from ... where increment > xxx
+        String countSql = relation.countSql(tmpColumnValue);
+        long start = System.currentTimeMillis();
+        Integer count = A.first(jdbcTemplate.queryForList(countSql, Integer.class));
+        if (Logs.ROOT_LOG.isInfoEnabled()) {
+            Logs.ROOT_LOG.info("count sql({}) execute({}), return({})",
+                    countSql, (System.currentTimeMillis() - start + "ms"), count);
+        }
+        if (U.less0(count)) {
+            return;
+        }
+
         for (;;) {
-            String tmpColumnValue = Files.read(index, type);
-            long start = System.currentTimeMillis();
-            String countSql = relation.countSql(tmpColumnValue);
-            Integer count = A.first(jdbcTemplate.queryForList(countSql, Integer.class));
+            // select ... from ... where increment > xxx order by increment limit 1000
+            String sql = relation.querySql(tmpColumnValue);
+            start = System.currentTimeMillis();
+            List<Map<String, Object>> dataList = jdbcTemplate.queryForList(sql);
             if (Logs.ROOT_LOG.isInfoEnabled()) {
-                Logs.ROOT_LOG.info("count sql({}) execute({}), return({})",
-                        countSql, (System.currentTimeMillis() - start + "ms"), count);
+                Logs.ROOT_LOG.info("sql({}) execute({})", sql, (System.currentTimeMillis() - start + "ms"));
             }
-            if (U.less0(count)) {
+            esRepository.saveDataToEs(index, type, fixDocument(relation, dataList));
+            tmpColumnValue = getLast(relation, dataList);
+            if (U.isBlank(tmpColumnValue)) {
                 return;
-            } else {
-                Map<String, String> documents = Maps.newHashMap();
-                List<Map<String, Object>> dataList = null;
+            }
 
-                int loopCount = relation.loopCount(count);
-                int writeCount = 0;
-                for (int i = 0; i < loopCount; i++) {
+            // handle increment = xxx, If the time field is synchronized, and the same data in the same second is a lot of time
+            // select count(*) from ... where increment = xxx limit 1000
+            String equalsCountSql = relation.equalsCountSql(tmpColumnValue);
+            start = System.currentTimeMillis();
+            Integer equalsCount = A.first(jdbcTemplate.queryForList(equalsCountSql, Integer.class));
+            if (Logs.ROOT_LOG.isInfoEnabled()) {
+                Logs.ROOT_LOG.info("count equals sql({}) execute({}), return({})",
+                        equalsCountSql, (System.currentTimeMillis() - start + "ms"), count);
+            }
+
+            if (U.greater0(equalsCount)) {
+                int equalsLoopCount = relation.loopCount(equalsCount);
+                for (int i = 0; i < equalsLoopCount; i++) {
+                    // select ... from ... where increment = xxx limit   0,1000|1000,1000|2000,1000| ...
+                    String equalsSql = relation.equalsQuerySql(tmpColumnValue, i);
                     start = System.currentTimeMillis();
-                    String sql = relation.querySql(i, tmpColumnValue);
-                    dataList = jdbcTemplate.queryForList(sql);
+                    List<Map<String, Object>> equalsColumnDataList = jdbcTemplate.queryForList(equalsSql);
                     if (Logs.ROOT_LOG.isInfoEnabled()) {
-                        Logs.ROOT_LOG.info("sql({}) execute({})", sql, (System.currentTimeMillis() - start + "ms"));
+                        Logs.ROOT_LOG.info("equals sql({}) execute({})",
+                                equalsSql, (System.currentTimeMillis() - start + "ms"));
                     }
-
-                    documents.putAll(fixDocument(relation, dataList));
-                    // batch insert
-                    if (documents.size() >= config.getCount()) {
-                        esRepository.saveDataToEs(index, type, documents);
-                        documents.clear();
-                        writeCount += 1;
-
-                        // save count * 20 data to es, then write last in temp file
-                        if (writeCount % 20 == 0) {
-                            String last = getLast(relation, dataList);
-                            if (U.isNotBlank(last)) {
-                                Files.write(index, type, last);
-                            }
-                        }
-                    }
+                    esRepository.saveDataToEs(index, type, fixDocument(relation, equalsColumnDataList));
                 }
+            }
+            // write last record in temp file
+            Files.write(relation.getIndex(), relation.getType(), tmpColumnValue);
 
-                // save last data
-                if (A.isNotEmpty(documents)) {
-                    esRepository.saveDataToEs(index, type, documents);
-
-                    // write last in temp file
-                    String last = getLast(relation, dataList);
-                    if (U.isNotBlank(last)) {
-                        Files.write(index, type, last);
-                    }
-                }
-
-                if (count < relation.getLimit()) {
-                    return;
-                }
+            // if sql: limit 1000, query data size 900, Can return
+            if (dataList.size() < relation.getLimit()) {
+                return;
             }
         }
     }
-    /** return last record */
+    /** write last record in temp file */
     private String getLast(Relation relation, List<Map<String, Object>> dataList) {
         Map<String, Object> last = A.last(dataList);
-        if (A.isEmpty(last)) {
-            return U.EMPTY;
-        } else {
-            List<String> lastList = Lists.newArrayList();
-            for (String columnAlias : relation.getIncrementColumnAlias()) {
-                String obj = dataToStr(last.get(columnAlias));
-                if (U.isNotBlank(obj)) {
-                    lastList.add(obj);
+        if (A.isNotEmpty(last)) {
+            Object obj = last.get(relation.getIncrementColumnAlias());
+            if (U.isNotBlank(obj)) {
+                // if was Date return 'yyyy-MM-dd HH:mm:ss', else return toStr
+                String lastData;
+                if (obj instanceof Date) {
+                    lastData = Dates.format((Date) obj, Dates.Type.YYYY_MM_DD_HH_MM_SS);
+                } else {
+                    lastData = obj.toString();
                 }
+                return lastData;
             }
-            return A.toStr(lastList, U.SPLIT);
         }
-    }
-    private String dataToStr(Object obj) {
-        // if was Date return 'yyyy-MM-dd HH:mm:ss', else return toStr
-        if (U.isBlank(obj)) {
-            return null;
-        } else if (obj instanceof Date) {
-            return Dates.format((Date) obj, Dates.Type.YYYY_MM_DD_HH_MM_SS);
-        } else {
-            return obj.toString();
-        }
+        return null;
     }
     /** traverse the Database Result and organize into es Document */
     private Map<String, String> fixDocument(Relation relation, List<Map<String, Object>> dataList) {

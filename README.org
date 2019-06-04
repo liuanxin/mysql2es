@@ -17,7 +17,6 @@ The relevant configuration instructions are as follows:
 config:
   ip-port: ["127.0.0.1:9200"]      # the default is 127.0.0.1:9200
   cron: 0/5 * * * * *              # the default is to execute once per minute
-  count: 400                       # the default is 1000, the number of batches of data to Elasticsearch operation
 
   relation:
     -
@@ -82,7 +81,7 @@ which will be used in the next synchronization(If it is the next run time but th
 
 PS:  \\
 If the amount of data is large, the first synchronization takes some time.
-Increasing the value of *count* and *limit* can increase the synchronization speed.
+Increasing the value of *limit* can increase the synchronization speed.
 Temporary files will be generated for each index, such as two indexes with ~product~ and ~order~,
 which will generate two temporary files ~/tmp/product~ and ~/tmp/order~.
 Windows in the ~C:\Users\current_user\AppData\Local\Temp~ directory,
