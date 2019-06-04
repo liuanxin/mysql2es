@@ -2,14 +2,15 @@ package com.github.util;
 
 import com.google.common.collect.Maps;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /** util with array, list, map */
+@SuppressWarnings("unchecked")
 public final class A {
 
-    public static boolean isArray(Object obj) {
-        return (obj != null && obj.getClass().isArray());
-    }
     public static <T> boolean isEmpty(T[] array) {
         return array == null || array.length == 0;
     }
@@ -37,9 +38,6 @@ public final class A {
     public static <T> String toStr(Collection<T> collection, String split) {
         return toStr(collection.toArray(), split);
     }
-    public static String toStr(Object[] array) {
-        return toStr(array, ",");
-    }
     public static String toStr(Object[] array, String split) {
         if (isEmpty(array)) {
             return U.EMPTY;
@@ -55,11 +53,8 @@ public final class A {
         return sbd.toString();
     }
 
-    public static <K, V> HashMap<K, V> maps(Object... keysAndValues) {
-        return (HashMap<K, V>) maps(Maps.newHashMap(), keysAndValues);
-    }
-    @SuppressWarnings("unchecked")
-    private static <K, V> Map<K, V> maps(Map<K, V> result, Object... keysAndValues) {
+    public static <K, V> Map<K, V> maps(Object... keysAndValues) {
+        Map<K, V> result = Maps.newHashMap();
         if (isNotEmpty(keysAndValues)) {
             for (int i = 0; i < keysAndValues.length; i += 2) {
                 if (keysAndValues.length > (i + 1)) {
@@ -68,9 +63,6 @@ public final class A {
             }
         }
         return result;
-    }
-    public static <K, V> LinkedHashMap<K, V> linkedMaps(Object... keysAndValues) {
-        return (LinkedHashMap<K, V>) maps(Maps.newLinkedHashMap(), keysAndValues);
     }
 
     public static <T> T first(Collection<T> collection) {
