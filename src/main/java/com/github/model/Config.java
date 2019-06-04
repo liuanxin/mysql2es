@@ -2,6 +2,7 @@ package com.github.model;
 
 import com.github.util.A;
 import com.github.util.U;
+import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,7 +26,7 @@ import java.util.List;
 @Accessors(chain = true)
 public class Config {
 
-    private List<String> ipPort = A.lists("127.0.0.1:9200");
+    private List<String> ipPort = Lists.newArrayList("127.0.0.1:9200");
 
     /**
      * <pre>
@@ -39,7 +40,7 @@ public class Config {
      * *  *  *  *  *  *
      * </pre>
      *
-     * @see org.springframework.scheduling.support.CronSequenceGenerator#parse(java.lang.String)
+     * @see org.springframework.scheduling.support.CronSequenceGenerator#doParse(String[])
      */
     private String cron = "0 * * * * *"; // every minutes with default
 
