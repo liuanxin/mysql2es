@@ -97,8 +97,8 @@ public class DataRepository {
     }
     private void saveData(Relation relation) {
         String index = relation.useIndex();
+        String type = relation.getType();
         for (;;) {
-            String type = relation.getType();
             String tmpColumnValue = Files.read(index, type);
             Integer count = A.first(jdbcTemplate.queryForList(relation.countSql(tmpColumnValue), Integer.class));
             if (U.less0(count)) {
@@ -117,7 +117,7 @@ public class DataRepository {
                     if (documents.size() >= config.getCount()) {
                         esRepository.saveDataToEs(index, type, documents);
                         documents.clear();
-                        writeCount++;
+                        writeCount += 1;
 
                         // save count * 20 data to es, then write last in temp file
                         if (writeCount % 20 == 0) {
@@ -132,11 +132,12 @@ public class DataRepository {
                 // save last data
                 if (A.isNotEmpty(documents)) {
                     esRepository.saveDataToEs(index, type, documents);
-                }
-                // write last in temp file
-                String last = getLast(relation, dataList);
-                if (U.isNotBlank(last)) {
-                    Files.write(index, type, last);
+
+                    // write last in temp file
+                    String last = getLast(relation, dataList);
+                    if (U.isNotBlank(last)) {
+                        Files.write(index, type, last);
+                    }
                 }
 
                 if (count < relation.getLimit()) {
