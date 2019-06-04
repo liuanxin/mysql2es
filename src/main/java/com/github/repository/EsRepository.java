@@ -150,7 +150,7 @@ public class EsRepository {
         }
     }
 
-    public void saveDataToEs(String index, String type, Map<String, String> idDataMap) {
+    public boolean saveDataToEs(String index, String type, Map<String, String> idDataMap) {
         if (A.isNotEmpty(idDataMap)) {
             BulkRequest batchRequest = new BulkRequest();
             for (Map.Entry<String, String> entry : idDataMap.entrySet()) {
@@ -164,6 +164,7 @@ public class EsRepository {
                 if (Logs.ROOT_LOG.isInfoEnabled()) {
                     Logs.ROOT_LOG.info("index({}) type({}) batch({}) success", index, type, bulk.getItems().length);
                 }
+                return true;
             } catch (IOException e) {
                 // <= 6.3.1 version, suggest field if empty will throw IAE(write is good)
                 // org.elasticsearch.index.mapper.CompletionFieldMapper.parse(443)
@@ -173,5 +174,6 @@ public class EsRepository {
                 }
             }
         }
+        return false;
     }
 }

@@ -40,8 +40,8 @@ public class Relation {
     /** operate sql statement. if not, will generate by table name(select * from table_name) */
     private String sql;
 
-    /**  number of each operation. will append in sql(select ... limit 500) */
-    private Integer limit = 500;
+    /**  number of each operation. will append in sql(select ... limit 1000) */
+    private Integer limit = 1000;
 
     /** table column -> es field. if not, will generate by column(c_some_type ==> someType) */
     private Map<String, String> mapping;
@@ -52,6 +52,9 @@ public class Relation {
      * @see org.elasticsearch.client.support.AbstractClient#prepareIndex(String, String, String)
      */
     private List<String> keyColumn;
+
+    /** if want to ignore some column in SQL */
+    private List<String> ignoreColumns;
 
     private String idPrefix;
     private String idSuffix;
@@ -88,7 +91,7 @@ public class Relation {
 
     /** if not config the 「mapping」, generate from 「column name」 */
     public String useField(String column) {
-        if (U.isBlank(column)) {
+        if (U.isBlank(column) || ignoreColumns.contains(column)) {
             return U.EMPTY;
         }
 
