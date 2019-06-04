@@ -56,6 +56,17 @@ public class Relation {
     /** if want to ignore some column in SQL */
     private List<String> ignoreColumn;
 
+    /** when use time field to increment, need primary key to generate Page SQL */
+    private String primaryKey = "id";
+
+    /**
+     * when same time field's count(SELECT COUNT(*) FROM table WHERE time = 'xxx') >= this value, page sql will change
+     *
+     * old: SELECT a,b FROM table LIMIT 1000000,1000
+     * new: SELECT a,b FROM table c INNER JOIN (SELECT id FROM table WHERE time > 'xxx' LIMIT 1000000,1000) t on c.id = t.id
+     */
+    private Integer bigCountToSql = 5000;
+
     private String idPrefix;
     private String idSuffix;
 
@@ -122,7 +133,12 @@ public class Relation {
         return countSql(EQUALS, param);
     }
     public String equalsQuerySql(String param, int page) {
-        return querySql(EQUALS, param, page);
+        int pageStart = page * limit;
+        if (pageStart >= bigCountToSql) {
+            return querySql(EQUALS, param, pageStart);
+        } else {
+            return bigPageSql(param, pageStart);
+        }
     }
 
     public int loopCount(int count) {
@@ -169,7 +185,7 @@ public class Relation {
             }
         }
     }
-    private String querySql(String operate, String param, int page) {
+    private String querySql(String operate, String param, int pageStart) {
         StringBuilder sbd = new StringBuilder();
         if (U.isNotBlank(sql)) {
             sbd.append(sql.trim());
@@ -181,10 +197,30 @@ public class Relation {
             sbd.append(" ORDER BY ").append(incrementColumn);
         }
         sbd.append(" LIMIT ");
-        if (U.greater0(page)) {
-            sbd.append(page * limit).append(", ");
+        if (U.greater0(pageStart)) {
+            sbd.append(pageStart).append(", ");
         }
         sbd.append(limit);
+        return sbd.toString();
+    }
+    private String bigPageSql(String param, int pageStart) {
+        StringBuilder sbd = new StringBuilder();
+        if (U.isNotBlank(sql)) {
+            sbd.append(sql.trim());
+        } else {
+            sbd.append("SELECT * FROM ").append(table);
+        }
+        sbd.append(" as CUR");
+        sbd.append(" INNER JOIN ( SELECT ").append(primaryKey);
+        sbd.append(" FROM").append(table);
+        sbd.append(" WHERE ").append(incrementColumn).append(" > ");
+        if (U.isNumber(param)) {
+            sbd.append(param);
+        } else {
+            sbd.append("'").append(param).append("'");
+        }
+        sbd.append(" LIMIT ").append(pageStart).append(", ").append(limit);
+        sbd.append(" ) TMP on CUR.").append(primaryKey).append(" = TMP.").append(primaryKey);
         return sbd.toString();
     }
 }
