@@ -21,7 +21,7 @@ config:
   relation:
     -
       table: t_product             # *** Must be set and have a primary key. The primary key will generate the id of /index/type/id in Elasticsearch, if has multi primary key, id where append with "-"
-      increment-column: ["id"]     # *** Must be set. Indicates that it is used for data increment operations, using increment `id` or `update_time`
+      increment-column: "id"       # *** Must be set. Indicates that it is used for data increment operations, using increment `id` or `update_time`
 
       # Starting with Elasticsearch 6.0, type defaults to _doc, and the index in Elasticsearch directly corresponds to the database table name
       index: product               # Indicates the index of /index/type/id in Elasticsearch, not set will be generated from the database table name (t_some_one ==> some-one), greate version 6.0, index name must be lowercase

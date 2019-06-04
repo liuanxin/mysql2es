@@ -99,9 +99,9 @@ public class DataRepository {
         String index = relation.useIndex();
         String type = relation.getType();
 
-        String tmpColumnValue = Files.read(index, type);
+        String tempColumnValue = Files.read(index, type);
         // select count(*) from ... where increment > xxx
-        String countSql = relation.countSql(tmpColumnValue);
+        String countSql = relation.countSql(tempColumnValue);
         long start = System.currentTimeMillis();
         Integer count = A.first(jdbcTemplate.queryForList(countSql, Integer.class));
         if (Logs.ROOT_LOG.isInfoEnabled()) {
@@ -114,21 +114,24 @@ public class DataRepository {
 
         for (;;) {
             // select ... from ... where increment > xxx order by increment limit 1000
-            String sql = relation.querySql(tmpColumnValue);
+            String sql = relation.querySql(tempColumnValue);
             start = System.currentTimeMillis();
             List<Map<String, Object>> dataList = jdbcTemplate.queryForList(sql);
             if (Logs.ROOT_LOG.isInfoEnabled()) {
                 Logs.ROOT_LOG.info("sql({}) execute({})", sql, (System.currentTimeMillis() - start + "ms"));
             }
-            esRepository.saveDataToEs(index, type, fixDocument(relation, dataList));
-            tmpColumnValue = getLast(relation, dataList);
-            if (U.isBlank(tmpColumnValue)) {
+            boolean flag = esRepository.saveDataToEs(index, type, fixDocument(relation, dataList));
+            if (!flag) {
+                return;
+            }
+            tempColumnValue = getLast(relation, dataList);
+            if (U.isBlank(tempColumnValue)) {
                 return;
             }
 
             // handle increment = xxx, If the time field is synchronized, and the same data in the same second is a lot of time
             // select count(*) from ... where increment = xxx limit 1000
-            String equalsCountSql = relation.equalsCountSql(tmpColumnValue);
+            String equalsCountSql = relation.equalsCountSql(tempColumnValue);
             start = System.currentTimeMillis();
             Integer equalsCount = A.first(jdbcTemplate.queryForList(equalsCountSql, Integer.class));
             if (Logs.ROOT_LOG.isInfoEnabled()) {
@@ -140,18 +143,21 @@ public class DataRepository {
                 int equalsLoopCount = relation.loopCount(equalsCount);
                 for (int i = 0; i < equalsLoopCount; i++) {
                     // select ... from ... where increment = xxx limit   0,1000|1000,1000|2000,1000| ...
-                    String equalsSql = relation.equalsQuerySql(tmpColumnValue, i);
+                    String equalsSql = relation.equalsQuerySql(tempColumnValue, i);
                     start = System.currentTimeMillis();
                     List<Map<String, Object>> equalsColumnDataList = jdbcTemplate.queryForList(equalsSql);
                     if (Logs.ROOT_LOG.isInfoEnabled()) {
                         Logs.ROOT_LOG.info("equals sql({}) execute({})",
                                 equalsSql, (System.currentTimeMillis() - start + "ms"));
                     }
-                    esRepository.saveDataToEs(index, type, fixDocument(relation, equalsColumnDataList));
+                    flag = esRepository.saveDataToEs(index, type, fixDocument(relation, equalsColumnDataList));
+                    if (!flag) {
+                        return;
+                    }
                 }
             }
             // write last record in temp file
-            Files.write(relation.getIndex(), relation.getType(), tmpColumnValue);
+            Files.write(relation.getIndex(), relation.getType(), tempColumnValue);
 
             // if sql: limit 1000, query data size 900, Can return
             if (dataList.size() < relation.getLimit()) {
