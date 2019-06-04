@@ -1,7 +1,6 @@
 package com.github.repository;
 
 import com.github.model.Config;
-import com.github.model.Document;
 import com.github.model.Scheme;
 import com.github.util.A;
 import com.github.util.Jsons;
@@ -151,29 +150,26 @@ public class EsRepository {
         }
     }
 
-    public void saveDataToEs(List<Document> documents) {
-        if (A.isNotEmpty(documents)) {
+    public void saveDataToEs(String index, String type, Map<String, String> idDataMap) {
+        if (A.isNotEmpty(idDataMap)) {
             BulkRequest batchRequest = new BulkRequest();
-            for (Document doc : documents) {
-                String id = doc.getId();
-                String source = Jsons.toJson(doc.getData());
+            for (Map.Entry<String, String> entry : idDataMap.entrySet()) {
+                String id = entry.getKey(), source = entry.getValue();
                 if (U.isNotBlank(id) && U.isNotBlank(source)) {
-                    String index = doc.getIndex();
-                    String type = doc.getType();
                     batchRequest.add(new IndexRequest(index, type, id).source(source, XContentType.JSON));
                 }
             }
             try {
                 BulkResponse bulk = client.bulk(batchRequest);
                 if (Logs.ROOT_LOG.isInfoEnabled()) {
-                    Logs.ROOT_LOG.info("batch(" + bulk.getItems().length + ") success");
+                    Logs.ROOT_LOG.info("index({}) type({}) batch({}) success", index, type, bulk.getItems().length);
                 }
             } catch (IOException e) {
                 // <= 6.3.1 version, suggest field if empty will throw IAE(write is good)
                 // org.elasticsearch.index.mapper.CompletionFieldMapper.parse(443)
                 // https://github.com/elastic/elasticsearch/pull/30713/files
                 if (Logs.ROOT_LOG.isErrorEnabled()) {
-                    Logs.ROOT_LOG.error("create or update data es exception", e);
+                    Logs.ROOT_LOG.error(String.format("create or update index(%s) type(%s) es exception", index, type), e);
                 }
             }
         }

@@ -1,5 +1,7 @@
 package com.github.util;
 
+import com.google.common.collect.Maps;
+
 import java.util.*;
 
 /** util with array, list, map */
@@ -53,34 +55,8 @@ public final class A {
         return sbd.toString();
     }
 
-    @SuppressWarnings("unchecked")
-    public static <T> List<T> lists(T... values) {
-        return new ArrayList<T>(java.util.Arrays.asList(values));
-    }
-    @SuppressWarnings("unchecked")
-    public static <T> List<T> linkedLists(T... values) {
-        return new LinkedList<T>(java.util.Arrays.asList(values));
-    }
-
-    @SuppressWarnings("unchecked")
-    public static <T> Set<T> sets(T... sets) {
-        return new HashSet<T>(java.util.Arrays.asList(sets));
-    }
-    @SuppressWarnings("unchecked")
-    public static <T> Set<T> linkedSets(T... sets) {
-        return new LinkedHashSet<T>(java.util.Arrays.asList(sets));
-    }
-
-    public static <K, V> HashMap<K, V> newHashMap() {
-        return new HashMap<K, V>();
-    }
-    public static <K, V> HashMap<K, V> newLinkedHashMap() {
-        return new LinkedHashMap<K, V>();
-    }
-
-    @SuppressWarnings("unchecked")
     public static <K, V> HashMap<K, V> maps(Object... keysAndValues) {
-        return (HashMap<K, V>) maps(newHashMap(), keysAndValues);
+        return (HashMap<K, V>) maps(Maps.newHashMap(), keysAndValues);
     }
     @SuppressWarnings("unchecked")
     private static <K, V> Map<K, V> maps(Map<K, V> result, Object... keysAndValues) {
@@ -93,9 +69,8 @@ public final class A {
         }
         return result;
     }
-    @SuppressWarnings("unchecked")
     public static <K, V> LinkedHashMap<K, V> linkedMaps(Object... keysAndValues) {
-        return (LinkedHashMap<K, V>) maps(newLinkedHashMap(), keysAndValues);
+        return (LinkedHashMap<K, V>) maps(Maps.newLinkedHashMap(), keysAndValues);
     }
 
     public static <T> T first(Collection<T> collection) {
