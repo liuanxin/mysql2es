@@ -15,7 +15,6 @@
 config:
   ip-port: ["127.0.0.1:9200"]      # 可以不设定, 默认是 127.0.0.1:9200
   cron: 0/5 * * * * *              # 可以不设定, 默认是每分钟执行一次
-  count: 400                       # 可以不设定, 默认是 1000, 一次往 Elasticsearch 操作数据的批量条数
 
   relation:
     -
@@ -75,7 +74,7 @@ nohup java -jar -Dspring.config.location=~/application.yml target/mysql2es.jar >
 下次同步时会用到(如果到了下次运行时间但上次还没有运行结束将会顺延).
 
 PS:  \\
-如果数据量很大, 第一次同步会耗费一点时间. 调整 *count* 和 *limit* 的值可以提升同步速度.
+如果数据量很大, 第一次同步会耗费一点时间. 调整 *limit* 的值可以提升同步速度.
 临时文件会每个索引生成一个, 比如有 ~product~ 和 ~order~ 这样两个索引, 会生成两个临时文件 ~/tmp/product~ 和 ~/tmp/order~,
 windows 在 ~C:\Users\current_user\AppData\Local\Temp~ 目录下, 可以在运行的命令行加上 ~-Djava.io.tmpdir=/path/to/tmpdir~ 来修改,
 如果将索引对应的临时文件手动删除, 下一次同步时此索引将会进行全量操作.
