@@ -131,7 +131,7 @@ public class DataRepository {
 
             // handle increment = xxx, If the time field is synchronized, and the same data in the same second is a lot of time
             // select count(*) from ... where increment = 'xxx' limit 1000
-            if (U.isNumber(tempColumnValue)) {
+            if (U.isNotNumber(tempColumnValue)) {
                 String equalsCountSql = relation.equalsCountSql(tempColumnValue);
                 start = System.currentTimeMillis();
                 Integer equalsCount = A.first(jdbcTemplate.queryForList(equalsCountSql, Integer.class));
