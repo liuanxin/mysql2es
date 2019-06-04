@@ -57,26 +57,6 @@ public final class U {
             return false;
         }
     }
-    public static int toInt(Object obj) {
-        if (isBlank(obj)) {
-            return 0;
-        }
-        try {
-            return Integer.parseInt(obj.toString());
-        } catch (NumberFormatException e) {
-            return 0;
-        }
-    }
-    public static long toLong(Object obj) {
-        if (isBlank(obj)) {
-            return 0L;
-        }
-        try {
-            return Long.parseLong(obj.toString());
-        } catch (NumberFormatException e) {
-            return 0L;
-        }
-    }
     public static boolean greater0(Number obj) {
         return obj != null && obj.doubleValue() > 0;
     }
