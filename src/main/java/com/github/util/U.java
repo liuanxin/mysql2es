@@ -46,6 +46,9 @@ public final class U {
     }
 
 
+    public static boolean isNotNumber(Object obj) {
+        return !isNumber(obj);
+    }
     public static boolean isNumber(Object obj) {
         if (isBlank(obj)) {
             return false;
