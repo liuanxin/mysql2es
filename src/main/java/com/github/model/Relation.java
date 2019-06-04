@@ -91,7 +91,7 @@ public class Relation {
 
     /** if not config the 「mapping」, generate from 「column name」 */
     public String useField(String column) {
-        if (U.isBlank(column) || ignoreColumns.contains(column)) {
+        if (U.isBlank(column) || (A.isNotEmpty(ignoreColumns) && ignoreColumns.contains(column))) {
             return U.EMPTY;
         }
 
