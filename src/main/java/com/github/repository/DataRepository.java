@@ -99,7 +99,7 @@ public class DataRepository {
         String index = relation.useIndex();
         String type = relation.getType();
 
-        String tempColumnValue = Files.read(index, type);
+        String tempColumnValue = F.read(index, type);
         // select count(*) from ... where increment > xxx
         String countSql = relation.countSql(tempColumnValue);
         long start = System.currentTimeMillis();
@@ -159,7 +159,7 @@ public class DataRepository {
                 }
             }
             // write last record in temp file
-            Files.write(relation.getIndex(), relation.getType(), tempColumnValue);
+            F.write(relation.getIndex(), relation.getType(), tempColumnValue);
 
             // if sql: limit 1000, query data size 900, Can return
             if (dataList.size() < relation.getLimit()) {
@@ -228,7 +228,7 @@ public class DataRepository {
 
     public void deleteTempFile() {
         for (Relation relation : config.getRelation()) {
-            Files.delete(relation.useIndex(), relation.getType());
+            F.delete(relation.useIndex(), relation.getType());
         }
     }
 }
