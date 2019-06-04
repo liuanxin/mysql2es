@@ -54,7 +54,7 @@ public class Relation {
     private List<String> keyColumn;
 
     /** if want to ignore some column in SQL */
-    private List<String> ignoreColumns;
+    private List<String> ignoreColumn;
 
     private String idPrefix;
     private String idSuffix;
@@ -91,7 +91,7 @@ public class Relation {
 
     /** if not config the 「mapping」, generate from 「column name」 */
     public String useField(String column) {
-        if (U.isBlank(column) || (A.isNotEmpty(ignoreColumns) && ignoreColumns.contains(column))) {
+        if (U.isBlank(column) || (A.isNotEmpty(ignoreColumn) && ignoreColumn.contains(column))) {
             return U.EMPTY;
         }
 
