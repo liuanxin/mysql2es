@@ -65,7 +65,7 @@ public class Relation {
      * old: SELECT a,b FROM table LIMIT 1000000,1000
      * new: SELECT a,b FROM table c INNER JOIN (SELECT id FROM table WHERE time > 'xxx' LIMIT 1000000,1000) t on c.id = t.id
      */
-    private Integer bigCountToSql = 5000;
+    private Integer bigCountToSql = 2000;
 
     private String idPrefix;
     private String idSuffix;
