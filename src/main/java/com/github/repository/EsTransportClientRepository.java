@@ -1,20 +1,26 @@
 package com.github.repository;
 
 import com.github.model.Config;
-import com.github.model.Document;
 import com.github.model.Scheme;
 import com.github.util.A;
 import com.github.util.Jsons;
 import com.github.util.Logs;
+import com.github.util.U;
+import com.google.common.collect.Lists;
 import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.action.ActionFuture;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
-import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.IndicesAdminClient;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.xcontent.XContentType;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 // @Component
 public class EsTransportClientRepository {
@@ -55,7 +61,7 @@ public class EsTransportClientRepository {
 
     public boolean saveScheme(List<Scheme> schemes) {
         if (A.isNotEmpty(schemes)) {
-            List<Scheme> successList = A.lists();
+            List<Scheme> successList = Lists.newArrayList();
 
             IndicesAdminClient indices = client.admin().indices();
             for (Scheme scheme : schemes) {
@@ -102,28 +108,27 @@ public class EsTransportClientRepository {
         return true;
     }
 
-    public boolean saveDataToEs(List<Document> documents) {
-        if (A.isNotEmpty(documents)) {
-            List<Document> successList = A.lists();
-            for (Document doc : documents) {
-                try {
-                    IndexResponse response = client.prepareIndex(doc.getIndex(), doc.getType(), doc.getId())
-                            .setSource(Jsons.toJson(doc.getData()), XContentType.JSON).get();
-                    if (Logs.ROOT_LOG.isDebugEnabled()) {
-                        Logs.ROOT_LOG.debug("client => create or update date return : {}", response.status());
-                    }
-
-                    successList.add(doc);
-                } catch (Exception e) {
-                    if (Logs.ROOT_LOG.isWarnEnabled()) {
-                        Logs.ROOT_LOG.warn("client => create or update data es exception", e);
-                    }
+    public boolean saveDataToEs(String index, String type, Map<String, String> idDataMap) {
+        if (A.isNotEmpty(idDataMap)) {
+            BulkRequest batchRequest = new BulkRequest();
+            for (Map.Entry<String, String> entry : idDataMap.entrySet()) {
+                String id = entry.getKey();
+                String source = entry.getValue();
+                if (U.isNotBlank(id) && U.isNotBlank(source)) {
+                    batchRequest.add(new IndexRequest(index, type, id).source(source, XContentType.JSON));
                 }
             }
-
-            if (A.isNotEmpty(successList)) {
-                if (Logs.ROOT_LOG.isDebugEnabled()) {
-                    Logs.ROOT_LOG.debug("client => put {} {} documents from db to es", successList.size(), successList);
+            try {
+                ActionFuture<BulkResponse> bulk = client.bulk(batchRequest);
+                if (Logs.ROOT_LOG.isInfoEnabled()) {
+                    Logs.ROOT_LOG.info("client => index({}) type({}) batch({}) success", index, type, bulk.get().getItems().length);
+                }
+            } catch (InterruptedException | ExecutionException e) {
+                // <= 6.3.1 version, suggest field if empty will throw IAE(write can be success)
+                // org.elasticsearch.index.mapper.CompletionFieldMapper.parse(443)
+                // https://github.com/elastic/elasticsearch/pull/30713/files
+                if (Logs.ROOT_LOG.isErrorEnabled()) {
+                    Logs.ROOT_LOG.error(String.format("client => create or update index(%s) type(%s) es exception", index, type), e);
                 }
             }
         }

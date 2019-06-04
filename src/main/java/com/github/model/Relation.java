@@ -27,6 +27,11 @@ public class Relation {
     /** es index <==> database table name. it not, will generate by table name(t_some_one ==> someOne) */
     private String index;
 
+    // begin with 6.0, type will be remove, replace with _doc
+    // https://www.elastic.co/guide/en/elasticsearch/reference/current/removal-of-types.html
+    /** es type */
+    private String type = "_doc";
+
     /** whether to generate scheme of es on the database table structure */
     private boolean scheme = true;
 
