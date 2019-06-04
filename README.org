@@ -75,8 +75,7 @@ The project will generate a scheme corresponding to index based on the table fie
 If you don't want to generate it automatically, please create it in Elasticsearch first and set the *scheme* to false in the index configuration.
 Then, the data is synchronized based on the timing rule.
 When synchronizing, the sql splicing increment field is used to obtain the paging data and write Elasticsearch in batches until there is no data.
-The value corresponding to the last increment field will be stored in the temporary file(Each index is asynchronously desynchronized,
-not in the order of synchronization, then resynchronizing the next one),
+The value corresponding to the last increment field will be stored in the temporary file,
 which will be used in the next synchronization(If it is the next run time but the last time it has not run, it will be postponed).
 
 PS:  \\
