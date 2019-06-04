@@ -100,7 +100,13 @@ public class DataRepository {
         String type = relation.getType();
         for (;;) {
             String tmpColumnValue = Files.read(index, type);
-            Integer count = A.first(jdbcTemplate.queryForList(relation.countSql(tmpColumnValue), Integer.class));
+            long start = System.currentTimeMillis();
+            String countSql = relation.countSql(tmpColumnValue);
+            Integer count = A.first(jdbcTemplate.queryForList(countSql, Integer.class));
+            if (Logs.ROOT_LOG.isInfoEnabled()) {
+                Logs.ROOT_LOG.info("count sql({}) execute({}), return({})",
+                        countSql, (System.currentTimeMillis() - start + "ms"), count);
+            }
             if (U.less0(count)) {
                 return;
             } else {
@@ -110,7 +116,12 @@ public class DataRepository {
                 int loopCount = relation.loopCount(count);
                 int writeCount = 0;
                 for (int i = 0; i < loopCount; i++) {
-                    dataList = jdbcTemplate.queryForList(relation.querySql(i, tmpColumnValue));
+                    start = System.currentTimeMillis();
+                    String sql = relation.querySql(i, tmpColumnValue);
+                    dataList = jdbcTemplate.queryForList(sql);
+                    if (Logs.ROOT_LOG.isInfoEnabled()) {
+                        Logs.ROOT_LOG.info("sql({}) execute({})", sql, (System.currentTimeMillis() - start + "ms"));
+                    }
 
                     documents.putAll(fixDocument(relation, dataList));
                     // batch insert
