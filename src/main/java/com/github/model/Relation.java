@@ -135,9 +135,9 @@ public class Relation {
     public String equalsQuerySql(String param, int page) {
         int pageStart = page * limit;
         if (pageStart >= bigCountToSql) {
-            return querySql(EQUALS, param, pageStart);
-        } else {
             return bigPageSql(param, pageStart);
+        } else {
+            return querySql(EQUALS, param, pageStart);
         }
     }
 
@@ -188,7 +188,7 @@ public class Relation {
     private String querySql(String operate, String param, int pageStart) {
         StringBuilder sbd = new StringBuilder();
         if (U.isNotBlank(sql)) {
-            sbd.append(sql.trim());
+            sbd.append(sql);
         } else {
             sbd.append("SELECT * FROM ").append(table);
         }
@@ -206,14 +206,20 @@ public class Relation {
     private String bigPageSql(String param, int pageStart) {
         StringBuilder sbd = new StringBuilder();
         if (U.isNotBlank(sql)) {
-            sbd.append(sql.trim());
+            sbd.append("SELECT CUR.* FROM (").append(sql).append(")");
         } else {
-            sbd.append("SELECT * FROM ").append(table);
+            sbd.append("SELECT CUR.* FROM ").append(table);
         }
         sbd.append(" as CUR");
         sbd.append(" INNER JOIN ( SELECT ").append(primaryKey);
-        sbd.append(" FROM").append(table);
-        sbd.append(" WHERE ").append(incrementColumn).append(" > ");
+        sbd.append(" FROM ").append(table);
+        sbd.append(" WHERE ");
+        if (incrementColumn.contains(".")) {
+            sbd.append(incrementColumn.substring(incrementColumn.indexOf(".") + 1));
+        } else {
+            sbd.append(incrementColumn);
+        }
+        sbd.append(" > ");
         if (U.isNumber(param)) {
             sbd.append(param);
         } else {
