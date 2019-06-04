@@ -130,29 +130,31 @@ public class DataRepository {
             }
 
             // handle increment = xxx, If the time field is synchronized, and the same data in the same second is a lot of time
-            // select count(*) from ... where increment = xxx limit 1000
-            String equalsCountSql = relation.equalsCountSql(tempColumnValue);
-            start = System.currentTimeMillis();
-            Integer equalsCount = A.first(jdbcTemplate.queryForList(equalsCountSql, Integer.class));
-            if (Logs.ROOT_LOG.isInfoEnabled()) {
-                Logs.ROOT_LOG.info("count equals sql({}) execute({}), return({})",
-                        equalsCountSql, (System.currentTimeMillis() - start + "ms"), count);
-            }
+            // select count(*) from ... where increment = 'xxx' limit 1000
+            if (U.isNumber(tempColumnValue)) {
+                String equalsCountSql = relation.equalsCountSql(tempColumnValue);
+                start = System.currentTimeMillis();
+                Integer equalsCount = A.first(jdbcTemplate.queryForList(equalsCountSql, Integer.class));
+                if (Logs.ROOT_LOG.isInfoEnabled()) {
+                    Logs.ROOT_LOG.info("count equals sql({}) execute({}), return({})",
+                            equalsCountSql, (System.currentTimeMillis() - start + "ms"), equalsCount);
+                }
 
-            if (U.greater0(equalsCount)) {
-                int equalsLoopCount = relation.loopCount(equalsCount);
-                for (int i = 0; i < equalsLoopCount; i++) {
-                    // select ... from ... where increment = xxx limit   0,1000|1000,1000|2000,1000| ...
-                    String equalsSql = relation.equalsQuerySql(tempColumnValue, i);
-                    start = System.currentTimeMillis();
-                    List<Map<String, Object>> equalsColumnDataList = jdbcTemplate.queryForList(equalsSql);
-                    if (Logs.ROOT_LOG.isInfoEnabled()) {
-                        Logs.ROOT_LOG.info("equals sql({}) execute({})",
-                                equalsSql, (System.currentTimeMillis() - start + "ms"));
-                    }
-                    flag = esRepository.saveDataToEs(index, type, fixDocument(relation, equalsColumnDataList));
-                    if (!flag) {
-                        return;
+                if (U.greater0(equalsCount)) {
+                    int equalsLoopCount = relation.loopCount(equalsCount);
+                    for (int i = 0; i < equalsLoopCount; i++) {
+                        // select ... from ... where increment = xxx limit   0,1000|1000,1000|2000,1000| ...
+                        String equalsSql = relation.equalsQuerySql(tempColumnValue, i);
+                        start = System.currentTimeMillis();
+                        List<Map<String, Object>> equalsColumnDataList = jdbcTemplate.queryForList(equalsSql);
+                        if (Logs.ROOT_LOG.isInfoEnabled()) {
+                            Logs.ROOT_LOG.info("equals sql({}) execute({})",
+                                    equalsSql, (System.currentTimeMillis() - start + "ms"));
+                        }
+                        flag = esRepository.saveDataToEs(index, type, fixDocument(relation, equalsColumnDataList));
+                        if (!flag) {
+                            return;
+                        }
                     }
                 }
             }
