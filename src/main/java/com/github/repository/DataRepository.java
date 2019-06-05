@@ -113,61 +113,79 @@ public class DataRepository {
         }
 
         for (;;) {
-            // select ... from ... where increment > xxx order by increment limit 1000
-            String sql = relation.querySql(tempColumnValue);
-            start = System.currentTimeMillis();
-            List<Map<String, Object>> dataList = jdbcTemplate.queryForList(sql);
+            boolean flag = handleGreaterAndEquals(relation, index, type, tempColumnValue);
+            if (flag) {
+                return;
+            }
+        }
+    }
+    private boolean handleGreaterAndEquals(Relation relation, String index, String type, String tempColumnValue) {
+        // select ... from ... where time > '2010-10-10 00:00:01' order by time limit 1000
+        String sql = relation.querySql(tempColumnValue);
+        long start = System.currentTimeMillis();
+        List<Map<String, Object>> dataList = jdbcTemplate.queryForList(sql);
+        if (Logs.ROOT_LOG.isInfoEnabled()) {
+            Logs.ROOT_LOG.info("sql({}) time({}), size({})",
+                    sql, (System.currentTimeMillis() - start + "ms"), dataList.size());
+        }
+        if (A.isEmpty(dataList)) {
+            // if not data, can break loop
+            return true;
+        }
+        boolean flag = esRepository.saveDataToEs(index, type, fixDocument(relation, dataList));
+        if (!flag) {
+            // if write to es false, can break loop
+            return true;
+        }
+        tempColumnValue = getLast(relation, dataList);
+        if (U.isBlank(tempColumnValue)) {
+            // if last data was nil, can break loop
+            return true;
+        }
+
+        handleEquals(relation, index, type, tempColumnValue);
+        // write last record in temp file
+        F.write(index, type, tempColumnValue);
+
+        // if sql: limit 1000, query data size 900, can break loop
+        return dataList.size() < relation.getLimit();
+    }
+    private void handleEquals(Relation relation, String index, String type, String tempColumnValue) {
+        // if was number: id > 123, don't need to id = 123
+        // not number: time > '2010-10-10 00:00:01', this: time = '2010-10-10 00:00:01'
+        if (U.isNotNumber(tempColumnValue)) {
+            // select count(*) from ... where time = '2010-10-10 00:00:01'
+            String equalsCountSql = relation.equalsCountSql(tempColumnValue);
+            long start = System.currentTimeMillis();
+            Integer equalsCount = A.first(jdbcTemplate.queryForList(equalsCountSql, Integer.class));
             if (Logs.ROOT_LOG.isInfoEnabled()) {
-                Logs.ROOT_LOG.info("sql({}) time({}), size({})",
-                        sql, (System.currentTimeMillis() - start + "ms"), dataList.size());
-            }
-            boolean flag = esRepository.saveDataToEs(index, type, fixDocument(relation, dataList));
-            if (!flag) {
-                return;
-            }
-            tempColumnValue = getLast(relation, dataList);
-            if (U.isBlank(tempColumnValue)) {
-                return;
+                Logs.ROOT_LOG.info("count equals sql({}) time({}), return({})",
+                        equalsCountSql, (System.currentTimeMillis() - start + "ms"), equalsCount);
             }
 
-            // handle increment = xxx, If the time field is synchronized, and the same data in the same second is a lot of time
-            // select count(*) from ... where increment = 'xxx' limit 1000
-            if (U.isNotNumber(tempColumnValue)) {
-                String equalsCountSql = relation.equalsCountSql(tempColumnValue);
-                start = System.currentTimeMillis();
-                Integer equalsCount = A.first(jdbcTemplate.queryForList(equalsCountSql, Integer.class));
-                if (Logs.ROOT_LOG.isInfoEnabled()) {
-                    Logs.ROOT_LOG.info("count equals sql({}) time({}), return({})",
-                            equalsCountSql, (System.currentTimeMillis() - start + "ms"), equalsCount);
-                }
-
-                if (U.greater0(equalsCount)) {
-                    int equalsLoopCount = relation.loopCount(equalsCount);
-                    for (int i = 0; i < equalsLoopCount; i++) {
-                        // select ... from ... where increment = xxx limit   0,1000|1000,1000|2000,1000| ...
-                        String equalsSql = relation.equalsQuerySql(tempColumnValue, i);
-                        start = System.currentTimeMillis();
-                        List<Map<String, Object>> equalsDataList = jdbcTemplate.queryForList(equalsSql);
-                        if (Logs.ROOT_LOG.isInfoEnabled()) {
-                            Logs.ROOT_LOG.info("equals sql({}) time({}), size({})",
-                                    equalsSql, (System.currentTimeMillis() - start + "ms"), equalsDataList.size());
-                        }
-                        flag = esRepository.saveDataToEs(index, type, fixDocument(relation, equalsDataList));
-                        if (!flag) {
+            if (U.greater0(equalsCount)) {
+                int equalsLoopCount = relation.loopCount(equalsCount);
+                for (int i = 0; i < equalsLoopCount; i++) {
+                    // select ... from ... where time = '2010-10-10 00:00:01' limit 0,1000|1000,1000|2000,1000|etc.
+                    String equalsSql = relation.equalsQuerySql(tempColumnValue, i);
+                    start = System.currentTimeMillis();
+                    List<Map<String, Object>> equalsDataList = jdbcTemplate.queryForList(equalsSql);
+                    if (Logs.ROOT_LOG.isInfoEnabled()) {
+                        Logs.ROOT_LOG.info("equals sql({}) time({}), size({})",
+                                equalsSql, (System.currentTimeMillis() - start + "ms"), equalsDataList.size());
+                    }
+                    if (A.isNotEmpty(equalsDataList)) {
+                        esRepository.saveDataToEs(index, type, fixDocument(relation, equalsDataList));
+                        // If the data changes when querying, the number of returned queries above may be less than expected
+                        if (equalsDataList.size() < relation.getLimit()) {
                             return;
                         }
                     }
                 }
             }
-            // write last record in temp file
-            F.write(relation.getIndex(), relation.getType(), tempColumnValue);
-
-            // if sql: limit 1000, query data size 900, Can return
-            if (dataList.size() < relation.getLimit()) {
-                return;
-            }
         }
     }
+
     /** write last record in temp file */
     private String getLast(Relation relation, List<Map<String, Object>> dataList) {
         Map<String, Object> last = A.last(dataList);
