@@ -113,13 +113,13 @@ public class DataRepository {
         }
 
         for (;;) {
-            boolean flag = handleGreaterAndEquals(relation, index, type, tempColumnValue);
-            if (flag) {
+            tempColumnValue = handleGreaterAndEquals(relation, index, type, tempColumnValue);
+            if (U.isBlank(tempColumnValue)) {
                 return;
             }
         }
     }
-    private boolean handleGreaterAndEquals(Relation relation, String index, String type, String tempColumnValue) {
+    private String handleGreaterAndEquals(Relation relation, String index, String type, String tempColumnValue) {
         // select ... from ... where time > '2010-10-10 00:00:01' order by time limit 1000
         String sql = relation.querySql(tempColumnValue);
         long start = System.currentTimeMillis();
@@ -130,17 +130,17 @@ public class DataRepository {
         }
         if (A.isEmpty(dataList)) {
             // if not data, can break loop
-            return true;
+            return null;
         }
         boolean flag = esRepository.saveDataToEs(index, type, fixDocument(relation, dataList));
         if (!flag) {
             // if write to es false, can break loop
-            return true;
+            return null;
         }
         tempColumnValue = getLast(relation, dataList);
         if (U.isBlank(tempColumnValue)) {
             // if last data was nil, can break loop
-            return true;
+            return null;
         }
 
         handleEquals(relation, index, type, tempColumnValue);
@@ -148,7 +148,10 @@ public class DataRepository {
         F.write(index, type, tempColumnValue);
 
         // if sql: limit 1000, query data size 900, can break loop
-        return dataList.size() < relation.getLimit();
+        if (dataList.size() < relation.getLimit()) {
+            return null;
+        }
+        return tempColumnValue;
     }
     private void handleEquals(Relation relation, String index, String type, String tempColumnValue) {
         // if was number: id > 123, don't need to id = 123
