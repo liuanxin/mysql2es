@@ -1,8 +1,10 @@
 package com.github.run;
 
-import com.github.model.Scheme;
+import com.github.model.Config;
+import com.github.model.Relation;
 import com.github.repository.DataRepository;
 import com.github.repository.EsRepository;
+import com.github.util.A;
 import com.github.util.Logs;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
@@ -10,17 +12,20 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
-import java.util.List;
+import java.util.Map;
 
 @Profile("!test")
 @Configuration
 public class Runner implements ApplicationRunner {
 
+    private final Config config;
     private final EsRepository esRepository;
     private final DataRepository dataRepository;
 
+
     @Autowired
-    public Runner(EsRepository esRepository, DataRepository dataRepository) {
+    public Runner(Config config, EsRepository esRepository, DataRepository dataRepository) {
+        this.config = config;
         this.esRepository = esRepository;
         this.dataRepository = dataRepository;
     }
@@ -33,10 +38,17 @@ public class Runner implements ApplicationRunner {
         if (Logs.ROOT_LOG.isInfoEnabled()) {
             Logs.ROOT_LOG.info("begin to generate scheme");
         }
+
         try {
-            List<Scheme> schemeList = dataRepository.dbToEsScheme();
-            esRepository.saveScheme(schemeList);
-            // esTransportClientRepository.saveScheme(schemeList);
+            String domain = A.first(config.getIpPort());
+            for (Relation relation : config.getRelation()) {
+                Map<String, Map> properties = dataRepository.dbToEsScheme(relation);
+                if (relation.isScheme() && A.isNotEmpty(properties)) {
+                    String index = relation.useIndex();
+                    String type = relation.getType();
+                    esRepository.saveScheme(domain, index, type, properties);
+                }
+            }
         } finally {
             if (Logs.ROOT_LOG.isInfoEnabled()) {
                 Logs.ROOT_LOG.info("end of generate scheme");
