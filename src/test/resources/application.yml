@@ -14,7 +14,7 @@ config:
   relation:
     -
       table: t_product_info
-      increment-column: ["id"]
+      increment-column: "id"
     -
       table: t_common_content
-      increment-column: ["update_time"]
+      increment-column: "update_time"

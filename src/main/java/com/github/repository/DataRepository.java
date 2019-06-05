@@ -2,7 +2,6 @@ package com.github.repository;
 
 import com.github.model.Config;
 import com.github.model.Relation;
-import com.github.model.Scheme;
 import com.github.util.*;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -12,6 +11,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -32,65 +32,60 @@ public class DataRepository {
     }
 
     /** generate scheme of es on the database table structure */
-    public List<Scheme> dbToEsScheme() {
-        List<Scheme> schemeList = Lists.newArrayList();
-        for (Relation relation : config.getRelation()) {
-            List<Map<String, Object>> mapList = jdbcTemplate.queryForList(relation.descSql());
-            if (A.isNotEmpty(mapList)) {
-                boolean scheme = relation.isScheme();
+    public Map<String, Map> dbToEsScheme(Relation relation) {
+        List<Map<String, Object>> mapList = jdbcTemplate.queryForList(relation.descSql());
+        if (A.isNotEmpty(mapList)) {
+            boolean scheme = relation.isScheme();
+            List<String> keyList = Lists.newArrayList();
+            Map<String, Map> propertyMap = Maps.newHashMap();
+            Map<String, Boolean> fieldMap = Maps.newHashMap();
+            for (Map<String, Object> map : mapList) {
+                Object column = map.get("Field");
+                Object type = map.get("Type");
 
-                List<String> keyList = Lists.newArrayList();
-                Map<String, Map> propertyMap = A.maps();
-                Map<String, Boolean> fieldMap = A.maps();
-                for (Map<String, Object> map : mapList) {
-                    Object column = map.get("Field");
-                    Object type = map.get("Type");
+                if (U.isNotBlank(column) && U.isNotBlank(type)) {
+                    String field = column.toString();
 
-                    if (U.isNotBlank(column) && U.isNotBlank(type)) {
-                        String field = column.toString();
-                        fieldMap.put(field, true);
-                        if (scheme) {
-                            propertyMap.put(relation.useField(field), Searchs.dbToEsType(type.toString()));
-                        }
-
-                        Object key = map.get("Key");
-                        if (U.isNotBlank(key) && "PRI".equals(key)) {
-                            keyList.add(field);
-                        }
+                    Object key = map.get("Key");
+                    if (U.isNotBlank(key) && "PRI".equals(key)) {
+                        keyList.add(field);
                     }
-                }
 
-                List<String> keyColumn = relation.getKeyColumn();
-                String table = relation.getTable();
-                if (A.isEmpty(keyColumn)) {
-                    U.assertException(A.isEmpty(keyList),
-                            String.format("table (%s) no primary key, can't create index in es!", table));
+                    fieldMap.put(field, true);
 
-                    if (keyList.size() > 1) {
-                        if (Logs.ROOT_LOG.isWarnEnabled()) {
-                            Logs.ROOT_LOG.warn("table ({}) has multi primary key, " +
-                                    "increment data may be query for duplicate data!", table);
-                        }
+                    if (scheme) {
+                        propertyMap.put(relation.useField(field), Searchs.dbToEsType(type.toString()));
                     }
-                    relation.setKeyColumn(keyList);
-                } else {
-                    for (String key : keyColumn) {
-                        U.assertNil(fieldMap.get(key), String.format("table (%s) don't have column (%s)", table, key));
-                    }
-                }
-                if (scheme) {
-                    schemeList.add(new Scheme().setIndex(relation.useIndex()).setProperties(propertyMap));
                 }
             }
+
+            List<String> keyColumn = relation.getKeyColumn();
+            String table = relation.getTable();
+            if (A.isEmpty(keyColumn)) {
+                if (A.isEmpty(keyList)) {
+                    U.assertException(String.format("table (%s) no primary key, can't create index in es!", table));
+                }
+                if (keyList.size() > 1) {
+                    if (Logs.ROOT_LOG.isWarnEnabled()) {
+                        Logs.ROOT_LOG.warn("table ({}) has multi primary key({})", table, A.toStr(keyList));
+                    }
+                }
+                relation.setKeyColumn(keyList);
+            } else {
+                for (String key : keyColumn) {
+                    U.assertNil(fieldMap.get(key), String.format("table (%s) don't have column (%s)", table, key));
+                }
+            }
+            return propertyMap;
         }
-        return schemeList;
+        return Collections.emptyMap();
     }
 
     /** async data to es */
     @Async
     public Future<Boolean> asyncData(Relation relation) {
         if (A.isEmpty(relation.getKeyColumn())) {
-            dbToEsScheme();
+            dbToEsScheme(relation);
         }
         saveData(relation);
         return new AsyncResult<>(true);
@@ -119,6 +114,7 @@ public class DataRepository {
             }
         }
     }
+
     private String handleGreaterAndEquals(Relation relation, String index, String type, String tempColumnValue) {
         // select ... from ... where time > '2010-10-10 00:00:01' order by time limit 1000
         String sql = relation.querySql(tempColumnValue);
@@ -198,6 +194,7 @@ public class DataRepository {
                 // if was Date return 'yyyy-MM-dd HH:mm:ss', else return toStr
                 String lastData;
                 if (obj instanceof Date) {
+                    // lastData = String.valueOf(((Date) obj).getTime());
                     lastData = Dates.format((Date) obj, Dates.Type.YYYY_MM_DD_HH_MM_SS);
                 } else {
                     lastData = obj.toString();
@@ -246,11 +243,5 @@ public class DataRepository {
             }
         }
         return documents;
-    }
-
-    public void deleteTempFile() {
-        for (Relation relation : config.getRelation()) {
-            F.delete(relation.useIndex(), relation.getType());
-        }
     }
 }

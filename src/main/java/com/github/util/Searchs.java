@@ -1,6 +1,7 @@
 package com.github.util;
 
 import com.github.annotation.NeedAnalysis;
+import com.google.common.collect.Maps;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -76,7 +77,7 @@ public final class Searchs {
                 map.put("search_analyzer", "ik_synonym_smart");
             }
 
-            Map<Object, Object> fieldMap = A.maps();
+            Map<Object, Object> fieldMap = Maps.newHashMap();
             if (needAnalyzer.pinyin()) {
                 fieldMap.put("pinyin", A.maps("type", STRING_TYPE, "analyzer", "simple_pinyin"));
                 fieldMap.put("full_pinyin", A.maps("type", STRING_TYPE, "analyzer", "full_pinyin"));
@@ -235,7 +236,7 @@ public final class Searchs {
      * }
      * private void createScheme(IndicesClient indices, String index, String type, Class clazz) {
      *   PutMappingRequest request = new PutMappingRequest(index);
-     *   String mapping = Searchs.getMapping(clazz);
+     *   <span style="color:red">String mapping = Searchs.getMapping(clazz);</span>
      *   request.type(type).source(mapping, XContentType.JSON);
      *   try {
      *     PutMappingResponse response = indices.putMapping(request);
@@ -255,7 +256,7 @@ public final class Searchs {
     }
 
     private static Map<String, Map> collectScheme(Class clazz) {
-        Map<String, Map> propertyMap = A.maps();
+        Map<String, Map> propertyMap = Maps.newHashMap();
         for (Field field : clazz.getDeclaredFields()) {
             int mod = field.getModifiers();
             if (!Modifier.isStatic(mod) && !Modifier.isFinal(mod)) {
