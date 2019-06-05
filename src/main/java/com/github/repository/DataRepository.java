@@ -105,7 +105,7 @@ public class DataRepository {
         long start = System.currentTimeMillis();
         Integer count = A.first(jdbcTemplate.queryForList(countSql, Integer.class));
         if (Logs.ROOT_LOG.isInfoEnabled()) {
-            Logs.ROOT_LOG.info("count sql({}) execute({}), return({})",
+            Logs.ROOT_LOG.info("count sql({}) time({}), return({})",
                     countSql, (System.currentTimeMillis() - start + "ms"), count);
         }
         if (U.less0(count)) {
@@ -118,7 +118,7 @@ public class DataRepository {
             start = System.currentTimeMillis();
             List<Map<String, Object>> dataList = jdbcTemplate.queryForList(sql);
             if (Logs.ROOT_LOG.isInfoEnabled()) {
-                Logs.ROOT_LOG.info("sql({}) execute({}), size({})",
+                Logs.ROOT_LOG.info("sql({}) time({}), size({})",
                         sql, (System.currentTimeMillis() - start + "ms"), dataList.size());
             }
             boolean flag = esRepository.saveDataToEs(index, type, fixDocument(relation, dataList));
@@ -137,7 +137,7 @@ public class DataRepository {
                 start = System.currentTimeMillis();
                 Integer equalsCount = A.first(jdbcTemplate.queryForList(equalsCountSql, Integer.class));
                 if (Logs.ROOT_LOG.isInfoEnabled()) {
-                    Logs.ROOT_LOG.info("count equals sql({}) execute({}), return({})",
+                    Logs.ROOT_LOG.info("count equals sql({}) time({}), return({})",
                             equalsCountSql, (System.currentTimeMillis() - start + "ms"), equalsCount);
                 }
 
@@ -149,7 +149,7 @@ public class DataRepository {
                         start = System.currentTimeMillis();
                         List<Map<String, Object>> equalsDataList = jdbcTemplate.queryForList(equalsSql);
                         if (Logs.ROOT_LOG.isInfoEnabled()) {
-                            Logs.ROOT_LOG.info("equals sql({}) execute({}), size({})",
+                            Logs.ROOT_LOG.info("equals sql({}) time({}), size({})",
                                     equalsSql, (System.currentTimeMillis() - start + "ms"), equalsDataList.size());
                         }
                         flag = esRepository.saveDataToEs(index, type, fixDocument(relation, equalsDataList));
