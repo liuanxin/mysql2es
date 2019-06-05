@@ -1,8 +1,10 @@
 package com.github;
 
-import com.github.model.Scheme;
+import com.github.model.Config;
+import com.github.model.Relation;
 import com.github.repository.DataRepository;
 import com.github.repository.EsRepository;
+import com.github.util.A;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,17 +12,17 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.List;
+import java.util.Map;
 
 @SpringBootTest
 @RunWith(SpringRunner.class)
 public class SchemeTest {
 
     @Autowired
-    private EsRepository esRepository;
+    private Config config;
 
-    // @Autowired
-    // private EsTransportClientRepository esTransportClientRepository;
+    @Autowired
+    private EsRepository esRepository;
 
     @Autowired
     private DataRepository dataRepository;
@@ -29,16 +31,17 @@ public class SchemeTest {
     @Sql(value = {"classpath:sql/delete.sql"}, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
     @Test
     public void test() {
-        List<Scheme> schemeList = dataRepository.dbToEsScheme();
+        String domain = A.first(config.getIpPort());
+        for (Relation relation : config.getRelation()) {
+            String index = relation.useIndex();
+            String type = relation.getType();
 
-        boolean flag = esRepository.saveScheme(schemeList);
-        if (flag) {
-            esRepository.deleteScheme(schemeList);
+            Map<String, Map> properties = dataRepository.dbToEsScheme(relation);
+            if (relation.isScheme() && A.isNotEmpty(properties)) {
+                esRepository.saveScheme(domain, index, type, properties);
+            }
+
+            esRepository.deleteScheme(index, type);
         }
-
-        // boolean flag = esTransportClientRepository.saveScheme(schemeList);
-        // if (flag) {
-        //     esTransportClientRepository.deleteScheme(schemeList);
-        // }
     }
 }

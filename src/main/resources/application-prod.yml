@@ -20,9 +20,9 @@ config:
   relation:
     -
       table: t_property
-      increment-column: ["id"]
+      increment-column: "id"
       limit: 100
     -
       table: t_value
-      increment-column: ["id"]
-      limit: 80
+      increment-column: "id"
+      limit: 200

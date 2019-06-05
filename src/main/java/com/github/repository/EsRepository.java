@@ -1,7 +1,5 @@
 package com.github.repository;
 
-import com.github.model.Config;
-import com.github.model.Scheme;
 import com.github.util.A;
 import com.github.util.Jsons;
 import com.github.util.Logs;
@@ -23,82 +21,59 @@ import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
 @Component
 public class EsRepository {
 
-    private final Config config;
     private final RestHighLevelClient client;
 
     @Autowired
-    public EsRepository(Config config, RestHighLevelClient client) {
-        this.config = config;
+    public EsRepository(RestHighLevelClient client) {
         this.client = client;
     }
 
-    @Async
-    public Future<Boolean> deleteScheme(List<Scheme> schemes) {
-        if (A.isNotEmpty(schemes)) {
-            IndicesClient indices = client.indices();
 
-            for (Scheme scheme : schemes) {
-                String index = scheme.getIndex();
-                String type = scheme.getType();
-                try {
-                    if (indices.exists(new GetIndexRequest().indices(index))) {
-                        DeleteIndexResponse resp = indices.delete(new DeleteIndexRequest(index));
-                        boolean flag = resp.isAcknowledged();
-                        if (Logs.ROOT_LOG.isDebugEnabled()) {
-                            Logs.ROOT_LOG.debug("delete scheme ({}/{}) return: ({})", index, type, flag);
-                        }
-                    }
-                } catch (IOException e) {
-                    if (Logs.ROOT_LOG.isWarnEnabled()) {
-                        Logs.ROOT_LOG.warn(String.format("delete scheme (%s/%s) es exception", index, type), e);
-                    }
+    @Async
+    public Future<Boolean> deleteScheme(String index, String type) {
+        IndicesClient indices = client.indices();
+
+        try {
+            if (indices.exists(new GetIndexRequest().indices(index))) {
+                DeleteIndexResponse resp = indices.delete(new DeleteIndexRequest(index));
+                boolean flag = resp.isAcknowledged();
+                if (Logs.ROOT_LOG.isDebugEnabled()) {
+                    Logs.ROOT_LOG.debug("delete scheme ({}/{}) return: ({})", index, type, flag);
                 }
+            }
+        } catch (IOException e) {
+            if (Logs.ROOT_LOG.isWarnEnabled()) {
+                Logs.ROOT_LOG.warn(String.format("delete scheme (%s/%s) es exception", index, type), e);
             }
         }
         return new AsyncResult<>(true);
     }
 
-    public boolean saveScheme(List<Scheme> schemes) {
-        if (A.isNotEmpty(schemes)) {
-            Map<String, Boolean> map = A.maps();
 
-            IndicesClient indices = client.indices();
-            for (Scheme scheme : schemes) {
-                String index = scheme.getIndex();
-                String type = scheme.getType();
+    public void saveScheme(String domain, String index, String type, Map<String, Map> properties) {
+        IndicesClient indices = client.indices();
 
-                if (!exists(indices, index)) {
-                    if (createIndex(indices, index)) {
-                        try {
-                            boolean ack = createScheme(indices, scheme);
-                            map.put(index + "/" + type, ack);
-                        } catch (IOException e) {
-                            if (Logs.ROOT_LOG.isErrorEnabled()) {
-                                Logs.ROOT_LOG.error(String.format("create index(%s) exception", index), e);
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (A.isNotEmpty(map)) {
-                if (Logs.ROOT_LOG.isDebugEnabled()) {
-                    Logs.ROOT_LOG.debug("put {} ({}) schemes from db to es", map.size(), Jsons.toJson(map));
-                }
-            }
+        boolean exists = exists(indices, domain, index);
+        if (exists) {
+            return;
         }
-        return true;
+        boolean create = createIndex(indices, domain, index);
+        if (!create) {
+            return;
+        }
+        createScheme(indices, domain, index, type, properties);
     }
-
-    private boolean exists(IndicesClient indices, String index) {
+    private boolean exists(IndicesClient indices, String domain, String index) {
         try {
+            if (Logs.ROOT_LOG.isDebugEnabled()) {
+                Logs.ROOT_LOG.debug("curl -I \"{}/{}\"", domain, index);
+            }
             return indices.exists(new GetIndexRequest().indices(index));
         } catch (IOException e) {
             if (Logs.ROOT_LOG.isErrorEnabled()) {
@@ -107,17 +82,18 @@ public class EsRepository {
             return true;
         }
     }
-
-    private boolean createIndex(IndicesClient indices, String index) {
-        CreateIndexRequest request = new CreateIndexRequest(index);
-        /*
-        String settings = Searchs.getSettings();
-        request.settings(settings, XContentType.JSON);
-        */
+    private boolean createIndex(IndicesClient indices, String domain, String index) {
         try {
+            CreateIndexRequest request = new CreateIndexRequest(index);
+            // String settings = Searchs.getSettings();
+            // request.settings(settings, XContentType.JSON);
+            if (Logs.ROOT_LOG.isDebugEnabled()) {
+                Logs.ROOT_LOG.debug("curl -XPUT \"{}/{}\"", domain, index);
+                // Logs.ROOT_LOG.debug("curl -X PUT \"{}/{}\" -d '{\"settings\":{}}'", domain, index, settings);
+            }
             boolean ack = indices.create(request).isAcknowledged();
             if (Logs.ROOT_LOG.isDebugEnabled()) {
-                Logs.ROOT_LOG.debug("create index({}): {}", index, ack);
+                Logs.ROOT_LOG.debug("create index({}) return {}", index, ack);
             }
             return ack;
         } catch (IOException e) {
@@ -127,28 +103,24 @@ public class EsRepository {
             return false;
         }
     }
-
-    private boolean createScheme(IndicesClient indices, Scheme scheme) throws IOException {
-        String index = scheme.getIndex();
-        String type = scheme.getType();
-
-        String source = Jsons.toJson(A.maps("properties", scheme.getProperties()));
-        if (Logs.ROOT_LOG.isDebugEnabled()) {
-            Logs.ROOT_LOG.debug("curl -XPUT \"http://{}/{}/{}/_mapping\" -d '{}'",
-                    config.ipAndPort(), index, type, source);
-        }
-
-        if (U.isBlank(source)) {
-            return false;
-        } else {
+    private void createScheme(IndicesClient indices, String domain, String index, String type, Map<String, Map> properties) {
+        try {
+            String source = Jsons.toJson(A.maps("properties", properties));
+            if (Logs.ROOT_LOG.isDebugEnabled()) {
+                Logs.ROOT_LOG.debug("curl -XPUT \"{}/{}/_mapping/_doc\" -d '{}'", domain, index, source);
+            }
             PutMappingRequest request = new PutMappingRequest(index).type(type).source(source, XContentType.JSON);
             boolean ack = indices.putMapping(request).isAcknowledged();
             if (Logs.ROOT_LOG.isInfoEnabled()) {
-                Logs.ROOT_LOG.info("put ({}/{}) mapping: {}", index, type, ack);
+                Logs.ROOT_LOG.info("put ({}/{}) mapping return {}", index, type, ack);
             }
-            return ack;
+        } catch (IOException e) {
+            if (Logs.ROOT_LOG.isErrorEnabled()) {
+                Logs.ROOT_LOG.error(String.format("create index(%s) exception", index), e);
+            }
         }
     }
+
 
     public boolean saveDataToEs(String index, String type, Map<String, String> idDataMap) {
         if (A.isNotEmpty(idDataMap)) {

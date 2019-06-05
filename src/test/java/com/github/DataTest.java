@@ -2,10 +2,9 @@ package com.github;
 
 import com.github.model.Config;
 import com.github.model.Relation;
-import com.github.model.Scheme;
 import com.github.repository.DataRepository;
 import com.github.repository.EsRepository;
-import com.github.util.Jsons;
+import com.github.util.F;
 import com.github.util.Logs;
 import com.google.common.collect.Lists;
 import org.junit.Test;
@@ -50,15 +49,18 @@ public class DataTest {
             }
         }
 
-        List<Scheme> schemeList = dataRepository.dbToEsScheme();
-        try {
-            boolean deleteSchemeFlag = esRepository.deleteScheme(schemeList).get();
-            if (deleteSchemeFlag) {
-                dataRepository.deleteTempFile();
-            }
-        } catch (InterruptedException | ExecutionException e) {
-            if (Logs.ROOT_LOG.isErrorEnabled()) {
-                Logs.ROOT_LOG.error(String.format("delete scheme(%s) exception", Jsons.toJson(schemeList)), e);
+        for (Relation relation : config.getRelation()) {
+            String index = relation.useIndex();
+            String type = relation.getType();
+            try {
+                boolean deleteSchemeFlag = esRepository.deleteScheme(index, type).get();
+                if (deleteSchemeFlag) {
+                    F.delete(index, type);
+                }
+            } catch(InterruptedException | ExecutionException e){
+                if (Logs.ROOT_LOG.isErrorEnabled()) {
+                    Logs.ROOT_LOG.error(String.format("delete scheme(%s/%s) exception", index, type), e);
+                }
             }
         }
     }

@@ -32,34 +32,31 @@ public class Job implements SchedulingConfigurer {
 
     @Override
     public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
-        taskRegistrar.addTriggerTask(new Runnable() {
-            @Override
-            public void run() {
-                if (Logs.ROOT_LOG.isInfoEnabled()) {
-                    Logs.ROOT_LOG.info("begin to run task");
+        taskRegistrar.addTriggerTask(() -> {
+            if (Logs.ROOT_LOG.isInfoEnabled()) {
+                Logs.ROOT_LOG.info("begin to run task");
+            }
+            try {
+                Map<String, Future<Boolean>> resultMap = Maps.newHashMap();
+                for (Relation relation : config.getRelation()) {
+                    resultMap.put(relation.useKey(), dataRepository.asyncData(relation));
                 }
-                try {
-                    Map<String, Future<Boolean>> resultMap = Maps.newHashMap();
-                    for (Relation relation : config.getRelation()) {
-                        resultMap.put(relation.useKey(), dataRepository.asyncData(relation));
-                    }
-                    for (Map.Entry<String, Future<Boolean>> entry : resultMap.entrySet()) {
-                        try {
-                            Boolean flag = entry.getValue().get();
-                            if (Logs.ROOT_LOG.isDebugEnabled()) {
-                                String status = (U.isNotBlank(flag) && flag) ? "success" : "fail";
-                                Logs.ROOT_LOG.debug("async db to es({}) {}", entry.getKey(), status);
-                            }
-                        } catch (InterruptedException | ExecutionException e) {
-                            if (Logs.ROOT_LOG.isErrorEnabled()) {
-                                Logs.ROOT_LOG.error("async db data to es exception", e);
-                            }
+                for (Map.Entry<String, Future<Boolean>> entry : resultMap.entrySet()) {
+                    try {
+                        Boolean flag = entry.getValue().get();
+                        if (Logs.ROOT_LOG.isDebugEnabled()) {
+                            String status = (U.isNotBlank(flag) && flag) ? "success" : "fail";
+                            Logs.ROOT_LOG.debug("async db to es({}) {}", entry.getKey(), status);
+                        }
+                    } catch (InterruptedException | ExecutionException e) {
+                        if (Logs.ROOT_LOG.isErrorEnabled()) {
+                            Logs.ROOT_LOG.error("async db data to es exception", e);
                         }
                     }
-                } finally {
-                    if (Logs.ROOT_LOG.isInfoEnabled()) {
-                        Logs.ROOT_LOG.info("end of task run");
-                    }
+                }
+            } finally {
+                if (Logs.ROOT_LOG.isInfoEnabled()) {
+                    Logs.ROOT_LOG.info("end of task run");
                 }
             }
         }, new CronTrigger(config.getCron()));
