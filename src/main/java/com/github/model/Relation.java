@@ -120,15 +120,16 @@ public class Relation {
         return String.format("DESC %s", table);
     }
 
+    // this: time > '2010-01-01 01:00:00'
     public String countSql(String param) {
         return countSql(GT, param);
     }
     public String querySql(String param) {
+        // just limit 1000000
         return querySql(GT, param, 0);
     }
 
-    // if use ... time > '2010-01-01 01:00:00', query: select count(*) ... time = '2010-01-01 01:00:00'
-
+    // next: time = '2010-01-01 01:00:00'
     public String equalsCountSql(String param) {
         return countSql(EQUALS, param);
     }
@@ -219,7 +220,7 @@ public class Relation {
         } else {
             sbd.append(incrementColumn);
         }
-        sbd.append(" > ");
+        sbd.append(EQUALS);
         if (U.isNumber(param)) {
             sbd.append(param);
         } else {
