@@ -118,7 +118,8 @@ public class DataRepository {
             start = System.currentTimeMillis();
             List<Map<String, Object>> dataList = jdbcTemplate.queryForList(sql);
             if (Logs.ROOT_LOG.isInfoEnabled()) {
-                Logs.ROOT_LOG.info("sql({}) execute({})", sql, (System.currentTimeMillis() - start + "ms"));
+                Logs.ROOT_LOG.info("sql({}) execute({}), size({})",
+                        sql, (System.currentTimeMillis() - start + "ms"), dataList.size());
             }
             boolean flag = esRepository.saveDataToEs(index, type, fixDocument(relation, dataList));
             if (!flag) {
@@ -146,12 +147,12 @@ public class DataRepository {
                         // select ... from ... where increment = xxx limit   0,1000|1000,1000|2000,1000| ...
                         String equalsSql = relation.equalsQuerySql(tempColumnValue, i);
                         start = System.currentTimeMillis();
-                        List<Map<String, Object>> equalsColumnDataList = jdbcTemplate.queryForList(equalsSql);
+                        List<Map<String, Object>> equalsDataList = jdbcTemplate.queryForList(equalsSql);
                         if (Logs.ROOT_LOG.isInfoEnabled()) {
-                            Logs.ROOT_LOG.info("equals sql({}) execute({})",
-                                    equalsSql, (System.currentTimeMillis() - start + "ms"));
+                            Logs.ROOT_LOG.info("equals sql({}) execute({}), size({})",
+                                    equalsSql, (System.currentTimeMillis() - start + "ms"), equalsDataList.size());
                         }
-                        flag = esRepository.saveDataToEs(index, type, fixDocument(relation, equalsColumnDataList));
+                        flag = esRepository.saveDataToEs(index, type, fixDocument(relation, equalsDataList));
                         if (!flag) {
                             return;
                         }
