@@ -4,6 +4,7 @@ import com.google.common.base.CaseFormat;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 /** util */
@@ -12,7 +13,6 @@ public final class U {
     public static final int PROCESSORS = Runtime.getRuntime().availableProcessors();
 
     public static final String EMPTY = "";
-    public static final String SPLIT = "!~!";
     public static final Charset UTF8 = StandardCharsets.UTF_8;
     private static final Pattern BLANK_REGEX = Pattern.compile("\\s{2,}");
 
@@ -75,6 +75,9 @@ public final class U {
         return !isBlank(obj);
     }
 
+    public static String uuid() {
+        return UUID.randomUUID().toString().replace("-", "");
+    }
 
     public static void assertNil(Object obj, String msg) {
         assertException(isBlank(obj), msg);
