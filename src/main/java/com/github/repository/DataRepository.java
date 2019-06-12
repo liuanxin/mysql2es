@@ -92,8 +92,8 @@ public class DataRepository {
         String index = relation.useIndex();
         String type = relation.getType();
 
-        String tempColumnValue = F.read(table, index, type);
-        String countSql = relation.countSql(tempColumnValue);
+        String lastValue = F.read(table, index, type);
+        String countSql = relation.countSql(lastValue);
         long start = System.currentTimeMillis();
         Integer count = A.first(jdbcTemplate.queryForList(countSql, Integer.class));
         if (Logs.ROOT_LOG.isInfoEnabled()) {
@@ -105,20 +105,21 @@ public class DataRepository {
         }
 
         for (;;) {
-            tempColumnValue = handleGreaterAndEquals(relation, tempColumnValue);
-            if (U.isBlank(tempColumnValue)) {
+            lastValue = handleGreaterAndEquals(relation, lastValue);
+            if (U.isBlank(lastValue)) {
                 return;
             }
         }
     }
 
-    private String handleGreaterAndEquals(Relation relation, String tempColumnValue) {
-        String sql = relation.querySql(tempColumnValue);
+    private String handleGreaterAndEquals(Relation relation, String lastValue) {
+        String sql = relation.querySql(lastValue);
         long start = System.currentTimeMillis();
         List<Map<String, Object>> dataList = jdbcTemplate.queryForList(sql);
+        String runId = U.uuid();
         if (Logs.ROOT_LOG.isInfoEnabled()) {
-            Logs.ROOT_LOG.info("sql({}) time({}), size({})",
-                    sql, (System.currentTimeMillis() - start + "ms"), dataList.size());
+            Logs.ROOT_LOG.info("run-id({}) sql({}) time({}), size({})",
+                    runId, sql, (System.currentTimeMillis() - start + "ms"), dataList.size());
         }
         if (A.isEmpty(dataList)) {
             // if not data, can break loop
@@ -128,26 +129,26 @@ public class DataRepository {
         String index = relation.useIndex();
         String type = relation.getType();
 
-        boolean flag = esRepository.saveDataToEs(index, type, fixDocument(relation, dataList));
+        boolean flag = esRepository.saveDataToEs(runId, index, type, fixDocument(relation, dataList));
         if (!flag) {
             // if write to es false, can break loop
             return null;
         }
-        tempColumnValue = getLast(relation, dataList);
-        if (U.isBlank(tempColumnValue)) {
+        lastValue = getLast(relation, dataList);
+        if (U.isBlank(lastValue)) {
             // if last data was nil, can break loop
             return null;
         }
 
-        handleEquals(relation, tempColumnValue);
+        handleEquals(relation, lastValue);
         // write last record in temp file
-        F.write(relation.getTable(), index, type, tempColumnValue);
+        F.write(relation.getTable(), index, type, lastValue);
 
         // if sql: limit 1000, query data size 900, can break loop
         if (dataList.size() < relation.getLimit()) {
             return null;
         }
-        return tempColumnValue;
+        return lastValue;
     }
     private void handleEquals(Relation relation, String tempColumnValue) {
         // if was number: id > 123, don't need to id = 123
@@ -156,9 +157,10 @@ public class DataRepository {
             String equalsCountSql = relation.equalsCountSql(tempColumnValue);
             long start = System.currentTimeMillis();
             Integer equalsCount = A.first(jdbcTemplate.queryForList(equalsCountSql, Integer.class));
+            String runId = U.uuid();
             if (Logs.ROOT_LOG.isInfoEnabled()) {
-                Logs.ROOT_LOG.info("count equals sql({}) time({}), return({})",
-                        equalsCountSql, (System.currentTimeMillis() - start + "ms"), equalsCount);
+                Logs.ROOT_LOG.info("run-id({}) count equals sql({}) time({}), return({})",
+                        runId, equalsCountSql, (System.currentTimeMillis() - start + "ms"), equalsCount);
             }
 
             if (U.greater0(equalsCount)) {
@@ -168,13 +170,13 @@ public class DataRepository {
                     start = System.currentTimeMillis();
                     List<Map<String, Object>> equalsDataList = jdbcTemplate.queryForList(equalsSql);
                     if (Logs.ROOT_LOG.isInfoEnabled()) {
-                        Logs.ROOT_LOG.info("equals sql({}) time({}), size({})",
-                                equalsSql, (System.currentTimeMillis() - start + "ms"), equalsDataList.size());
+                        Logs.ROOT_LOG.info("run-id({}) equals sql({}) time({}), size({})",
+                                runId, equalsSql, (System.currentTimeMillis() - start + "ms"), equalsDataList.size());
                     }
                     if (A.isNotEmpty(equalsDataList)) {
                         String index = relation.useIndex();
                         String type = relation.getType();
-                        esRepository.saveDataToEs(index, type, fixDocument(relation, equalsDataList));
+                        esRepository.saveDataToEs(runId, index, type, fixDocument(relation, equalsDataList));
                         // If the data changes when querying, the number of returned queries above may be less than expected
                         if (equalsDataList.size() < relation.getLimit()) {
                             return;
