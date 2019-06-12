@@ -9,6 +9,7 @@ import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequest;
+import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
@@ -135,9 +136,9 @@ public class EsRepository {
     }
 
 
-    public boolean saveDataToEs(String index, String type, Map<String, String> idDataMap) {
+    public int saveDataToEs(String index, String type, Map<String, String> idDataMap) {
         if (A.isEmpty(idDataMap)) {
-            return false;
+            return 0;
         } else {
             BulkRequest batchRequest = new BulkRequest();
             for (Map.Entry<String, String> entry : idDataMap.entrySet()) {
@@ -148,12 +149,14 @@ public class EsRepository {
             }
 
             try {
-                long start = System.currentTimeMillis();
                 BulkResponse responses = client.bulk(batchRequest);
-                if (Logs.ROOT_LOG.isInfoEnabled()) {
-                    Logs.ROOT_LOG.info("{}/{} async batch({}) time({})",
-                            index, type, responses.getItems().length, (System.currentTimeMillis() - start + "ms"));
+                int size = responses.getItems().length;
+                for (BulkItemResponse response : responses) {
+                    if (response.isFailed()) {
+                        size--;
+                    }
                 }
+                return size;
             } catch (IOException e) {
                 // <= 6.3.1 version, suggest field if empty will throw IAE(write is good)
                 // org.elasticsearch.index.mapper.CompletionFieldMapper.parse(443)
@@ -161,8 +164,8 @@ public class EsRepository {
                 if (Logs.ROOT_LOG.isErrorEnabled()) {
                     Logs.ROOT_LOG.error(String.format("async create or update (%s/%s) es exception", index, type), e);
                 }
+                return 0;
             }
-            return true;
         }
     }
 }
