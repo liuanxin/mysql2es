@@ -76,7 +76,7 @@ public final class U {
     }
 
     public static String uuid() {
-        return UUID.randomUUID().toString().replace("-", "");
+        return UUID.randomUUID().toString();
     }
 
     public static void assertNil(Object obj, String msg) {
