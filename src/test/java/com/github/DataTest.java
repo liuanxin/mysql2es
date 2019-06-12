@@ -55,7 +55,7 @@ public class DataTest {
             try {
                 boolean deleteSchemeFlag = esRepository.deleteScheme(index, type).get();
                 if (deleteSchemeFlag) {
-                    F.delete(index, type);
+                    F.delete(relation.getTable(), index, type);
                 }
             } catch(InterruptedException | ExecutionException e){
                 if (Logs.ROOT_LOG.isErrorEnabled()) {

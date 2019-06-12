@@ -27,9 +27,7 @@ public class DataInit {
 //        U.assertNil(config, "no config with MariaDB/MySQL and es mapping");
 //        config.check();
 //
-//        Settings settings = Settings.builder()
-//                .put("client.transport.sniff", true)
-//                .build();
+//        Settings settings = Settings.builder().put("client.transport.sniff", true).build();
 //        TransportClient client = new PreBuiltTransportClient(settings);
 //        for (String ipAndPort : config.getIpPort()) {
 //            String[] ipPort = ipAndPort.split(":");

@@ -31,7 +31,7 @@ public class SchemeTest {
     @Sql(value = {"classpath:sql/delete.sql"}, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
     @Test
     public void test() {
-        String domain = A.first(config.getIpPort());
+        String domain = config.ipAndPort();
         for (Relation relation : config.getRelation()) {
             String index = relation.useIndex();
             String type = relation.getType();
