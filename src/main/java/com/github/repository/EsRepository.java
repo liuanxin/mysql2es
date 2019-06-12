@@ -4,7 +4,6 @@ import com.github.util.A;
 import com.github.util.Jsons;
 import com.github.util.Logs;
 import com.github.util.U;
-import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
@@ -136,7 +135,7 @@ public class EsRepository {
     }
 
 
-    public boolean saveDataToEs(String runId, String index, String type, Map<String, String> idDataMap) {
+    public boolean saveDataToEs(String index, String type, Map<String, String> idDataMap) {
         if (A.isEmpty(idDataMap)) {
             return false;
         } else {
@@ -148,26 +147,21 @@ public class EsRepository {
                 }
             }
 
-            long start = System.currentTimeMillis();
-            client.bulkAsync(batchRequest, new ActionListener<BulkResponse>() {
-                @Override
-                public void onResponse(BulkResponse responses) {
-                    if (Logs.ROOT_LOG.isInfoEnabled()) {
-                        Logs.ROOT_LOG.info("run-id({}) {}/{} async batch({}) time({})", runId,
-                                index, type, responses.getItems().length, (System.currentTimeMillis() - start + "ms"));
-                    }
+            try {
+                long start = System.currentTimeMillis();
+                BulkResponse responses = client.bulk(batchRequest);
+                if (Logs.ROOT_LOG.isInfoEnabled()) {
+                    Logs.ROOT_LOG.info("{}/{} async batch({}) time({})",
+                            index, type, responses.getItems().length, (System.currentTimeMillis() - start + "ms"));
                 }
-                @Override
-                public void onFailure(Exception e) {
-                    // <= 6.3.1 version, suggest field if empty will throw IAE(write is good)
-                    // org.elasticsearch.index.mapper.CompletionFieldMapper.parse(443)
-                    // https://github.com/elastic/elasticsearch/pull/30713/files
-                    if (Logs.ROOT_LOG.isErrorEnabled()) {
-                        Logs.ROOT_LOG.error(String.format("run-id(%s) async create or update (%s/%s) es exception",
-                                        runId, index, type), e);
-                    }
+            } catch (IOException e) {
+                // <= 6.3.1 version, suggest field if empty will throw IAE(write is good)
+                // org.elasticsearch.index.mapper.CompletionFieldMapper.parse(443)
+                // https://github.com/elastic/elasticsearch/pull/30713/files
+                if (Logs.ROOT_LOG.isErrorEnabled()) {
+                    Logs.ROOT_LOG.error(String.format("async create or update (%s/%s) es exception", index, type), e);
                 }
-            });
+            }
             return true;
         }
     }

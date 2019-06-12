@@ -116,10 +116,9 @@ public class DataRepository {
         String sql = relation.querySql(lastValue);
         long start = System.currentTimeMillis();
         List<Map<String, Object>> dataList = jdbcTemplate.queryForList(sql);
-        String runId = U.uuid();
         if (Logs.ROOT_LOG.isInfoEnabled()) {
-            Logs.ROOT_LOG.info("run-id({}) sql({}) time({}), size({})",
-                    runId, sql, (System.currentTimeMillis() - start + "ms"), dataList.size());
+            Logs.ROOT_LOG.info("sql({}) time({}), size({})",
+                    sql, (System.currentTimeMillis() - start + "ms"), dataList.size());
         }
         if (A.isEmpty(dataList)) {
             // if not data, can break loop
@@ -129,7 +128,7 @@ public class DataRepository {
         String index = relation.useIndex();
         String type = relation.getType();
 
-        boolean flag = esRepository.saveDataToEs(runId, index, type, fixDocument(relation, dataList));
+        boolean flag = esRepository.saveDataToEs(index, type, fixDocument(relation, dataList));
         if (!flag) {
             // if write to es false, can break loop
             return null;
@@ -168,15 +167,14 @@ public class DataRepository {
                     String equalsSql = relation.equalsQuerySql(tempColumnValue, i);
                     start = System.currentTimeMillis();
                     List<Map<String, Object>> equalsDataList = jdbcTemplate.queryForList(equalsSql);
-                    String runId = U.uuid();
                     if (Logs.ROOT_LOG.isInfoEnabled()) {
-                        Logs.ROOT_LOG.info("run-id({}) equals sql({}) time({}), size({})",
-                                runId, equalsSql, (System.currentTimeMillis() - start + "ms"), equalsDataList.size());
+                        Logs.ROOT_LOG.info("equals sql({}) time({}), size({})",
+                                equalsSql, (System.currentTimeMillis() - start + "ms"), equalsDataList.size());
                     }
                     if (A.isNotEmpty(equalsDataList)) {
                         String index = relation.useIndex();
                         String type = relation.getType();
-                        esRepository.saveDataToEs(runId, index, type, fixDocument(relation, equalsDataList));
+                        esRepository.saveDataToEs(index, type, fixDocument(relation, equalsDataList));
                         // If the data changes when querying, the number of returned queries above may be less than expected
                         if (equalsDataList.size() < relation.getLimit()) {
                             return;
