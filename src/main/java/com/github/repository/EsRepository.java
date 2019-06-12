@@ -136,7 +136,7 @@ public class EsRepository {
     }
 
 
-    public boolean saveDataToEs(String index, String type, Map<String, String> idDataMap) {
+    public boolean saveDataToEs(String runId, String index, String type, Map<String, String> idDataMap) {
         if (A.isEmpty(idDataMap)) {
             return false;
         } else {
@@ -153,7 +153,7 @@ public class EsRepository {
                 @Override
                 public void onResponse(BulkResponse responses) {
                     if (Logs.ROOT_LOG.isInfoEnabled()) {
-                        Logs.ROOT_LOG.info("index({}) type({}) batch({}) time({})",
+                        Logs.ROOT_LOG.info("run-id({}) {}/{} async batch({}) time({})", runId,
                                 index, type, responses.getItems().length, (System.currentTimeMillis() - start + "ms"));
                     }
                 }
@@ -163,7 +163,8 @@ public class EsRepository {
                     // org.elasticsearch.index.mapper.CompletionFieldMapper.parse(443)
                     // https://github.com/elastic/elasticsearch/pull/30713/files
                     if (Logs.ROOT_LOG.isErrorEnabled()) {
-                        Logs.ROOT_LOG.error(String.format("create or update (%s/%s) es exception", index, type), e);
+                        Logs.ROOT_LOG.error(String.format("run-id(%s) async create or update (%s/%s) es exception",
+                                        runId, index, type), e);
                     }
                 }
             });
