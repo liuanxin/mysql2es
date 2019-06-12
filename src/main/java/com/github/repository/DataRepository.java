@@ -157,10 +157,9 @@ public class DataRepository {
             String equalsCountSql = relation.equalsCountSql(tempColumnValue);
             long start = System.currentTimeMillis();
             Integer equalsCount = A.first(jdbcTemplate.queryForList(equalsCountSql, Integer.class));
-            String runId = U.uuid();
             if (Logs.ROOT_LOG.isInfoEnabled()) {
-                Logs.ROOT_LOG.info("run-id({}) count equals sql({}) time({}), return({})",
-                        runId, equalsCountSql, (System.currentTimeMillis() - start + "ms"), equalsCount);
+                Logs.ROOT_LOG.info("count equals sql({}) time({}), return({})",
+                        equalsCountSql, (System.currentTimeMillis() - start + "ms"), equalsCount);
             }
 
             if (U.greater0(equalsCount)) {
@@ -169,6 +168,7 @@ public class DataRepository {
                     String equalsSql = relation.equalsQuerySql(tempColumnValue, i);
                     start = System.currentTimeMillis();
                     List<Map<String, Object>> equalsDataList = jdbcTemplate.queryForList(equalsSql);
+                    String runId = U.uuid();
                     if (Logs.ROOT_LOG.isInfoEnabled()) {
                         Logs.ROOT_LOG.info("run-id({}) equals sql({}) time({}), size({})",
                                 runId, equalsSql, (System.currentTimeMillis() - start + "ms"), equalsDataList.size());
