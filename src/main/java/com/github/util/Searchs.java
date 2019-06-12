@@ -96,7 +96,7 @@ public final class Searchs {
             map.put("fields", fieldMap);
         }
         else if (DATE_TYPE.equals(type)) {
-            map.put("format", "epoch_millis||yyyy-MM-dd HH:mm:ss SSS||yyyy-MM-dd||yyyy-MM-dd HH:mm:ss");
+            map.put("format", "epoch_millis||yyyy-MM-dd HH:mm:ss SSS||yyyy-MM-dd||yyyy-MM-dd HH:mm:ss||strict_date_optional_time");
         }
         return map;
     }
@@ -116,7 +116,7 @@ public final class Searchs {
         else if (fieldType.contains("date") || fieldType.contains("time")) {
             return A.maps(
                     "type", "date",
-                    "format", "epoch_millis||yyyy-MM-dd HH:mm:ss SSS||yyyy-MM-dd||yyyy-MM-dd HH:mm:ss"
+                    "format", "epoch_millis||yyyy-MM-dd HH:mm:ss SSS||yyyy-MM-dd||yyyy-MM-dd HH:mm:ss||strict_date_optional_time"
             );
         }
         else if (fieldType.contains("float")) {

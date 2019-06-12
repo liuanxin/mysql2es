@@ -40,7 +40,7 @@ public class Runner implements ApplicationRunner {
         }
 
         try {
-            String domain = A.first(config.getIpPort());
+            String domain = config.ipAndPort();
             for (Relation relation : config.getRelation()) {
                 Map<String, Map> properties = dataRepository.dbToEsScheme(relation);
                 if (relation.isScheme() && A.isNotEmpty(properties)) {

@@ -1,6 +1,5 @@
 package com.github.repository;
 
-import com.github.model.Config;
 import com.github.model.Relation;
 import com.github.util.*;
 import com.google.common.collect.Lists;
@@ -20,13 +19,11 @@ import java.util.concurrent.Future;
 @Component
 public class DataRepository {
 
-    private final Config config;
     private final JdbcTemplate jdbcTemplate;
     private final EsRepository esRepository;
 
     @Autowired
-    public DataRepository(Config config, JdbcTemplate jdbcTemplate, EsRepository esRepository) {
-        this.config = config;
+    public DataRepository(JdbcTemplate jdbcTemplate, EsRepository esRepository) {
         this.jdbcTemplate = jdbcTemplate;
         this.esRepository = esRepository;
     }
@@ -91,11 +88,11 @@ public class DataRepository {
         return new AsyncResult<>(true);
     }
     private void saveData(Relation relation) {
+        String table = relation.getTable();
         String index = relation.useIndex();
         String type = relation.getType();
 
-        String tempColumnValue = F.read(index, type);
-        // select count(*) from ... where increment > xxx
+        String tempColumnValue = F.read(table, index, type);
         String countSql = relation.countSql(tempColumnValue);
         long start = System.currentTimeMillis();
         Integer count = A.first(jdbcTemplate.queryForList(countSql, Integer.class));
@@ -108,15 +105,14 @@ public class DataRepository {
         }
 
         for (;;) {
-            tempColumnValue = handleGreaterAndEquals(relation, index, type, tempColumnValue);
+            tempColumnValue = handleGreaterAndEquals(relation, tempColumnValue);
             if (U.isBlank(tempColumnValue)) {
                 return;
             }
         }
     }
 
-    private String handleGreaterAndEquals(Relation relation, String index, String type, String tempColumnValue) {
-        // select ... from ... where time > '2010-10-10 00:00:01' order by time limit 1000
+    private String handleGreaterAndEquals(Relation relation, String tempColumnValue) {
         String sql = relation.querySql(tempColumnValue);
         long start = System.currentTimeMillis();
         List<Map<String, Object>> dataList = jdbcTemplate.queryForList(sql);
@@ -128,6 +124,10 @@ public class DataRepository {
             // if not data, can break loop
             return null;
         }
+
+        String index = relation.useIndex();
+        String type = relation.getType();
+
         boolean flag = esRepository.saveDataToEs(index, type, fixDocument(relation, dataList));
         if (!flag) {
             // if write to es false, can break loop
@@ -139,9 +139,9 @@ public class DataRepository {
             return null;
         }
 
-        handleEquals(relation, index, type, tempColumnValue);
+        handleEquals(relation, tempColumnValue);
         // write last record in temp file
-        F.write(index, type, tempColumnValue);
+        F.write(relation.getTable(), index, type, tempColumnValue);
 
         // if sql: limit 1000, query data size 900, can break loop
         if (dataList.size() < relation.getLimit()) {
@@ -149,11 +149,10 @@ public class DataRepository {
         }
         return tempColumnValue;
     }
-    private void handleEquals(Relation relation, String index, String type, String tempColumnValue) {
+    private void handleEquals(Relation relation, String tempColumnValue) {
         // if was number: id > 123, don't need to id = 123
         // not number: time > '2010-10-10 00:00:01', this: time = '2010-10-10 00:00:01'
         if (U.isNotNumber(tempColumnValue)) {
-            // select count(*) from ... where time = '2010-10-10 00:00:01'
             String equalsCountSql = relation.equalsCountSql(tempColumnValue);
             long start = System.currentTimeMillis();
             Integer equalsCount = A.first(jdbcTemplate.queryForList(equalsCountSql, Integer.class));
@@ -165,7 +164,6 @@ public class DataRepository {
             if (U.greater0(equalsCount)) {
                 int equalsLoopCount = relation.loopCount(equalsCount);
                 for (int i = 0; i < equalsLoopCount; i++) {
-                    // select ... from ... where time = '2010-10-10 00:00:01' limit 0,1000|1000,1000|2000,1000|etc.
                     String equalsSql = relation.equalsQuerySql(tempColumnValue, i);
                     start = System.currentTimeMillis();
                     List<Map<String, Object>> equalsDataList = jdbcTemplate.queryForList(equalsSql);
@@ -174,6 +172,8 @@ public class DataRepository {
                                 equalsSql, (System.currentTimeMillis() - start + "ms"), equalsDataList.size());
                     }
                     if (A.isNotEmpty(equalsDataList)) {
+                        String index = relation.useIndex();
+                        String type = relation.getType();
                         esRepository.saveDataToEs(index, type, fixDocument(relation, equalsDataList));
                         // If the data changes when querying, the number of returned queries above may be less than expected
                         if (equalsDataList.size() < relation.getLimit()) {
