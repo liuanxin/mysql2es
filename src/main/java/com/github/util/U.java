@@ -29,7 +29,7 @@ public final class U {
 
     // Invalid index name [abcXyz], must be lowercase ==> convert to : abc-xyz
 
-    public static String tableToType(String table) {
+    public static String tableToIndex(String table) {
         return CaseFormat.UPPER_UNDERSCORE.converterTo(CaseFormat.LOWER_HYPHEN)
                 .convert(table.toUpperCase().startsWith("T_") ? table.toUpperCase().substring(2) : table);
     }

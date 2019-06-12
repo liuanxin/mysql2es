@@ -76,6 +76,6 @@ public class Config {
         }
     }
     public String ipAndPort() {
-        return A.isEmpty(ipPort) ? U.EMPTY : ipPort.iterator().next();
+        return A.isEmpty(ipPort) ? U.EMPTY : A.first(ipPort);
     }
 }

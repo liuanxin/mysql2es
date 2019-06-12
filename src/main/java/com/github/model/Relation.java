@@ -93,11 +93,11 @@ public class Relation {
     public String useIndex() {
         if (U.isNotBlank(index)) {
             return index;
+        } else if (U.isNotBlank(table)) {
+            return U.tableToIndex(table);
+        } else {
+            return U.EMPTY;
         }
-        if (U.isNotBlank(table)) {
-            return U.tableToType(table);
-        }
-        return U.EMPTY;
     }
 
     /** if not config the 「mapping」, generate from 「column name」 */
@@ -120,19 +120,21 @@ public class Relation {
         return String.format("DESC %s", table);
     }
 
-    // this: time > '2010-01-01 01:00:00'
+    /** select count(*) from ... where (id > xxx | time > '2010-01-01 01:00:00') */
     public String countSql(String param) {
         return countSql(GT, param);
     }
+    /** select ... from ... where time > '2010-10-10 00:00:01' order by time limit 1000 */
     public String querySql(String param) {
-        // just limit 1000000
+        // just limit 1000, not limit 1000000, 1000
         return querySql(GT, param, 0);
     }
 
-    // next: time = '2010-01-01 01:00:00'
+    /** select count(*) from ... where time = '2010-10-10 00:00:01' */
     public String equalsCountSql(String param) {
         return countSql(EQUALS, param);
     }
+    /** select ... from ... where time = '2010-10-10 00:00:01' limit 0,1000|1000,1000|2000,1000|etc. */
     public String equalsQuerySql(String param, int page) {
         int pageStart = page * limit;
         if (pageStart >= bigCountToSql) {
