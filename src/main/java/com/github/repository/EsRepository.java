@@ -41,10 +41,12 @@ public class EsRepository {
 
         try {
             if (indices.exists(new GetIndexRequest().indices(index))) {
+                long start = System.currentTimeMillis();
                 DeleteIndexResponse resp = indices.delete(new DeleteIndexRequest(index));
                 boolean flag = resp.isAcknowledged();
                 if (Logs.ROOT_LOG.isDebugEnabled()) {
-                    Logs.ROOT_LOG.debug("delete scheme ({}/{}) return: ({})", index, type, flag);
+                    Logs.ROOT_LOG.debug("delete scheme ({}/{}) time({}) return({})",
+                            index, type, (System.currentTimeMillis() - start + "ms"), flag);
                 }
             }
         } catch (IOException e) {
@@ -74,7 +76,13 @@ public class EsRepository {
             if (Logs.ROOT_LOG.isDebugEnabled()) {
                 Logs.ROOT_LOG.debug("curl -I \"{}/{}\"", domain, index);
             }
-            return indices.exists(new GetIndexRequest().indices(index));
+            long start = System.currentTimeMillis();
+            boolean ack = indices.exists(new GetIndexRequest().indices(index));
+            if (Logs.ROOT_LOG.isDebugEnabled()) {
+                Logs.ROOT_LOG.debug("query index({}) exists time({}) return({})",
+                        index, (System.currentTimeMillis() - start + "ms"), ack);
+            }
+            return ack;
         } catch (IOException e) {
             if (Logs.ROOT_LOG.isErrorEnabled()) {
                 Logs.ROOT_LOG.error(String.format("query index(%s) exists exception", index), e);
@@ -91,9 +99,11 @@ public class EsRepository {
                 Logs.ROOT_LOG.debug("curl -XPUT \"{}/{}\"", domain, index);
                 // Logs.ROOT_LOG.debug("curl -X PUT \"{}/{}\" -d '{\"settings\":{}}'", domain, index, settings);
             }
+            long start = System.currentTimeMillis();
             boolean ack = indices.create(request).isAcknowledged();
             if (Logs.ROOT_LOG.isDebugEnabled()) {
-                Logs.ROOT_LOG.debug("create index({}) return {}", index, ack);
+                Logs.ROOT_LOG.debug("create index({}) time({}) return({})",
+                        index, (System.currentTimeMillis() - start + "ms"), ack);
             }
             return ack;
         } catch (IOException e) {
@@ -103,16 +113,19 @@ public class EsRepository {
             return false;
         }
     }
-    private void createScheme(IndicesClient indices, String domain, String index, String type, Map<String, Map> properties) {
+    private void createScheme(IndicesClient indices, String domain, String index,
+                              String type, Map<String, Map> properties) {
         try {
             String source = Jsons.toJson(A.maps("properties", properties));
             if (Logs.ROOT_LOG.isDebugEnabled()) {
                 Logs.ROOT_LOG.debug("curl -XPUT \"{}/{}/_mapping/_doc\" -d '{}'", domain, index, source);
             }
             PutMappingRequest request = new PutMappingRequest(index).type(type).source(source, XContentType.JSON);
+            long start = System.currentTimeMillis();
             boolean ack = indices.putMapping(request).isAcknowledged();
             if (Logs.ROOT_LOG.isInfoEnabled()) {
-                Logs.ROOT_LOG.info("put ({}/{}) mapping return {}", index, type, ack);
+                Logs.ROOT_LOG.info("put ({}/{}) mapping time({}) return({})",
+                        index, type, (System.currentTimeMillis() - start + "ms"), ack);
             }
         } catch (IOException e) {
             if (Logs.ROOT_LOG.isErrorEnabled()) {
@@ -132,9 +145,11 @@ public class EsRepository {
                 }
             }
             try {
+                long start = System.currentTimeMillis();
                 BulkResponse bulk = client.bulk(batchRequest);
                 if (Logs.ROOT_LOG.isInfoEnabled()) {
-                    Logs.ROOT_LOG.info("index({}) type({}) batch({}) success", index, type, bulk.getItems().length);
+                    Logs.ROOT_LOG.info("index({}) type({}) batch({}) time({})",
+                            index, type, bulk.getItems().length, (System.currentTimeMillis() - start + "ms"));
                 }
                 return true;
             } catch (IOException e) {
@@ -142,7 +157,7 @@ public class EsRepository {
                 // org.elasticsearch.index.mapper.CompletionFieldMapper.parse(443)
                 // https://github.com/elastic/elasticsearch/pull/30713/files
                 if (Logs.ROOT_LOG.isErrorEnabled()) {
-                    Logs.ROOT_LOG.error(String.format("create or update index(%s) type(%s) es exception", index, type), e);
+                    Logs.ROOT_LOG.error(String.format("create or update (%s/%s) es exception", index, type), e);
                 }
             }
         }
