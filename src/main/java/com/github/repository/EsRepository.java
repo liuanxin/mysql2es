@@ -162,7 +162,7 @@ public class EsRepository {
                 // org.elasticsearch.index.mapper.CompletionFieldMapper.parse(443)
                 // https://github.com/elastic/elasticsearch/pull/30713/files
                 if (Logs.ROOT_LOG.isErrorEnabled()) {
-                    Logs.ROOT_LOG.error(String.format("async create or update (%s/%s) es exception", index, type), e);
+                    Logs.ROOT_LOG.error(String.format("create or update (%s/%s) es data exception", index, type), e);
                 }
                 return 0;
             }
