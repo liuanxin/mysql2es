@@ -21,7 +21,7 @@ config:
   relation:
     -
       table: t_product           # *** Must be set and have primary key. The primary key will generate the id of /index/type/id in Elasticsearch, if has multi, id where append with "-"
-      increment-column: "id"     # *** Must be set. Indicates that it is used for data increment operations. Generally, it uses auto increment ~id~ or ~time~
+      increment-column: id       # *** Must be set. Indicates that it is used for data increment operations. Generally, it uses auto increment ~id~ or ~time~
 
       # Starting with Elasticsearch 6.0, type defaults to _doc, and the index in Elasticsearch directly corresponds to the database table name
       index: product             # Can not be set. Indicates the index of /index/type/id in Elasticsearch, not set will be generated from the database table name (t_some_one ==> some-one), 6.0 start index name must be lowercase
@@ -30,13 +30,13 @@ config:
       sql: select * from t_table # Can not be set. Custom sql statement (do not use ORDER BY and LIMIT, will be automatically added based on increment-column), no setting will automatically assemble from the database table
       limit: 2000                # Can not be set. The number of times to get from the database, the default is 1000
 
-      key-column: ["id"]         # Can not be set. The id column used to generate the index will not be automatically retrieved from the table. When the table has a primary key and multiple columns of unique constraints, can use this configuration when you want to use the unique constraint to do the index id.
+      key-column: [id]           # Can not be set. The id column used to generate the index will not be automatically retrieved from the table. When the table has a primary key and multiple columns of unique constraints, can use this configuration when you want to use the unique constraint to do the index id.
       id-prefix:                 # Can not be set. Use when you want to prefix the index id
       id-suffix:                 # Can not be set. Use when you want to suffix the index id
 
       mapping:                   # Can not be set. By default, it will be generated from the table field (c_some_type ==> someType), and only special cases can be set.
         c_type: type               # table column(Use alias if there is an alias) : elasticsearch field
-      ignore-column: ["field"]   # Can not be set. The above sql does not want to write the index of the field (if the field has an alias, use an alias)
+      ignore-column: [field]     # Can not be set. The above sql does not want to write the index of the field (if the field has an alias, use an alias)
 
       big-count-to-sql: 2000     # Can not be set. Limit start in sql, start in 1000 exceeds this value will be optimized into inner join statement, the default is 2000
       primary-key: id            # Can not be set. The primary key name, when the table data is a lot, use  LIMIT 10million,1000  efficiency will be very slow, this field will optimize the sql statement, the default is id
