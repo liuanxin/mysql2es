@@ -36,7 +36,7 @@ config:
 
       mapping:                   # Can not be set. By default, it will be generated from the table field (c_some_type ==> someType), and only special cases can be set.
         c_type: type               # table column(Use alias if there is an alias) : elasticsearch field
-      ignore-column: [field]     # Can not be set. The above sql does not want to write the index of the field (if the field has an alias, use an alias)
+      ignore-column: [c1, c2]    # Can not be set. The above sql does not want to write the index of the column (if the column has an alias, use the alias)
 
       big-count-to-sql: 2000     # Can not be set. Limit start in sql, start in 1000 exceeds this value will be optimized into inner join statement, the default is 2000
       primary-key: id            # Can not be set. The primary key name, when the table data is a lot, use  LIMIT 10million,1000  efficiency will be very slow, this field will optimize the sql statement, the default is id
