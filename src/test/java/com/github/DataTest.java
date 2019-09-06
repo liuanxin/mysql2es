@@ -9,7 +9,6 @@ import com.github.util.Logs;
 import com.google.common.collect.Lists;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -22,14 +21,14 @@ import java.util.concurrent.Future;
 @RunWith(SpringRunner.class)
 public class DataTest {
 
-    @Autowired
     private Config config;
-
-    @Autowired
     private EsRepository esRepository;
-
-    @Autowired
     private DataRepository dataRepository;
+    public DataTest(Config config, EsRepository esRepository, DataRepository dataRepository) {
+        this.config = config;
+        this.esRepository = esRepository;
+        this.dataRepository = dataRepository;
+    }
 
     @Sql({"classpath:sql/scheme.sql", "classpath:sql/insert.sql"})
     @Sql(value = {"classpath:sql/delete.sql"}, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)

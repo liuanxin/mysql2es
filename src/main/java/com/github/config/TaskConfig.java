@@ -5,7 +5,6 @@ import com.github.util.A;
 import com.github.util.U;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.aop.interceptor.SimpleAsyncUncaughtExceptionHandler;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -18,8 +17,6 @@ import java.util.concurrent.Executor;
 public class TaskConfig implements AsyncConfigurer {
 
     private final Config config;
-
-    @Autowired
     public TaskConfig(Config config) {
         this.config = config;
     }

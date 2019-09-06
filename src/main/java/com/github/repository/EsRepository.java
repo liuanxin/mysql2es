@@ -16,7 +16,6 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.IndicesClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Component;
@@ -29,8 +28,6 @@ import java.util.concurrent.Future;
 public class EsRepository {
 
     private final RestHighLevelClient client;
-
-    @Autowired
     public EsRepository(RestHighLevelClient client) {
         this.client = client;
     }

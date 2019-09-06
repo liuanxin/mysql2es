@@ -6,7 +6,6 @@ import com.github.repository.DataRepository;
 import com.github.util.Logs;
 import com.github.util.U;
 import com.google.common.collect.Maps;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
@@ -23,8 +22,6 @@ public class Job implements SchedulingConfigurer {
 
     private final Config config;
     private final DataRepository dataRepository;
-
-    @Autowired
     public Job(Config config, DataRepository dataRepository) {
         this.config = config;
         this.dataRepository = dataRepository;
