@@ -11,13 +11,13 @@ public class F {
 
     private static String getFileName(String table, String index, String type) {
         StringBuilder sbd = new StringBuilder();
-        String tableToIndex = U.tableToIndex(table);
-        if (!tableToIndex.equals(index)) {
-            sbd.append(tableToIndex).append("-");
-        }
         sbd.append(index);
         if (!"_doc".equals(type)) {
             sbd.append("-").append(type);
+        }
+        String tableToIndex = U.tableToIndex(table);
+        if (!tableToIndex.equals(index)) {
+            sbd.append("-").append(tableToIndex);
         }
         return U.addSuffix(Const.TMP) + sbd.toString();
     }

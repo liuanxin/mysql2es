@@ -7,7 +7,6 @@ import com.github.repository.EsRepository;
 import com.github.util.A;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -18,14 +17,14 @@ import java.util.Map;
 @RunWith(SpringRunner.class)
 public class SchemeTest {
 
-    @Autowired
     private Config config;
-
-    @Autowired
     private EsRepository esRepository;
-
-    @Autowired
     private DataRepository dataRepository;
+    public SchemeTest(Config config, EsRepository esRepository, DataRepository dataRepository) {
+        this.config = config;
+        this.esRepository = esRepository;
+        this.dataRepository = dataRepository;
+    }
 
     @Sql({"classpath:sql/scheme.sql"})
     @Sql(value = {"classpath:sql/delete.sql"}, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
