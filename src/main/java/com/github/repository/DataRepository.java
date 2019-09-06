@@ -4,7 +4,6 @@ import com.github.model.Relation;
 import com.github.util.*;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
@@ -21,8 +20,6 @@ public class DataRepository {
 
     private final JdbcTemplate jdbcTemplate;
     private final EsRepository esRepository;
-
-    @Autowired
     public DataRepository(JdbcTemplate jdbcTemplate, EsRepository esRepository) {
         this.jdbcTemplate = jdbcTemplate;
         this.esRepository = esRepository;

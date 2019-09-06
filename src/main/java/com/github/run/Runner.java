@@ -6,7 +6,6 @@ import com.github.repository.DataRepository;
 import com.github.repository.EsRepository;
 import com.github.util.A;
 import com.github.util.Logs;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Configuration;
@@ -21,17 +20,11 @@ public class Runner implements ApplicationRunner {
     private final Config config;
     private final EsRepository esRepository;
     private final DataRepository dataRepository;
-
-
-    @Autowired
     public Runner(Config config, EsRepository esRepository, DataRepository dataRepository) {
         this.config = config;
         this.esRepository = esRepository;
         this.dataRepository = dataRepository;
     }
-
-    // @Autowired
-    // private EsTransportClientRepository esTransportClientRepository;
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
