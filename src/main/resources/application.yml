@@ -2,7 +2,7 @@
 logging.config: classpath:log-dev.xml
 
 spring.datasource:
-  url: jdbc:mysql://dev-db:3306/db?useSSL=false&useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&statementInterceptors=com.github.util.sql.PrintSql
+  url: jdbc:mysql://dev-db:3306/db?useAffectedRows=true&useSSL=false&useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&statementInterceptors=com.github.util.sql.PrintSql8
   username: root
   password: root
   hikari:
