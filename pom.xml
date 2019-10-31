@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.0.4.RELEASE</version>
+        <version>2.2.0.RELEASE</version>
         <relativePath/>
     </parent>
 
@@ -20,12 +20,12 @@
         <elasticsearch.version>6.3.2</elasticsearch.version>
         <hikaricp.version>3.2.0</hikaricp.version>
 
-        <commons-lang3.version>3.8.1</commons-lang3.version>
-        <guava.version>27.0-jre</guava.version>
-        <jackson.version>2.9.7</jackson.version>
-        <joda.version>2.10.1</joda.version>
+        <commons-lang3.version>3.9</commons-lang3.version>
+        <guava.version>28.1-jre</guava.version>
+        <jackson.version>2.10.0</jackson.version>
+        <joda.version>2.10.4</joda.version>
     </properties>
-    
+
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -45,7 +45,7 @@
                 <artifactId>HikariCP</artifactId>
                 <version>${hikaricp.version}</version>
             </dependency>
-            
+
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
