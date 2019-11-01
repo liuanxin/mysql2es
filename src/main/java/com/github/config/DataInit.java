@@ -1,21 +1,14 @@
 package com.github.config;
 
 import com.github.model.Config;
-import com.github.util.U;
-import com.google.common.collect.Lists;
-import org.apache.http.HttpHost;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.List;
-
 @Configuration
 public class DataInit {
 
-    @Bean
+    @Bean(initMethod = "check")
     @ConfigurationProperties(prefix = "config")
     public Config config() {
         return new Config();
@@ -25,7 +18,6 @@ public class DataInit {
 //    public TransportClient connect() {
 //        Config config = config();
 //        U.assertNil(config, "no config with MariaDB/MySQL and es mapping");
-//        config.check();
 //
 //        Settings settings = Settings.builder().put("client.transport.sniff", true).build();
 //        TransportClient client = new PreBuiltTransportClient(settings);
@@ -43,18 +35,34 @@ public class DataInit {
 //        return client;
 //    }
 
-    // https://www.elastic.co/guide/en/elasticsearch/client/index.html
+//    // https://www.elastic.co/guide/en/elasticsearch/client/index.html
 
-    @Bean
-    public RestHighLevelClient search() {
-        Config config = config();
-        U.assertNil(config, "no config with MariaDB/MySQL and es mapping");
-        config.check();
-
-        List<HttpHost> hostList = Lists.newArrayList();
-        for (String ipAndPort : config.getIpPort()) {
-            hostList.add(HttpHost.create(ipAndPort));
-        }
-        return new RestHighLevelClient(RestClient.builder(hostList.toArray(new HttpHost[0])));
-    }
+//    // @see org.springframework.boot.autoconfigure.elasticsearch.rest.RestClientConfigurations.RestHighLevelClientConfiguration
+//    @Bean
+//    public RestHighLevelClient search() {
+//        Config config = config();
+//        U.assertNil(config, "no config with MariaDB/MySQL and es mapping");
+//
+//        String searchUrl = config.getIpPort();
+//        String username = config.getUsername();
+//        String password = config.getPassword();
+//
+//        String[] ipPortArray = searchUrl.split(",");
+//        List<HttpHost> hostList = Lists.newArrayList();
+//        for (String ipAndPort : ipPortArray) {
+//            if (U.isNotBlank(ipAndPort)) {
+//                hostList.add(HttpHost.create(ipAndPort.trim()));
+//            }
+//        }
+//
+//        RestClientBuilder builder = RestClient.builder(hostList.toArray(new HttpHost[0]));
+//
+//        if (U.isNotBlank(username) && U.isNotBlank(password)) {
+//            CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+//            credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(username, password));
+//            builder.setHttpClientConfigCallback(httpClientBuilder ->
+//                    httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
+//        }
+//        return new RestHighLevelClient(builder);
+//    }
 }
