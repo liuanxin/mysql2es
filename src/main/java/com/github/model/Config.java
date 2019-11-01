@@ -2,7 +2,6 @@ package com.github.model;
 
 import com.github.util.A;
 import com.github.util.U;
-import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,8 +24,6 @@ import java.util.List;
 @AllArgsConstructor
 @Accessors(chain = true)
 public class Config {
-
-    private List<String> ipPort = Lists.newArrayList("127.0.0.1:9200");
 
     /**
      * <pre>
@@ -74,8 +71,5 @@ public class Config {
         for (Relation r : relation) {
             r.check();
         }
-    }
-    public String ipAndPort() {
-        return A.isEmpty(ipPort) ? U.EMPTY : A.first(ipPort);
     }
 }

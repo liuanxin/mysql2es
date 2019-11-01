@@ -18,7 +18,7 @@ public final class Searchs {
 
     private static final String STRING_TYPE = "text";
     private static final String DATE_TYPE = "date";
-    
+
     /** https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html */
     private static final Map<Class<?>, String> TYPE_MAPPING = A.maps(
             boolean.class, "boolean",
@@ -82,6 +82,7 @@ public final class Searchs {
                 fieldMap.put("pinyin", A.maps("type", STRING_TYPE, "analyzer", "simple_pinyin"));
                 fieldMap.put("full_pinyin", A.maps("type", STRING_TYPE, "analyzer", "full_pinyin"));
             }
+            // for suggest: https://elasticsearch.cn/article/142
             if (needAnalyzer.suggest()) {
                 fieldMap.put("suggest", A.maps(
                         "type", "completion",
@@ -210,7 +211,7 @@ public final class Searchs {
      *     }
      *   }
      * }
-     *   
+     *
      * private boolean exists(IndicesClient indices, String index) {
      *   try {
      *     return indices.exists(new GetIndexRequest().indices(index));

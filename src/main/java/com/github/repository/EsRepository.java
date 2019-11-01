@@ -56,24 +56,21 @@ public class EsRepository {
     }
 
 
-    public void saveScheme(String domain, String index, String type, Map<String, Map> properties) {
+    public void saveScheme(String index, String type, Map<String, Map> properties) {
         IndicesClient indices = client.indices();
 
-        boolean exists = exists(indices, domain, index);
+        boolean exists = exists(indices, index);
         if (exists) {
             return;
         }
-        boolean create = createIndex(indices, domain, index);
+        boolean create = createIndex(indices, index);
         if (!create) {
             return;
         }
-        createScheme(indices, domain, index, type, properties);
+        createScheme(indices, index, type, properties);
     }
-    private boolean exists(IndicesClient indices, String domain, String index) {
+    private boolean exists(IndicesClient indices, String index) {
         try {
-            if (Logs.ROOT_LOG.isDebugEnabled()) {
-                Logs.ROOT_LOG.debug("curl -I \"{}/{}\"", domain, index);
-            }
             long start = System.currentTimeMillis();
             boolean ack = indices.exists(new GetIndexRequest().indices(index));
             if (Logs.ROOT_LOG.isDebugEnabled()) {
@@ -88,15 +85,11 @@ public class EsRepository {
             return true;
         }
     }
-    private boolean createIndex(IndicesClient indices, String domain, String index) {
+    private boolean createIndex(IndicesClient indices, String index) {
         try {
             CreateIndexRequest request = new CreateIndexRequest(index);
             // String settings = Searchs.getSettings();
             // request.settings(settings, XContentType.JSON);
-            if (Logs.ROOT_LOG.isDebugEnabled()) {
-                Logs.ROOT_LOG.debug("curl -XPUT \"{}/{}\"", domain, index);
-                // Logs.ROOT_LOG.debug("curl -X PUT \"{}/{}\" -d '{\"settings\":{}}'", domain, index, settings);
-            }
             long start = System.currentTimeMillis();
             boolean ack = indices.create(request).isAcknowledged();
             if (Logs.ROOT_LOG.isDebugEnabled()) {
@@ -111,13 +104,9 @@ public class EsRepository {
             return false;
         }
     }
-    private void createScheme(IndicesClient indices, String domain, String index,
-                              String type, Map<String, Map> properties) {
+    private void createScheme(IndicesClient indices, String index, String type, Map<String, Map> properties) {
         try {
             String source = Jsons.toJson(A.maps("properties", properties));
-            if (Logs.ROOT_LOG.isDebugEnabled()) {
-                Logs.ROOT_LOG.debug("curl -XPUT \"{}/{}/_mapping/_doc\" -d '{}'", domain, index, source);
-            }
             PutMappingRequest request = new PutMappingRequest(index).type(type).source(source, XContentType.JSON);
             long start = System.currentTimeMillis();
             boolean ack = indices.putMapping(request).isAcknowledged();
@@ -155,7 +144,7 @@ public class EsRepository {
                 }
                 return size;
             } catch (IOException e) {
-                // <= 6.3.1 version, suggest field if empty will throw IAE(write is good)
+                // <= 6.3.1 version, suggest field if empty will throw IllegalArgumentException(write is good)
                 // org.elasticsearch.index.mapper.CompletionFieldMapper.parse(443)
                 // https://github.com/elastic/elasticsearch/pull/30713/files
                 if (Logs.ROOT_LOG.isErrorEnabled()) {
