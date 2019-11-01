@@ -53,7 +53,7 @@ public class Job implements SchedulingConfigurer {
                 }
             } finally {
                 if (Logs.ROOT_LOG.isInfoEnabled()) {
-                    Logs.ROOT_LOG.info("end of task run");
+                    Logs.ROOT_LOG.info("end of run task");
                 }
             }
         }, new CronTrigger(config.getCron()));
