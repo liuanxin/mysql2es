@@ -30,14 +30,13 @@ public class SchemeTest {
     @Sql(value = {"classpath:sql/delete.sql"}, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
     @Test
     public void test() {
-        String domain = config.ipAndPort();
         for (Relation relation : config.getRelation()) {
             String index = relation.useIndex();
             String type = relation.getType();
 
             Map<String, Map> properties = dataRepository.dbToEsScheme(relation);
             if (relation.isScheme() && A.isNotEmpty(properties)) {
-                esRepository.saveScheme(domain, index, type, properties);
+                esRepository.saveScheme(index, type, properties);
             }
 
             esRepository.deleteScheme(index, type);

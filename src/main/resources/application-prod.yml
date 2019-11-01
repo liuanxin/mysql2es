@@ -1,19 +1,23 @@
 
 logging.config: classpath:log-prod.xml
 
-spring.datasource:
-  url: jdbc:mysql://127.0.0.1:3306/db?useAffectedRows=true&useSSL=false&useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true
-  username: root
-  password: root
-  hikari:
-    minimumIdle: 3
-    maximumPoolSize: 6
-    maxLifetime: 1500000
-    dataSourceProperties:
-      prepStmtCacheSize: 9
-      prepStmtCacheSqlLimit: 12
-      cachePrepStmts: true
-      useServerPrepStmts: true
+spring:
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/db?useAffectedRows=true&useSSL=false&useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true
+    username: root
+    password: root
+    hikari:
+      minimumIdle: 3
+      maximumPoolSize: 6
+      maxLifetime: 1500000
+      dataSourceProperties:
+        prepStmtCacheSize: 9
+        prepStmtCacheSqlLimit: 12
+        cachePrepStmts: true
+        useServerPrepStmts: true
+  elasticsearch.rest:
+    uris: 127.0.0.1:9200
+
 
 config:
   cron: 0/30 * * * * *

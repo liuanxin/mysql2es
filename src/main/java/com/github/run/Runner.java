@@ -33,13 +33,12 @@ public class Runner implements ApplicationRunner {
         }
 
         try {
-            String domain = config.ipAndPort();
             for (Relation relation : config.getRelation()) {
                 Map<String, Map> properties = dataRepository.dbToEsScheme(relation);
                 if (relation.isScheme() && A.isNotEmpty(properties)) {
                     String index = relation.useIndex();
                     String type = relation.getType();
-                    esRepository.saveScheme(domain, index, type, properties);
+                    esRepository.saveScheme(index, type, properties);
                 }
             }
         } finally {

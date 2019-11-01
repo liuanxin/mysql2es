@@ -1,27 +1,29 @@
 
 logging.config: classpath:log-dev.xml
 
-spring.datasource:
-  url: jdbc:mysql://dev-db:3306/db?useAffectedRows=true&useSSL=false&useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&statementInterceptors=com.github.util.sql.PrintSql8
-  username: root
-  password: root
-  hikari:
-    minimumIdle: 1
-    maximumPoolSize: 1
-    maxLifetime: 1500000
+spring:
+  datasource:
+    url: jdbc:mysql://dev-db:3306/db?useAffectedRows=true&useSSL=false&useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&statementInterceptors=com.github.util.sql.PrintSql8
+    username: root
+    password: root
+    hikari:
+      minimumIdle: 1
+      maximumPoolSize: 1
+      maxLifetime: 1500000
+  elasticsearch.rest:
+    uris: [dev-es:9200]      # default was 127.0.0.1:9200, multiple separated by commas
 
 
 config:
-  ip-port: ["dev-es:9200"]    # default was 127.0.0.1:9200
-  cron: 0/5 * * * * *            # this mean: [0 5 10 15 20 25 30 35 40 45 50 55] second
+  cron: 0/5 * * * * *        # this mean: [0 5 10 15 20 25 30 35 40 45 50 55] second
   relation:
     -
-      table: t_property          # *** must set
-      increment-column: id       # *** must set
+      table: t_property      # *** must set
+      increment-column: id   # *** must set
       limit: 100
     -
-      table: t_value             # *** must set
-      increment-column: id       # *** must set
+      table: t_value         # *** must set
+      increment-column: id   # *** must set
       limit: 80
 
 # /etc/hosts
