@@ -39,12 +39,12 @@ config:
         c_type: type               # table column(如果有别名则使用别名) : elasticsearch field
       ignore-column: [c1, c2]    # 可以不设定. 上面的 sql 中不想写入索引的字段(如果字段有别名则用别名)
 
-      big-count-to-sql: 2000     # 可以不设定. sql 中 limit start,1000 中的 start 超出这个值将会进行优化成 inner join 语句, 默认是 2000
+      big-count-to-sql: 2000     # 可以不设定. sql 中 limit start,1000 里的 start 超出这个值就将 sql 优化成 inner join 的方式, 默认是 2000
       primary-key: id            # 可以不设定. 主键名, 当表数据很多时使用  LIMIT 1000万,1000  效率会很慢, 这个字段会优化 sql 语句, 默认是 id
-      # 原来的 sql 是: SELECT ... FROM t_product WHERE time > '2010-01-01 00:00:01' LIMIT 1000万,1000
-      # 优化的 sql 是: SELECT ... FROM t_product c inner join (SELECT id FROM t_product WHERE time > '2010-01-01 00:00:01' LIMIT 1000万,1000) t on t.id = c.id
-      # 原先的 sql 中, limit 是最后才执行, 执行时是先通过索引找到 id, 再去存数据的物理块取相关的记录, 然后在结果集里偏移 1000万 再取 1000 条, 所以效率好不了
-      # 优化的 sql 中, 索引中存的是索引列和主键, 所以括号中的查询哪怕偏移 1000万 也全都是在索引里操作(覆盖索引), 然后再用 id 联表取数据, 所以这样是很快的
+      # 原来的 sql: SELECT ... FROM t_product WHERE time > '2010-01-01 00:00:01' LIMIT 1000万,1000
+      # 优化的 sql: SELECT ... FROM t_product c inner join (SELECT id FROM t_product WHERE time > '2010-01-01 00:00:01' LIMIT 1000万,1000) t on t.id = c.id
+      # 原先的 sql 执行时先通过索引找到 id, 再去存数据的物理块取记录, 最后在结果集里偏移 1000万 后再取 1000 条, 所以效率好不了
+      # 优化的 sql 括号中偏移 1000万 是基于覆盖索引在处理(索引存的是索引列 + 主键), 然后再用 id 联表取数据, 因此这样是很快的
 #+END_SRC
 
 cron 的说明如下
