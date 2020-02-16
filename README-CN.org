@@ -63,7 +63,7 @@ cron 的说明如下
 
 
 ** 运行
-#+BEGIN_SRC conf
+#+BEGIN_SRC bash
 git clone https://github.com/liuanxin/mysql2es.git
 cd mysql2es
 
