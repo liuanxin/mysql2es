@@ -68,18 +68,18 @@ git clone https://github.com/liuanxin/mysql2es.git
 cd mysql2es
 
 
-change application-prod.yml to your setting
+# change application-prod.yml to your setting
 mvn clean package -DskipTests
 nohup java -jar -Dspring.profiles.active=prod target/mysql2es.jar >/dev/null 2>&1 &
 
 or
 
-add your ~/application.yml
+# add your ~/application.yml
 mvn clean package -DskipTests
 nohup java -jar -Dspring.config.location=~/application.yml target/mysql2es.jar >/dev/null 2>&1 &
 
 
-log in ~/logs/mysql2es.log
+# log in ~/logs/mysql2es.log
 #+END_SRC
 
 
