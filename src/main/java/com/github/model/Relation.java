@@ -12,6 +12,8 @@ import java.util.Map;
 @Setter
 public class Relation {
 
+    // todo  1. show tables like 't_order%' 2. batch delete
+
     private static final String GT = " > ";
     private static final String EQUALS = " = ";
 
