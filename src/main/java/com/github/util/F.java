@@ -25,7 +25,11 @@ public class F {
     public static String read(String table, String index, String type) {
         String fileName = getFileName(table, index, type);
         try {
-            return Files.asCharSource(new File(fileName), U.UTF8).read();
+            String content = Files.asCharSource(new File(fileName), U.UTF8).read();
+            if (Logs.ROOT_LOG.isDebugEnabled()) {
+                Logs.ROOT_LOG.debug("read content({}) with file ({})", content, fileName);
+            }
+            return content;
         } catch (FileNotFoundException e) {
             if (Logs.ROOT_LOG.isDebugEnabled()) {
                 Logs.ROOT_LOG.debug("no file ({})", fileName);
@@ -42,6 +46,9 @@ public class F {
         String fileName = getFileName(table, index, type);
         try {
             Files.asCharSink(new File(fileName), U.UTF8).write(content);
+            if (Logs.ROOT_LOG.isDebugEnabled()) {
+                Logs.ROOT_LOG.debug("write content({}) to file ({})", content, fileName);
+            }
         } catch (IOException e) {
             if (Logs.ROOT_LOG.isErrorEnabled()) {
                 Logs.ROOT_LOG.error(String.format("write to file(%s) exception", fileName), e);

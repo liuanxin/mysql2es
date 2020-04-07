@@ -15,6 +15,7 @@ import java.util.Map;
 
 @SpringBootTest
 @RunWith(SpringRunner.class)
+@SuppressWarnings("rawtypes")
 public class SchemeTest {
 
     private Config config;
