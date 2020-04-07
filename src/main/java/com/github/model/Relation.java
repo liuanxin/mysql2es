@@ -12,18 +12,16 @@ import java.util.Map;
 @Setter
 public class Relation {
 
-    // todo  1. show tables like 't_order%' 2. batch delete
-
     private static final String GT = " > ";
     private static final String EQUALS = " = ";
 
-    /** database table name */
+    /** Database table name */
     private String table;
 
     /** The field name for the increment in the table */
     private String incrementColumn;
 
-    // above two properties must be set, the following don't need.
+    // Above two properties must be set, the following don't need.
 
     /** The field name for the increment in the table, if nil use incrementColumn */
     private String incrementColumnAlias;
@@ -37,12 +35,15 @@ public class Relation {
     private String type = "_doc";
 
     /** whether to generate scheme of es on the database table structure */
-    private boolean scheme = true;
+    private boolean scheme = false;
 
-    /** operate sql statement. if not, will generate by table name(select * from table_name) */
+    /** If it is a multi-table mapping, whether to stitch the info on the table to the id */
+    private boolean patternToId = true;
+
+    /** Operate sql statement. if not, will generate by table name(select * from table_name) */
     private String sql;
 
-    /**  number of each operation. will append in sql(select ... limit 1000) */
+    /** Number of each operation. will append in sql(select ... limit 1000) */
     private Integer limit = 1000;
 
     /** table column -> es field. if not, will generate by column(c_some_type ==> someType) */
@@ -55,14 +56,14 @@ public class Relation {
      */
     private List<String> keyColumn;
 
-    /** if want to ignore some column in SQL */
+    /** If want to ignore some column in SQL */
     private List<String> ignoreColumn;
 
-    /** when use time field to increment, need primary key to generate Page SQL */
+    /** When use time field to increment, need primary key to generate Page SQL */
     private String primaryKey = "id";
 
     /**
-     * when same time field's count(SELECT COUNT(*) FROM table WHERE time = 'xxx') >= this value, page sql will change
+     * When same time field's count(SELECT COUNT(*) FROM table WHERE time = 'xxx') >= this value, page sql will change
      *
      * old: SELECT a,b FROM table LIMIT 1000000,1000
      * new: SELECT a,b FROM table c INNER JOIN (SELECT id FROM table WHERE time > 'xxx' LIMIT 1000000,1000) t on c.id = t.id
@@ -96,7 +97,21 @@ public class Relation {
         if (U.isNotBlank(index)) {
             return index;
         } else if (U.isNotBlank(table)) {
-            return U.tableToIndex(table);
+            String tmp;
+            if (checkMatch()) {
+                String match = "%";
+                String split = "_";
+                tmp = table.replace(match, U.EMPTY).replace(split + split, split);
+                if (tmp.startsWith(split)) {
+                    tmp = tmp.substring(1);
+                }
+                if (tmp.endsWith(split)) {
+                    tmp = tmp.substring(0, tmp.length() - 1);
+                }
+            } else {
+                tmp = table;
+            }
+            return U.tableToIndex(tmp);
         } else {
             return U.EMPTY;
         }
@@ -118,31 +133,66 @@ public class Relation {
     }
 
     /** generate desc sql */
-    public String descSql() {
+    public String descSql(String table) {
         return String.format("DESC %s", table);
     }
 
-    /** select count(*) from ... where (id > xxx | time > '2010-01-01 01:00:00') */
-    public String countSql(String param) {
-        return countSql(GT, param);
+    /** check table has match */
+    public boolean checkMatch() {
+        return table.contains("%");
     }
-    /** select ... from ... where time > '2010-10-10 00:00:01' order by time limit 1000 */
-    public String querySql(String param) {
+    /** query all tables with match */
+    public String matchSql() {
+        return String.format("SHOW TABLES LIKE '%s'", table);
+    }
+    /** get match info with table pattern */
+    public String matchInfo(String realTable) {
+        if (checkMatch() && patternToId) {
+            // t_order_%        : t_order_202001        ==>  202001,   t_order_202002        ==>  202002
+            // t_order_%_item_% : t_order_2020_item_01  ==>  2020-01,  t_order_2020_item_02  ==>  2020-02
+            String tmp = realTable;
+            String match = "%";
+            String split = "-";
+            for (String str : table.split(match)) {
+                tmp = tmp.replaceFirst(str, split);
+            }
+            if (tmp.startsWith(split)) {
+                tmp = tmp.substring(1);
+            }
+            if (tmp.endsWith(split)) {
+                tmp = tmp.substring(0, tmp.length() - 1);
+            }
+            return tmp;
+        } else {
+            return U.EMPTY;
+        }
+    }
+
+    /** select count(*) from ... where (id > xxx | time > '2010-01-01 01:00:00') */
+    public String countSql(String table, String param) {
+        return countSql(GT, table, param);
+    }
+    /** select ... from ... where (id > xxx | time > '2010-10-10 00:00:01') order by (id | time) limit 1000 */
+    public String querySql(String table, String param) {
         // just limit 1000, not limit 1000000, 1000
-        return querySql(GT, param, 0);
+        return querySql(GT, table, param, 0);
     }
 
     /** select count(*) from ... where time = '2010-10-10 00:00:01' */
-    public String equalsCountSql(String param) {
-        return countSql(EQUALS, param);
+    public String equalsCountSql(String table, String param) {
+        return countSql(EQUALS, table, param);
     }
-    /** select ... from ... where time = '2010-10-10 00:00:01' limit 0,1000|1000,1000|2000,1000|etc. */
-    public String equalsQuerySql(String param, int page) {
+    /**
+     * select ... from ... where time = '2010-10-10 00:00:01' limit 0,1000|1000,1000
+     * <br><br>or<br><br>
+     * select cur.* from ... as cur inner join (select id from ... where time = '2010-01-01 00:00:01' limit 2000,1000) t on t.id = cur.id
+     */
+    public String equalsQuerySql(String table, String param, int page) {
         int pageStart = page * limit;
         if (pageStart >= bigCountToSql) {
-            return bigPageSql(param, pageStart);
+            return bigPageSql(table, param, pageStart);
         } else {
-            return querySql(EQUALS, param, pageStart);
+            return querySql(EQUALS, table, param, pageStart);
         }
     }
 
@@ -154,7 +204,7 @@ public class Relation {
         return loop;
     }
 
-    private String countSql(String operate, String param) {
+    private String countSql(String operate, String table, String param) {
         String count = "SELECT COUNT(*) FROM ";
 
         StringBuilder sbd = new StringBuilder();
@@ -162,7 +212,7 @@ public class Relation {
             // ignore case, dot(.) can match all(include wrap tab)
             sbd.append(sql.trim().replaceFirst("(?is)SELECT (.*?) FROM ", count));
         } else {
-            sbd.append(count).append(table);
+            sbd.append(count).append("`").append(table).append("`");
         }
         appendWhere(operate, param, sbd);
         return sbd.toString();
@@ -190,12 +240,12 @@ public class Relation {
             }
         }
     }
-    private String querySql(String operate, String param, int pageStart) {
+    private String querySql(String operate, String table, String param, int pageStart) {
         StringBuilder sbd = new StringBuilder();
         if (U.isNotBlank(sql)) {
             sbd.append(sql);
         } else {
-            sbd.append("SELECT * FROM ").append(table);
+            sbd.append("SELECT * FROM `").append(table).append("`");
         }
         appendWhere(operate, param, sbd);
         if (!EQUALS.equals(operate)) {
@@ -208,16 +258,16 @@ public class Relation {
         sbd.append(limit);
         return sbd.toString();
     }
-    private String bigPageSql(String param, int pageStart) {
+    private String bigPageSql(String table, String param, int pageStart) {
         StringBuilder sbd = new StringBuilder();
         if (U.isNotBlank(sql)) {
             sbd.append("SELECT CUR.* FROM (").append(sql).append(")");
         } else {
-            sbd.append("SELECT CUR.* FROM ").append(table);
+            sbd.append("SELECT CUR.* FROM `").append(table).append("`");
         }
         sbd.append(" as CUR");
         sbd.append(" INNER JOIN ( SELECT ").append(primaryKey);
-        sbd.append(" FROM ").append(table);
+        sbd.append(" FROM `").append(table).append("`");
         sbd.append(" WHERE ");
         if (incrementColumn.contains(".")) {
             sbd.append(incrementColumn.substring(incrementColumn.indexOf(".") + 1));

@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.Future;
 
 @Component
+@SuppressWarnings("rawtypes")
 public class EsRepository {
 
     private final RestHighLevelClient client;
@@ -59,17 +60,15 @@ public class EsRepository {
     public void saveScheme(String index, String type, Map<String, Map> properties) {
         IndicesClient indices = client.indices();
 
-        boolean exists = exists(indices, index);
-        if (exists) {
-            return;
+        boolean exists = existsIndex(indices, index);
+        if (!exists) {
+            boolean create = createIndex(indices, index);
+            if (create) {
+                createScheme(indices, index, type, properties);
+            }
         }
-        boolean create = createIndex(indices, index);
-        if (!create) {
-            return;
-        }
-        createScheme(indices, index, type, properties);
     }
-    private boolean exists(IndicesClient indices, String index) {
+    private boolean existsIndex(IndicesClient indices, String index) {
         try {
             long start = System.currentTimeMillis();
             boolean ack = indices.exists(new GetIndexRequest().indices(index));
@@ -125,33 +124,38 @@ public class EsRepository {
     public int saveDataToEs(String index, String type, Map<String, String> idDataMap) {
         if (A.isEmpty(idDataMap)) {
             return 0;
-        } else {
-            BulkRequest batchRequest = new BulkRequest();
-            for (Map.Entry<String, String> entry : idDataMap.entrySet()) {
-                String id = entry.getKey(), source = entry.getValue();
-                if (U.isNotBlank(id) && U.isNotBlank(source)) {
-                    batchRequest.add(new IndexRequest(index, type, id).source(source, XContentType.JSON));
-                }
-            }
+        }
 
-            try {
-                BulkResponse responses = client.bulk(batchRequest);
-                int size = responses.getItems().length;
-                for (BulkItemResponse response : responses) {
-                    if (response.isFailed()) {
-                        size--;
-                    }
-                }
-                return size;
-            } catch (IOException e) {
-                // <= 6.3.1 version, suggest field if empty will throw IllegalArgumentException(write is good)
-                // org.elasticsearch.index.mapper.CompletionFieldMapper.parse(443)
-                // https://github.com/elastic/elasticsearch/pull/30713/files
-                if (Logs.ROOT_LOG.isErrorEnabled()) {
-                    Logs.ROOT_LOG.error(String.format("create or update (%s/%s) es data exception", index, type), e);
-                }
-                return 0;
+        BulkRequest batchRequest = new BulkRequest();
+        long originalSize = 0;
+        for (Map.Entry<String, String> entry : idDataMap.entrySet()) {
+            String id = entry.getKey(), source = entry.getValue();
+            if (U.isNotBlank(id) && U.isNotBlank(source)) {
+                batchRequest.add(new IndexRequest(index, type, id).source(source, XContentType.JSON));
+                originalSize++;
             }
+        }
+
+        try {
+            BulkResponse responses = client.bulk(batchRequest);
+            int size = responses.getItems().length;
+            for (BulkItemResponse response : responses) {
+                if (response.isFailed()) {
+                    size--;
+                }
+            }
+            if (Logs.ROOT_LOG.isDebugEnabled()) {
+                Logs.ROOT_LOG.debug("batch save({}/{}) size({}) success({})", index, type, originalSize, size);
+            }
+            return size;
+        } catch (IOException e) {
+            // <= 6.3.1 version, suggest field if empty will throw IllegalArgumentException(write is good)
+            // org.elasticsearch.index.mapper.CompletionFieldMapper.parse(443)
+            // https://github.com/elastic/elasticsearch/pull/30713/files
+            if (Logs.ROOT_LOG.isErrorEnabled()) {
+                Logs.ROOT_LOG.error(String.format("create or update (%s/%s) es data exception", index, type), e);
+            }
+            return 0;
         }
     }
 }
