@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.concurrent.Future;
 
 @Component
+@SuppressWarnings({ "rawtypes", "DuplicatedCode" })
 public class DataRepository {
 
     private final JdbcTemplate jdbcTemplate;
@@ -27,7 +28,20 @@ public class DataRepository {
 
     /** generate scheme of es on the database table structure */
     public Map<String, Map> dbToEsScheme(Relation relation) {
-        List<Map<String, Object>> mapList = jdbcTemplate.queryForList(relation.descSql());
+        String relationTable = relation.getTable();
+        String table;
+        if (relation.checkMatch()) {
+            List<String> matchTables = jdbcTemplate.queryForList(relation.matchSql(), String.class);
+            table = A.first(matchTables);
+            if (Logs.ROOT_LOG.isInfoEnabled()) {
+                Logs.ROOT_LOG.info("sql(SHOW TABLES LIKE '{}') return({}), use `{}` to check basic info",
+                        relationTable, A.toStr(matchTables), table);
+            }
+        } else {
+            table = relationTable;
+        }
+
+        List<Map<String, Object>> mapList = jdbcTemplate.queryForList(relation.descSql(table));
         if (A.isNotEmpty(mapList)) {
             boolean scheme = relation.isScheme();
             List<String> keyList = Lists.newArrayList();
@@ -39,14 +53,12 @@ public class DataRepository {
 
                 if (U.isNotBlank(column) && U.isNotBlank(type)) {
                     String field = column.toString();
+                    fieldMap.put(field, true);
 
                     Object key = map.get("Key");
                     if (U.isNotBlank(key) && "PRI".equals(key)) {
                         keyList.add(field);
                     }
-
-                    fieldMap.put(field, true);
-
                     if (scheme) {
                         propertyMap.put(relation.useField(field), Searchs.dbToEsType(type.toString()));
                     }
@@ -54,7 +66,6 @@ public class DataRepository {
             }
 
             List<String> keyColumn = relation.getKeyColumn();
-            String table = relation.getTable();
             if (A.isEmpty(keyColumn)) {
                 if (A.isEmpty(keyList)) {
                     U.assertException(String.format("table (%s) no primary key, can't create index in es!", table));
@@ -88,50 +99,67 @@ public class DataRepository {
         String table = relation.getTable();
         String index = relation.useIndex();
         String type = relation.getType();
-
-        String lastValue = F.read(table, index, type);
-        String countSql = relation.countSql(lastValue);
-        long start = System.currentTimeMillis();
-        Integer count = A.first(jdbcTemplate.queryForList(countSql, Integer.class));
-        if (Logs.ROOT_LOG.isInfoEnabled()) {
-            Logs.ROOT_LOG.info("count sql({}) time({}) return({})",
-                    countSql, (System.currentTimeMillis() - start + "ms"), count);
-        }
-        if (U.less0(count)) {
-            return;
-        }
-
-        for (;;) {
-            lastValue = handleGreaterAndEquals(relation, lastValue);
-            if (U.isBlank(lastValue)) {
-                return;
+        if (U.isNotBlank(table) && U.isNotBlank(index) && U.isNotBlank(type)) {
+            List<String> matchTables;
+            if (relation.checkMatch()) {
+                long start = System.currentTimeMillis();
+                matchTables = jdbcTemplate.queryForList(relation.matchSql(), String.class);
+                if (Logs.ROOT_LOG.isInfoEnabled()) {
+                    Logs.ROOT_LOG.info("sql(SHOW TABLES LIKE {}) time({}ms) return({}), size({})",
+                            table, (System.currentTimeMillis() - start), A.toStr(matchTables), matchTables.size());
+                }
+            } else {
+                matchTables = Collections.singletonList(table);
+            }
+            for (String matchTable : matchTables) {
+                saveSingleTable(relation, index, type, matchTable);
             }
         }
     }
 
-    private String handleGreaterAndEquals(Relation relation, String lastValue) {
-        String sql = relation.querySql(lastValue);
+    private void saveSingleTable(Relation relation, String index, String type, String matchTable) {
+        String lastValue = F.read(matchTable, index, type);
+        String countSql = relation.countSql(matchTable, lastValue);
+        long start = System.currentTimeMillis();
+        Integer count = A.first(jdbcTemplate.queryForList(countSql, Integer.class));
+        if (Logs.ROOT_LOG.isInfoEnabled()) {
+            Logs.ROOT_LOG.info("count sql({}) time({}ms) return({})",
+                    countSql, (System.currentTimeMillis() - start), count);
+        }
+        if (U.greater0(count)) {
+            String matchInId = relation.matchInfo(matchTable);
+            for (;;) {
+                lastValue = handleGreaterAndEquals(relation, matchTable, lastValue, matchInId);
+                if (U.isBlank(lastValue)) {
+                    return;
+                }
+            }
+        }
+    }
+
+    private String handleGreaterAndEquals(Relation relation, String matchTable, String lastValue, String matchInId) {
+        String sql = relation.querySql(matchTable, lastValue);
         long sqlStart = System.currentTimeMillis();
         List<Map<String, Object>> dataList = jdbcTemplate.queryForList(sql);
         if (A.isEmpty(dataList)) {
             // if not data, can break loop
             return null;
         }
-        String sqlTime = (System.currentTimeMillis() - sqlStart + "ms");
+        long sqlTime = (System.currentTimeMillis() - sqlStart);
 
         String index = relation.useIndex();
         String type = relation.getType();
 
         long esStart = System.currentTimeMillis();
-        int size = esRepository.saveDataToEs(index, type, fixDocument(relation, dataList));
+        int size = esRepository.saveDataToEs(index, type, fixDocument(relation, dataList, matchInId));
+        long esTime = (System.currentTimeMillis() - esStart);
+        if (Logs.ROOT_LOG.isInfoEnabled()) {
+            Logs.ROOT_LOG.info("sql({}) time({}ms) return size({}), batch to({}) time({}ms) success({})",
+                    sql, sqlTime, dataList.size(), (index + "/" + type), esTime, size);
+        }
         if (size == 0) {
             // if write to es false, can break loop
             return null;
-        }
-        String esTime = (System.currentTimeMillis() - esStart + "ms");
-        if (Logs.ROOT_LOG.isInfoEnabled()) {
-            Logs.ROOT_LOG.info("sql({}) time({}) return size({}), batch to({}) time({}) success({})",
-                    sql, sqlTime, dataList.size(), (index + "/" + type), esTime, size);
         }
 
         lastValue = getLast(relation, dataList);
@@ -140,9 +168,9 @@ public class DataRepository {
             return null;
         }
 
-        handleEquals(relation, lastValue);
+        handleEquals(relation, matchTable, lastValue, matchInId);
         // write last record in temp file
-        F.write(relation.getTable(), index, type, lastValue);
+        F.write(matchTable, index, type, lastValue);
 
         // if sql: limit 1000, query data size 900, can break loop
         if (dataList.size() < relation.getLimit()) {
@@ -150,42 +178,43 @@ public class DataRepository {
         }
         return lastValue;
     }
-    private void handleEquals(Relation relation, String tempColumnValue) {
+    private void handleEquals(Relation relation, String matchTable, String tempColumnValue, String matchInId) {
         // if was number: id > 123, don't need to id = 123
         // not number: time > '2010-10-10 00:00:01', this: time = '2010-10-10 00:00:01'
         if (U.isNotNumber(tempColumnValue)) {
-            String equalsCountSql = relation.equalsCountSql(tempColumnValue);
+            String equalsCountSql = relation.equalsCountSql(matchTable, tempColumnValue);
             long start = System.currentTimeMillis();
             Integer equalsCount = A.first(jdbcTemplate.queryForList(equalsCountSql, Integer.class));
             if (Logs.ROOT_LOG.isInfoEnabled()) {
-                Logs.ROOT_LOG.info("equals count sql({}) time({}) return({})",
-                        equalsCountSql, (System.currentTimeMillis() - start + "ms"), equalsCount);
+                Logs.ROOT_LOG.info("equals count sql({}) time({}ms) return({})",
+                        equalsCountSql, (System.currentTimeMillis() - start), equalsCount);
             }
 
             if (U.greater0(equalsCount)) {
                 int equalsLoopCount = relation.loopCount(equalsCount);
                 for (int i = 0; i < equalsLoopCount; i++) {
-                    String equalsSql = relation.equalsQuerySql(tempColumnValue, i);
+                    String equalsSql = relation.equalsQuerySql(matchTable, tempColumnValue, i);
                     long sqlStart = System.currentTimeMillis();
                     List<Map<String, Object>> equalsDataList = jdbcTemplate.queryForList(equalsSql);
                     if (A.isEmpty(equalsDataList)) {
                         // if not data, can break equals handle
                         return;
                     }
-                    String sqlTime = (System.currentTimeMillis() - sqlStart + "ms");
+                    long sqlTime = (System.currentTimeMillis() - sqlStart);
 
                     String index = relation.useIndex();
                     String type = relation.getType();
+
                     long esStart = System.currentTimeMillis();
-                    int size = esRepository.saveDataToEs(index, type, fixDocument(relation, equalsDataList));
+                    int size = esRepository.saveDataToEs(index, type, fixDocument(relation, equalsDataList, matchInId));
+                    long esTime = (System.currentTimeMillis() - esStart);
+                    if (Logs.ROOT_LOG.isInfoEnabled()) {
+                        Logs.ROOT_LOG.info("equals sql({}ms) time({}) return size({}), batch to({}) time({}ms) success({})",
+                                equalsSql, sqlTime, equalsDataList.size(), (index + "/" + type), esTime, size);
+                    }
                     if (size == 0) {
                         // if success was 0, can break equals handle
                         return;
-                    }
-                    String esTime = (System.currentTimeMillis() - esStart + "ms");
-                    if (Logs.ROOT_LOG.isInfoEnabled()) {
-                        Logs.ROOT_LOG.info("equals sql({}) time({}) return size({}), batch to({}) time({}) success({})",
-                                equalsSql, sqlTime, equalsDataList.size(), (index + "/" + type), esTime, size);
                     }
 
                     // if sql: limit 1000, 1000, query data size 900, can break equals handle
@@ -217,25 +246,34 @@ public class DataRepository {
         return null;
     }
     /** traverse the Database Result and organize into es Document */
-    private Map<String, String> fixDocument(Relation relation, List<Map<String, Object>> dataList) {
+    private Map<String, String> fixDocument(Relation relation, List<Map<String, Object>> dataList, String matchInId) {
         Map<String, String> documents = Maps.newHashMap();
         for (Map<String, Object> obj : dataList) {
-            StringBuilder sbd = new StringBuilder();
+            StringBuilder idBuild = new StringBuilder();
             String idPrefix = relation.getIdPrefix();
             if (U.isNotBlank(idPrefix)) {
-                sbd.append(idPrefix);
+                idBuild.append(idPrefix);
             }
-            for (String primary : relation.getKeyColumn()) {
-                sbd.append(obj.get(primary)).append("-");
+            if (relation.isPatternToId() && U.isNotBlank(matchInId)) {
+                if (idBuild.length() > 0) {
+                    idBuild.append("-");
+                }
+                idBuild.append(matchInId);
             }
-            if (sbd.toString().endsWith("-")) {
-                sbd.delete(sbd.length() - 1, sbd.length());
+            for (String column : relation.getKeyColumn()) {
+                if (idBuild.length() > 0) {
+                    idBuild.append("-");
+                }
+                idBuild.append(obj.get(column));
             }
             String idSuffix = relation.getIdSuffix();
             if (U.isNotBlank(idSuffix)) {
-                sbd.append(idSuffix);
+                if (idBuild.length() > 0) {
+                    idBuild.append("-");
+                }
+                idBuild.append(idSuffix);
             }
-            String id = sbd.toString();
+            String id = idBuild.toString();
             // Document no id, can't be save
             if (U.isNotBlank(id)) {
                 Map<String, Object> dataMap = Maps.newHashMap();

@@ -15,6 +15,7 @@ import java.util.Map;
 
 @Profile("!test")
 @Configuration
+@SuppressWarnings("rawtypes")
 public class Runner implements ApplicationRunner {
 
     private final Config config;
