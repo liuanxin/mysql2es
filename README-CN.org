@@ -74,7 +74,7 @@ nohup java -jar -Dspring.profiles.active=prod target/mysql2es.jar >/dev/null 2>&
 
 或者
 
-# 添加你的配置文件到任意地方: ~/application.yml
+# 添加你的配置文件到任意地方, 如: ~/application.yml(建议基于 application-prod.yml 修改即可)
 mvn clean package -DskipTests
 nohup java -jar -Dspring.config.location=~/application.yml target/mysql2es.jar >/dev/null 2>&1 &
 
