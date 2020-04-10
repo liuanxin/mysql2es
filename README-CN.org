@@ -21,14 +21,14 @@ config:
 
   relation:
     -
-      table: t_product           # *** 必须设定且要有主键. 主键会生成 Elasticsearch 中 /index/type/id 的 id, 如果是多列主键会用 "-" 拼接, 可以使用 % 做为通配来匹配多张表(当分表时)
+      table: product             # *** 必须设定且要有主键. 主键会生成 Elasticsearch 中 /index/type/id 的 id, 如果是多列主键会用 "-" 拼接, 可以使用 % 做为通配来匹配多张表(当分表时)
       increment-column: id       # *** 必须设定. 表示用来做数据增量操作时用, 一般使用自增 id 或 time(更新时间戳)
 
       # 6.0 开始, type 默认是 _doc, Elasticsearch 中的 index 直接对应数据库表名
       index: product             # 可以不设定. 表示 Elasticsearch 中 /index/type/id 的 index, 不设定将会从数据库表名生成(t_some_one ==> some-one), 6.0 开始 index name 必须是小写
       type: doc                  # 可以不设定. 默认是 _doc
       scheme: true               # 可以不设定. 是否在启动时基于 数据库表结构 生成 Elasticsearch 的 scheme, 默认是 false
-      sql: select * from t_table # 可以不设定. 自定义的 sql 语句(不要用 ORDER BY 和 LIMIT, 会基于 increment-column 自动添加), 不设定将会自动从数据库表拼装
+      sql: select * from product # 可以不设定. 自定义的 sql 语句(不要用 ORDER BY 和 LIMIT, 会基于 increment-column 自动添加), 不设定将会基于 table 来拼装
       limit: 2000                # 可以不设定. 一次从数据库获取的条数, 默认是 1000
 
       pattern-to-id: false       # 可以不设定. true 表示将表名的通配数据做为 id 的一部分(比如上面的 table 使用 t_order_% 通配, 则表 t_order_2016 同步时 2016 将做为 id 的前缀), 默认是 true
