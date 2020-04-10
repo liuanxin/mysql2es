@@ -85,7 +85,8 @@ nohup java -jar -Dspring.config.location=~/application.yml target/mysql2es.jar >
 
 ** 说明
 
-建议先在 Elasticsearch 中建好 index 的 scheme(如果想基于数据库表字段类型来生成可以在配置中设置 *scheme* 为 true)
+建议先在 Elasticsearch 中建好 index 的 scheme(如果想基于数据库表字段类型来生成可以在配置中设置 *scheme* 为 true).  \\
+
 系统启动后会根据定时规则来同步数据, 同步时基于 sql 拼接增量字段来获取分页数据并批量写入 Elasticsearch 直到没有数据为止,
 最后的记录会存到临时文件供下次同步时会用到(如果到了下次运行时间, 但上次还没有运行结束将会顺延).
 
