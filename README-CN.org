@@ -29,7 +29,7 @@ config:
       type: doc                  # 可以不设定. 默认是 _doc
       scheme: true               # 可以不设定. 是否在启动时基于 数据库表结构 生成 Elasticsearch 的 scheme, 默认是 false
       sql: select * from product # 可以不设定. 自定义的 sql 语句(不要用 ORDER BY 和 LIMIT, 会基于 increment-column 自动添加), 不设定将会基于 table 来拼装
-      limit: 2000                # 可以不设定. 一次从数据库获取的条数, 默认是 1000
+      limit: 2000                # 可以不设定. 一次从数据库获取 及 同步进 Elasticsearch 的条数, 默认是 1000
 
       pattern-to-id: false       # 可以不设定. true 表示将表名的通配数据做为 id 的一部分(比如上面的 table 使用 t_order_% 通配, 则表 t_order_2016 同步时 2016 将做为 id 的前缀), 默认是 true
       key-column: [id]           # 可以不设定. 用来生成 index 的 id 列, 不设置将会自动从表中获取, 当表中有主键又有多列唯一约束, 想用唯一约束来做 index 的 id 时可以使用此配置
