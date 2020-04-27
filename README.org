@@ -19,7 +19,7 @@ spring:
     uris: [192.168.1.2:9200,192.168.1.3:9200]  # The default is 127.0.0.1:9200
 
 config:
-  cron: 0/5 * * * * *              # The default is to execute once per minute
+  cron: 0/5 * * * * *            # The default is to execute once per minute
 
   relation:
     -
