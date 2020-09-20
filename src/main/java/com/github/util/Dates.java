@@ -111,7 +111,7 @@ public class Dates {
         for (Type type : Type.values()) {
             if (type.isCst()) {
                 try {
-                    // cst 单独处理
+                    // cst
                     return new SimpleDateFormat(type.getValue(), Locale.ENGLISH).parse(source);
                 } catch (ParseException | IllegalArgumentException e) {
                     // ignore
@@ -154,22 +154,22 @@ public class Dates {
             sbd.append("-");
         }
         if (year != 0) {
-            sbd.append(year).append(" 年 ");
+            sbd.append(year).append(" year ");
         }
         if (day != 0) {
-            sbd.append(day).append(" 天 ");
+            sbd.append(day).append(" day ");
         }
         if (hour != 0) {
-            sbd.append(hour).append(" 小时 ");
+            sbd.append(hour).append(" hour ");
         }
         if (minute != 0) {
-            sbd.append(minute).append(" 分 ");
+            sbd.append(minute).append(" min ");
         }
         if (second != 0) {
-            sbd.append(second).append(" 秒 ");
+            sbd.append(second).append(" second ");
         }
         if (m != 0) {
-            sbd.append(m).append(" 毫秒");
+            sbd.append(m).append(" ms");
         }
         return sbd.toString().trim();
     }
