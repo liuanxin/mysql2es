@@ -3,6 +3,7 @@ package com.github.run;
 import com.github.model.Config;
 import com.github.model.Relation;
 import com.github.repository.DataRepository;
+import com.github.util.Dates;
 import com.github.util.Logs;
 import com.github.util.U;
 import com.google.common.collect.Maps;
@@ -30,6 +31,7 @@ public class Job implements SchedulingConfigurer {
     @Override
     public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
         taskRegistrar.addTriggerTask(() -> {
+            long start = System.currentTimeMillis();
             if (Logs.ROOT_LOG.isInfoEnabled()) {
                 Logs.ROOT_LOG.info("begin to run task");
             }
@@ -53,7 +55,8 @@ public class Job implements SchedulingConfigurer {
                 }
             } finally {
                 if (Logs.ROOT_LOG.isInfoEnabled()) {
-                    Logs.ROOT_LOG.info("end of run task");
+                    long end = System.currentTimeMillis();
+                    Logs.ROOT_LOG.info("end of run task, use time: {}.", Dates.toHuman(end - start));
                 }
             }
         }, new CronTrigger(config.getCron()));
