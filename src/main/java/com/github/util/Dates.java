@@ -70,6 +70,12 @@ public class Dates {
         }
     }
 
+    private static final long SECOND = 1000L;
+    private static final long MINUTE = 60 * SECOND;
+    private static final long HOUR = 60 * MINUTE;
+    private static final long DAY = 24 * HOUR;
+    private static final long YEAR = 365 * DAY;
+
     public static Date now() {
         return new Date();
     }
@@ -118,5 +124,53 @@ public class Dates {
             }
         }
         return null;
+    }
+
+    public static String toHuman(long intervalMs) {
+        if (intervalMs == 0) {
+            return "0";
+        }
+
+        boolean flag = (intervalMs < 0);
+        long ms = flag ? -intervalMs : intervalMs;
+
+        long year = ms / YEAR;
+        long y = ms % YEAR;
+
+        long day = y / DAY;
+        long d = y % DAY;
+
+        long hour = d / HOUR;
+        long h = d % HOUR;
+
+        long minute = h / MINUTE;
+        long mi = h % MINUTE;
+
+        long second = mi / SECOND;
+        long m = mi % SECOND;
+
+        StringBuilder sbd = new StringBuilder();
+        if (flag) {
+            sbd.append("-");
+        }
+        if (year != 0) {
+            sbd.append(year).append(" 年 ");
+        }
+        if (day != 0) {
+            sbd.append(day).append(" 天 ");
+        }
+        if (hour != 0) {
+            sbd.append(hour).append(" 小时 ");
+        }
+        if (minute != 0) {
+            sbd.append(minute).append(" 分 ");
+        }
+        if (second != 0) {
+            sbd.append(second).append(" 秒 ");
+        }
+        if (m != 0) {
+            sbd.append(m).append(" 毫秒");
+        }
+        return sbd.toString().trim();
     }
 }
