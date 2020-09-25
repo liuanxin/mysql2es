@@ -9,6 +9,7 @@ import java.util.Date;
 import java.util.Locale;
 
 /** util with Date */
+@SuppressWarnings("unused")
 public class Dates {
 
     public enum Type {
@@ -57,7 +58,7 @@ public class Dates {
 
         CST("EEE MMM dd HH:mm:ss zzz yyyy");
 
-        private String value;
+        private final String value;
         Type(String value) {
             this.value = value;
         }
@@ -113,8 +114,7 @@ public class Dates {
                 try {
                     // cst
                     return new SimpleDateFormat(type.getValue(), Locale.ENGLISH).parse(source);
-                } catch (ParseException | IllegalArgumentException e) {
-                    // ignore
+                } catch (ParseException | IllegalArgumentException ignore) {
                 }
             } else {
                 Date date = getDateFormat(type).parseDateTime(source).toDate();
@@ -154,19 +154,19 @@ public class Dates {
             sbd.append("-");
         }
         if (year != 0) {
-            sbd.append(year).append(" year ");
+            sbd.append(year).append(" year");
         }
         if (day != 0) {
-            sbd.append(day).append(" day ");
+            sbd.append(day).append(" day");
         }
         if (hour != 0) {
-            sbd.append(hour).append(" hour ");
+            sbd.append(hour).append(" hour");
         }
         if (minute != 0) {
-            sbd.append(minute).append(" min ");
+            sbd.append(minute).append(" min");
         }
         if (second != 0) {
-            sbd.append(second).append(" second ");
+            sbd.append(second).append(" second");
         }
         if (m != 0) {
             sbd.append(m).append(" ms");

@@ -28,6 +28,7 @@ public class Runner implements ApplicationRunner {
         this.dataRepository = dataRepository;
     }
 
+    @SuppressWarnings("RedundantThrows")
     @Override
     public void run(ApplicationArguments args) throws Exception {
         long start = System.currentTimeMillis();
