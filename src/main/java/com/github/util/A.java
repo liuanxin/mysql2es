@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 /** util with array, list, map */
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"unchecked", "rawtypes"})
 public final class A {
 
     public static <T> boolean isEmpty(T[] array) {
