@@ -14,6 +14,7 @@ import java.util.Date;
 import java.util.Map;
 
 /** Useful when generating certain search objects */
+@SuppressWarnings({"rawtypes", "unused"})
 public final class Searchs {
 
     private static final String STRING_TYPE = "text";

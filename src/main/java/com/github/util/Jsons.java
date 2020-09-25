@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 
 /** util with Json */
+@SuppressWarnings("unused")
 public class Jsons {
 
 	private static final ObjectMapper BASIC = new BasicObjectMapper();
