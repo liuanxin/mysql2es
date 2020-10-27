@@ -154,22 +154,22 @@ public class Dates {
             sbd.append("-");
         }
         if (year != 0) {
-            sbd.append(year).append(" year");
+            sbd.append(year).append(" year ");
         }
         if (day != 0) {
-            sbd.append(day).append(" day");
+            sbd.append(day).append(" day ");
         }
         if (hour != 0) {
-            sbd.append(hour).append(" hour");
+            sbd.append(hour).append(" hour ");
         }
         if (minute != 0) {
-            sbd.append(minute).append(" min");
+            sbd.append(minute).append(" min ");
         }
         if (second != 0) {
-            sbd.append(second).append(" second");
+            sbd.append(second).append(" second ");
         }
         if (m != 0) {
-            sbd.append(m).append(" ms");
+            sbd.append(m).append(" ms ");
         }
         return sbd.toString().trim();
     }
