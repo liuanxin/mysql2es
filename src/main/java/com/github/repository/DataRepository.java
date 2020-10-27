@@ -209,7 +209,7 @@ public class DataRepository {
                     int size = esRepository.saveDataToEs(index, type, fixDocument(relation, equalsDataList, matchInId));
                     long esTime = (System.currentTimeMillis() - esStart);
                     if (Logs.ROOT_LOG.isInfoEnabled()) {
-                        Logs.ROOT_LOG.info("equals sql({}ms) time({}) return size({}), batch to({}) time({}ms) success({})",
+                        Logs.ROOT_LOG.info("equals sql({}) time({}ms) return size({}), batch to({}) time({}ms) success({})",
                                 equalsSql, sqlTime, equalsDataList.size(), (index + "/" + type), esTime, size);
                     }
                     if (size == 0) {
