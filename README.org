@@ -23,8 +23,8 @@ config:
 
   relation:
     -
-      table: t_product           # *** Must set and have primary key. The primary key will generate the id of /index/type/id in Elasticsearch, if has multi, id where append with "-". can use % as a wildcard to match multiple tables(when sharding table)
-      increment-column: id       # *** Must set. Indicates that it is used for data increment operations. Generally, it uses auto increment ~id~ or ~time~
+      table: t_product           # *** Must set and have primary key. The primary key will generate the id of /index/type/id in Elasticsearch, if has multi, id where append with "-". can use % as a wildcard to match multiple tables(when sharding table)
+      increment-column: id       # *** Must set. Indicates that it is used for data increment operations. Generally, it uses auto increment ~id~ or ~time~
 
       # Starting with Elasticsearch 6.0, type defaults to _doc, and the index in Elasticsearch directly corresponds to the database table name
       index: product             # Indicates the index of /index/type/id in Elasticsearch, not set will be generated from the database table name (t_some_one ==> some-one), 6.0 start index name must be lowercase
