@@ -23,8 +23,8 @@ public class Relation {
 
     // Above two properties must be set, the following don't need.
 
-    /** The field name for the increment in the table, if nil use incrementColumn */
-    private String incrementColumnAlias;
+    /** If sql has join, master table's alias */
+    private String tableAlias;
 
     /** es index <==> database table name. it not, will generate by table name(t_some_one ==> someOne) */
     private String index;
@@ -77,9 +77,6 @@ public class Relation {
         U.assertNil(table, "must set (db table name)");
         U.assertNil(incrementColumn, "must set (db table increment-column)");
 
-        if (U.isBlank(incrementColumnAlias)) {
-            incrementColumnAlias = incrementColumn;
-        }
         if (U.isNotBlank(limit)) {
             U.assert0(limit, "limit must greater 0");
         }
@@ -228,6 +225,9 @@ public class Relation {
             } else {
                 sbd.append(where);
             }
+            if (U.isNotBlank(tableAlias)) {
+                sbd.append(tableAlias).append(".");
+            }
             sbd.append(incrementColumn).append(operate);
             if (U.isNumber(param)) {
                 sbd.append(param);
@@ -249,7 +249,11 @@ public class Relation {
         }
         appendWhere(operate, param, sbd);
         if (!EQUALS.equals(operate)) {
-            sbd.append(" ORDER BY ").append(incrementColumn);
+            sbd.append(" ORDER BY ");
+            if (U.isNotBlank(tableAlias)) {
+                sbd.append(tableAlias).append(".");
+            }
+            sbd.append(incrementColumn);
         }
         sbd.append(" LIMIT ");
         if (U.greater0(pageStart)) {
