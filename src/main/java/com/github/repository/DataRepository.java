@@ -150,7 +150,7 @@ public class DataRepository {
         int size = esRepository.saveDataToEs(index, fixDocument(relation, dataList, matchInId, nestedData));
         long esTime = (System.currentTimeMillis() - esStart);
         if (Logs.ROOT_LOG.isInfoEnabled()) {
-            Logs.ROOT_LOG.info("sql time({}) size({}) batch to({}) time({}ms) success({})",
+            Logs.ROOT_LOG.info("sql time({}ms) size({}) batch to({}) time({}ms) success({})",
                     allSqlTime, dataList.size(), index, esTime, size);
         }
         if (size == 0) {
