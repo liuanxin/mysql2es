@@ -24,18 +24,14 @@ public class TaskConfig implements AsyncConfigurer {
     @Override
     public Executor getAsyncExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        if (U.isBlank(config) || A.isEmpty(config.getRelation())) {
-            executor.setCorePoolSize(U.PROCESSORS);
-            executor.setMaxPoolSize(U.PROCESSORS << 2);
-            executor.setQueueCapacity(U.PROCESSORS);
-        } else {
-            int size = config.getRelation().size();
-            executor.setCorePoolSize(size);
-            executor.setMaxPoolSize(size << 2);
-            executor.setQueueCapacity(size);
-        }
+
+        int size = A.isEmpty(config.getRelation()) ? U.PROCESSORS : config.getRelation().size();
+        executor.setCorePoolSize(size);
+        executor.setMaxPoolSize(size << 2);
+        executor.setQueueCapacity(size);
         executor.setThreadNamePrefix("async-executor-");
         executor.initialize();
+
         return executor;
     }
 
