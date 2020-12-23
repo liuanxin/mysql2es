@@ -1,32 +1,39 @@
 
-logging.config: classpath:log-prod.xml
+logging.config: classpath:log-dev.xml
 
 spring:
   datasource:
-    url: jdbc:mysql://127.0.0.1:3306/db?useAffectedRows=true&useSSL=false&useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true
-    username: root
-    password: root
+    url: jdbc:mysql://192.168.87.110:63307/gc_ods?useAffectedRows=true&useSSL=false&useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&tinyInt1isBit=false&statementInterceptors=com.github.util.sql.PrintSql5
+    driver-class-name: com.mysql.jdbc.Driver
+    username: ods_pt_test_q
+    password: ZAiw3WFK2BvuIdKy
     hikari:
-      minimumIdle: 2
-      maximumPoolSize: 6
+      minimumIdle: 1
+      maximumPoolSize: 1
       maxLifetime: 1500000
-      dataSourceProperties:
-        prepStmtCacheSize: 9
-        prepStmtCacheSqlLimit: 12
-        cachePrepStmts: true
-        useServerPrepStmts: true
   elasticsearch.rest:
-    uris: 127.0.0.1:9200
+    uris: 192.168.86.196:9200
 
 
 config:
-  cron: 0/30 * * * * *
+  cron: 0/5 * * * * *
   relation:
     -
-      table: t_property
-      increment-column: "id"
-      limit: 100
+      table: orders
+      increment-column: id
+      index: dev_ods_order
+      sql: SELECT ord.id, ord.order_code, ord.customer_code, ord.reference_no, ord.tracking_number, ord.order_type, ord.create_type, ord.platform, ord.platform_number, ord.order_status, ord.warehouse_code, ord.sm_code, ord.brand, ord.remark, ord.oda_type, ord.is_return, ord.is_residential, ord.is_attachment, ord.is_truck_service, ord.is_more_box, ord.abnormal_source, ord.abnormal_reason, ord.order_exception_sub_type, ord.abnormal_desc, ifnull(ord.create_time,0) create_time, ifnull(ord.update_time,0) update_time, ifnull(ord.payment_time,0) payment_time, ifnull(ord.oms_time,0) oms_time, ifnull(opt.submit_time,0) submit_time, ifnull(opt.ship_time,0) ship_time, ord.currency_code, ord.platform_account, ord.shipping_fee_estimate, ord.actual_fee_estimate, ord.is_signature, ord.is_insurance, ord.insurance_value, ord.age_detection, ord.is_lift_gate, ord.fba_shipment_id, ord.fba_shipment_id_create_time, ord.is_change_label, oaddr.first_name, oaddr.company, oaddr.postcode, oaddr.email, oaddr.phone, oaddr.country_code, oaddr.state, oaddr.city, oaddr.street_address1, oaddr.street_address2, os.weight, os.length, os.width, os.height, os.change_weight, os.change_length, os.change_width, os.change_height, os.vol_weight FROM orders ord LEFT JOIN order_ship os ON ord.order_code = os.order_code LEFT JOIN order_address oaddr ON ord.order_code = oaddr.order_code LEFT JOIN order_operation_time opt ON ord.order_code = opt.order_code
+      key-column: id
+      table-alias: ord
+
     -
-      table: t_value
-      increment-column: "id"
-      limit: 200
+      table: order_product
+      increment-column: id
+      index: dev_ods_order_product
+      sql: SELECT id, order_code, product_barcode from order_product
+
+    -
+      table: order_address
+      increment-column: id
+      index: dev_ods_order_address
+      sql: SELECT id, order_code, first_name, country_code from order_address

@@ -50,15 +50,14 @@ public class DataTest {
 
         for (Relation relation : config.getRelation()) {
             String index = relation.useIndex();
-            String type = relation.getType();
             try {
-                boolean deleteSchemeFlag = esRepository.deleteScheme(index, type).get();
+                boolean deleteSchemeFlag = esRepository.deleteScheme(index).get();
                 if (deleteSchemeFlag) {
-                    F.delete(relation.getTable(), index, type);
+                    F.delete(relation.getTable(), index);
                 }
             } catch(InterruptedException | ExecutionException e){
                 if (Logs.ROOT_LOG.isErrorEnabled()) {
-                    Logs.ROOT_LOG.error(String.format("delete scheme(%s/%s) exception", index, type), e);
+                    Logs.ROOT_LOG.error(String.format("delete scheme(%s) exception", index), e);
                 }
             }
         }

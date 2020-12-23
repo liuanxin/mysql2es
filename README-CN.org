@@ -46,6 +46,17 @@ config:
       # 优化的 sql: SELECT ... FROM t_product c inner join (SELECT id FROM t_product WHERE time > '2010-01-01 00:00:01' LIMIT 1000万,1000) t on t.id = c.id
       # 原先的 sql 执行时先通过索引找到 id, 再去存数据的物理块取记录, 最后在结果集里偏移 1000万 后再取 1000 条, 所以效率好不了
       # 优化的 sql 括号中偏移 1000万 是基于覆盖索引在处理(索引存的是索引列 + 主键), 然后再用 id 联表取数据, 因此这样是很快的
+
+      nested-mapping:
+        # 如果有 t_order 和 t_order_item 表, t_order 主键是 id, t_order_item 关联字段是 order_id, 则 master-field 是 id, nested-field 是 order_id
+        item:
+          main-field: id
+          sql: SELECT xx, yy, zz FROM order_item
+          nested-field: order_id
+        address:
+          main-field: id
+          sql: SELECT aa, bb, cc FROM order_address
+          nested-field: order_id
 #+END_SRC
 
 cron 的说明如下

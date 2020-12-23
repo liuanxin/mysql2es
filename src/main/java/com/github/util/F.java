@@ -9,12 +9,9 @@ import java.io.IOException;
 
 public class F {
 
-    private static String getFileName(String table, String index, String type) {
+    private static String getFileName(String table, String index) {
         StringBuilder sbd = new StringBuilder();
         sbd.append(index);
-        if (!"_doc".equals(type)) {
-            sbd.append("-").append(type);
-        }
         String tableToIndex = U.tableToIndex(table);
         if (!tableToIndex.equals(index)) {
             sbd.append("-").append(tableToIndex);
@@ -22,8 +19,8 @@ public class F {
         return U.addSuffix(Const.TMP) + sbd.toString();
     }
 
-    public static String read(String table, String index, String type) {
-        String fileName = getFileName(table, index, type);
+    public static String read(String table, String index) {
+        String fileName = getFileName(table, index);
         try {
             String content = Files.asCharSource(new File(fileName), U.UTF8).read();
             if (Logs.ROOT_LOG.isDebugEnabled()) {
@@ -42,8 +39,8 @@ public class F {
         return U.EMPTY;
     }
 
-    public static void write(String table, String index, String type, String content) {
-        String fileName = getFileName(table, index, type);
+    public static void write(String table, String index, String content) {
+        String fileName = getFileName(table, index);
         try {
             Files.asCharSink(new File(fileName), U.UTF8).write(content);
             if (Logs.ROOT_LOG.isDebugEnabled()) {
@@ -56,8 +53,8 @@ public class F {
         }
     }
 
-    public static void delete(String table, String index, String type) {
-        String fileName = getFileName(table, index, type);
+    public static void delete(String table, String index) {
+        String fileName = getFileName(table, index);
         boolean flag = new File(fileName).delete();
         if (Logs.ROOT_LOG.isDebugEnabled()) {
             Logs.ROOT_LOG.debug("delete ({}) {}", fileName, flag);

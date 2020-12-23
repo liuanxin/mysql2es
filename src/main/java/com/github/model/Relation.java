@@ -31,8 +31,8 @@ public class Relation {
 
     // begin with 6.0, type will be remove, replace with _doc
     // https://www.elastic.co/guide/en/elasticsearch/reference/current/removal-of-types.html
-    /** es type */
-    private String type = "_doc";
+    // /** es type */
+    // private String type = "_doc";
 
     /** whether to generate scheme of es on the database table structure */
     private boolean scheme = false;
@@ -48,6 +48,9 @@ public class Relation {
 
     /** table column -> es field. if not, will generate by column(c_some_type ==> someType) */
     private Map<String, String> mapping;
+
+    /** nested mapping */
+    private Map<String, NestedMapping> nestedMapping;
 
     /**
      * primary key, will generate to id in es, query from db table, if not, can't create index in es

@@ -74,6 +74,9 @@ public final class U {
     public static boolean isNotBlank(Object obj) {
         return !isBlank(obj);
     }
+    public static String toStr(Object obj) {
+        return obj == null ? null : obj.toString();
+    }
 
     public static String uuid() {
         return UUID.randomUUID().toString();
