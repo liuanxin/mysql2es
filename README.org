@@ -46,6 +46,17 @@ config:
       primary-key: id            # The primary key name, when the table data is a lot, use  LIMIT 10million,1000  efficiency will be very slow, this field will optimize the sql statement, the default is id
       # Original sql :  SELECT ... FROM t_table WHERE time > '2010-01-01 00:00:01' LIMIT 10million,1000
       # Optimized sql:  SELECT ... FROM t_table c inner join (SELECT id FROM t_table WHERE time > '2010-01-01 00:00:01' LIMIT 10million,1000) t on t.id = c.id
+
+      nested-mapping:
+        # If has table `t_order` and `t_order_item`, `t_order` : id, `t_order_item` : order_id, then main-field => id, nested-field => order_id
+        item:
+          main-field: id
+          sql: SELECT xx, yy, zz FROM order_item
+          nested-field: order_id
+        address:
+          main-field: id
+          sql: SELECT aa, bb, cc FROM order_address
+          nested-field: order_id
 #+END_SRC
 
 about cron

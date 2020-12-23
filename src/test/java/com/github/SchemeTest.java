@@ -33,14 +33,13 @@ public class SchemeTest {
     public void test() {
         for (Relation relation : config.getRelation()) {
             String index = relation.useIndex();
-            String type = relation.getType();
 
             Map<String, Map> properties = dataRepository.dbToEsScheme(relation);
             if (relation.isScheme() && A.isNotEmpty(properties)) {
-                esRepository.saveScheme(index, type, properties);
+                esRepository.saveScheme(index, properties);
             }
 
-            esRepository.deleteScheme(index, type);
+            esRepository.deleteScheme(index);
         }
     }
 }
