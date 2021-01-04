@@ -213,6 +213,9 @@ public class DataRepository {
                         Logs.ROOT_LOG.info("equals sql time({}ms) size({}) batch to({}) time({}ms) success({})",
                                 allSqlTime, equalsDataList.size(), index, esTime, size);
                     }
+                    // write last record in temp file
+                    F.write(matchTable, index, tempColumnValue);
+
                     if (size == 0) {
                         // if success was 0, can break equals handle
                         return;
