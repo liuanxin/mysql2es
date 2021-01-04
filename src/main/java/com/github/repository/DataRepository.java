@@ -233,24 +233,26 @@ public class DataRepository {
         }
 
         Map<String, List<Map<String, Object>>> returnMap = Maps.newHashMap();
-        for (Map.Entry<String, NestedMapping> entry : relation.getNestedMapping().entrySet()) {
-            String key = entry.getKey();
-            NestedMapping nested = entry.getValue();
+        if (A.isNotEmpty(relation.getNestedMapping())) {
+            for (Map.Entry<String, NestedMapping> entry : relation.getNestedMapping().entrySet()) {
+                String key = entry.getKey();
+                NestedMapping nested = entry.getValue();
 
-            List<Object> relations = Lists.newArrayList();
-            for (Map<String, Object> data : dataList) {
-                relations.add(data.get(nested.getMainField()));
-            }
-            if (A.isNotEmpty(relations)) {
-                String sql = nested.nestedQuerySql(relations);
-                if (U.isNotBlank(sql)) {
-                    long start = System.currentTimeMillis();
-                    List<Map<String, Object>> nestedDataList = jdbcTemplate.queryForList(sql);
-                    if (Logs.ROOT_LOG.isDebugEnabled()) {
-                        Logs.ROOT_LOG.debug("nested({}) sql({}) time({}ms) return size({})",
-                                key, sql, (System.currentTimeMillis() - start), nestedDataList.size());
+                List<Object> relations = Lists.newArrayList();
+                for (Map<String, Object> data : dataList) {
+                    relations.add(data.get(nested.getMainField()));
+                }
+                if (A.isNotEmpty(relations)) {
+                    String sql = nested.nestedQuerySql(relations);
+                    if (U.isNotBlank(sql)) {
+                        long start = System.currentTimeMillis();
+                        List<Map<String, Object>> nestedDataList = jdbcTemplate.queryForList(sql);
+                        if (Logs.ROOT_LOG.isDebugEnabled()) {
+                            Logs.ROOT_LOG.debug("nested({}) sql({}) time({}ms) return size({})",
+                                    key, sql, (System.currentTimeMillis() - start), nestedDataList.size());
+                        }
+                        returnMap.put(key, nestedDataList);
                     }
-                    returnMap.put(key, nestedDataList);
                 }
             }
         }
@@ -280,22 +282,24 @@ public class DataRepository {
     private Map<String, String> fixDocument(Relation relation, List<Map<String, Object>> dataList,
                                             String matchInId, Map<String, List<Map<String, Object>>> nestedData) {
         Map<String, Multimap<String, Map<String, Object>>> nestedMap = Maps.newHashMap();
-        for (Map.Entry<String, NestedMapping> entry : relation.getNestedMapping().entrySet()) {
-            String key = entry.getKey();
-            NestedMapping nested = entry.getValue();
+        if (A.isNotEmpty(relation.getNestedMapping())) {
+            for (Map.Entry<String, NestedMapping> entry : relation.getNestedMapping().entrySet()) {
+                String key = entry.getKey();
+                NestedMapping nested = entry.getValue();
 
-            List<Map<String, Object>> list = nestedData.get(key);
-            if (A.isNotEmpty(list)) {
-                String tableField = nested.getNestedField();
-                Multimap<String, Map<String, Object>> multiMap = LinkedHashMultimap.create();
-                for (Map<String, Object> data : list) {
-                    String fieldData = U.toStr(data.get(tableField));
-                    if (U.isNotBlank(fieldData)) {
-                        data.remove(tableField);
-                        multiMap.put(fieldData, data);
+                List<Map<String, Object>> list = nestedData.get(key);
+                if (A.isNotEmpty(list)) {
+                    String tableField = nested.getNestedField();
+                    Multimap<String, Map<String, Object>> multiMap = LinkedHashMultimap.create();
+                    for (Map<String, Object> data : list) {
+                        String fieldData = U.toStr(data.get(tableField));
+                        if (U.isNotBlank(fieldData)) {
+                            data.remove(tableField);
+                            multiMap.put(fieldData, data);
+                        }
                     }
+                    nestedMap.put(key, multiMap);
                 }
-                nestedMap.put(key, multiMap);
             }
         }
 
@@ -329,19 +333,21 @@ public class DataRepository {
 
             // Document no id, can't be save
             if (U.isNotBlank(id)) {
-                for (Map.Entry<String, NestedMapping> entry : relation.getNestedMapping().entrySet()) {
-                    String nestedKey = entry.getKey();
-                    if (data.containsKey(nestedKey)) {
-                        if (Logs.ROOT_LOG.isWarnEnabled()) {
-                            Logs.ROOT_LOG.warn("nested({}) has already alias in primary sql, ignore put)", nestedKey);
-                        }
-                    } else {
-                        NestedMapping nestedValue = entry.getValue();
-                        Multimap<String, Map<String, Object>> multimap = nestedMap.get(nestedKey);
-                        if (U.isNotBlank(multimap) && multimap.size() > 0) {
-                            Collection<Map<String, Object>> list = multimap.get(U.toStr(data.get(nestedValue.getMainField())));
-                            if (A.isNotEmpty(list)) {
-                                data.put(nestedKey, list);
+                if (A.isNotEmpty(relation.getNestedMapping())) {
+                    for (Map.Entry<String, NestedMapping> entry : relation.getNestedMapping().entrySet()) {
+                        String nestedKey = entry.getKey();
+                        if (data.containsKey(nestedKey)) {
+                            if (Logs.ROOT_LOG.isWarnEnabled()) {
+                                Logs.ROOT_LOG.warn("nested({}) has already alias in primary sql, ignore put)", nestedKey);
+                            }
+                        } else {
+                            NestedMapping nestedValue = entry.getValue();
+                            Multimap<String, Map<String, Object>> multimap = nestedMap.get(nestedKey);
+                            if (U.isNotBlank(multimap) && multimap.size() > 0) {
+                                Collection<Map<String, Object>> list = multimap.get(U.toStr(data.get(nestedValue.getMainField())));
+                                if (A.isNotEmpty(list)) {
+                                    data.put(nestedKey, list);
+                                }
                             }
                         }
                     }
