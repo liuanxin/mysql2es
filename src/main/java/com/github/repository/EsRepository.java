@@ -4,18 +4,17 @@ import com.github.util.A;
 import com.github.util.Jsons;
 import com.github.util.Logs;
 import com.github.util.U;
+import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
+import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
+import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.client.IndicesClient;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.CreateIndexRequest;
-import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.client.indices.PutMappingRequest;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
@@ -40,13 +39,12 @@ public class EsRepository {
         IndicesClient indices = client.indices();
 
         try {
-            if (indices.exists(new GetIndexRequest(index), RequestOptions.DEFAULT)) {
+            if (indices.exists(new GetIndexRequest().indices(index))) {
                 long start = System.currentTimeMillis();
-                AcknowledgedResponse resp = indices.delete(new DeleteIndexRequest(index), RequestOptions.DEFAULT);
+                DeleteIndexResponse resp = indices.delete(new DeleteIndexRequest(index));
                 boolean flag = resp.isAcknowledged();
                 if (Logs.ROOT_LOG.isDebugEnabled()) {
-                    Logs.ROOT_LOG.debug("delete scheme ({}) time({}) return({})",
-                            index, (System.currentTimeMillis() - start + "ms"), flag);
+                    Logs.ROOT_LOG.debug("delete scheme ({}) time({}) return({})", index, (System.currentTimeMillis() - start + "ms"), flag);
                 }
             }
         } catch (IOException e) {
@@ -72,7 +70,7 @@ public class EsRepository {
     private boolean existsIndex(IndicesClient indices, String index) {
         try {
             long start = System.currentTimeMillis();
-            boolean ack = indices.exists(new GetIndexRequest(index), RequestOptions.DEFAULT);
+            boolean ack = indices.exists(new GetIndexRequest().indices(index));
             if (Logs.ROOT_LOG.isDebugEnabled()) {
                 Logs.ROOT_LOG.debug("query index({}) exists time({}) return({})",
                         index, (System.currentTimeMillis() - start + "ms"), ack);
@@ -91,7 +89,7 @@ public class EsRepository {
             // String settings = Searchs.getSettings();
             // request.settings(settings, XContentType.JSON);
             long start = System.currentTimeMillis();
-            boolean ack = indices.create(request, RequestOptions.DEFAULT).isAcknowledged();
+            boolean ack = indices.create(request).isAcknowledged();
             if (Logs.ROOT_LOG.isDebugEnabled()) {
                 Logs.ROOT_LOG.debug("create index({}) time({}) return({})",
                         index, (System.currentTimeMillis() - start + "ms"), ack);
@@ -109,7 +107,7 @@ public class EsRepository {
             String source = Jsons.toJson(A.maps("properties", properties));
             PutMappingRequest request = new PutMappingRequest(index).source(source, XContentType.JSON);
             long start = System.currentTimeMillis();
-            boolean ack = indices.putMapping(request, RequestOptions.DEFAULT).isAcknowledged();
+            boolean ack = indices.putMapping(request).isAcknowledged();
             if (Logs.ROOT_LOG.isInfoEnabled()) {
                 Logs.ROOT_LOG.info("put ({}) mapping time({}) return({})", index, (System.currentTimeMillis() - start + "ms"), ack);
             }
@@ -131,30 +129,21 @@ public class EsRepository {
         for (Map.Entry<String, String> entry : idDataMap.entrySet()) {
             String id = entry.getKey(), source = entry.getValue();
             if (U.isNotBlank(id) && U.isNotBlank(source)) {
-                batchRequest.add(new IndexRequest(index).id(id).source(source, XContentType.JSON));
+                batchRequest.add(new IndexRequest(index, id).source(source, XContentType.JSON));
                 originalSize++;
             }
         }
 
         try {
-            BulkResponse responses = client.bulk(batchRequest, RequestOptions.DEFAULT);
+            BulkResponse responses = client.bulk(batchRequest);
             int size = responses.getItems().length;
-
-            BulkItemResponse.Failure fail = null;
             for (BulkItemResponse response : responses) {
                 if (response.isFailed()) {
-                    fail = response.getFailure();
                     size--;
                 }
             }
-            if (size == originalSize) {
-                if (Logs.ROOT_LOG.isDebugEnabled()) {
-                    Logs.ROOT_LOG.debug("batch save({}) size({}) success({})", index, originalSize, size);
-                }
-            } else {
-                if (Logs.ROOT_LOG.isErrorEnabled()) {
-                    Logs.ROOT_LOG.error("batch save({}) size({}) success({}), has error({})", index, originalSize, size, fail);
-                }
+            if (Logs.ROOT_LOG.isDebugEnabled()) {
+                Logs.ROOT_LOG.debug("batch save({}) size({}) success({})", index, originalSize, size);
             }
             return size;
         } catch (IOException e) {
