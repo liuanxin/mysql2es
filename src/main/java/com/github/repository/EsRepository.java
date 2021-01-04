@@ -129,7 +129,7 @@ public class EsRepository {
         for (Map.Entry<String, String> entry : idDataMap.entrySet()) {
             String id = entry.getKey(), source = entry.getValue();
             if (U.isNotBlank(id) && U.isNotBlank(source)) {
-                batchRequest.add(new IndexRequest(index, id).source(source, XContentType.JSON));
+                batchRequest.add(new IndexRequest(index).id(id).source(source, XContentType.JSON));
                 originalSize++;
             }
         }
@@ -137,13 +137,22 @@ public class EsRepository {
         try {
             BulkResponse responses = client.bulk(batchRequest);
             int size = responses.getItems().length;
+
+            BulkItemResponse.Failure fail = null;
             for (BulkItemResponse response : responses) {
                 if (response.isFailed()) {
+                    fail = response.getFailure();
                     size--;
                 }
             }
-            if (Logs.ROOT_LOG.isDebugEnabled()) {
-                Logs.ROOT_LOG.debug("batch save({}) size({}) success({})", index, originalSize, size);
+            if (size == originalSize) {
+                if (Logs.ROOT_LOG.isDebugEnabled()) {
+                    Logs.ROOT_LOG.debug("batch save({}) size({}) success({})", index, originalSize, size);
+                }
+            } else {
+                if (Logs.ROOT_LOG.isErrorEnabled()) {
+                    Logs.ROOT_LOG.error("batch save({}) size({}) success({}), has error({})", index, originalSize, size, fail);
+                }
             }
             return size;
         } catch (IOException e) {
