@@ -129,7 +129,7 @@ public class EsRepository {
         for (Map.Entry<String, String> entry : idDataMap.entrySet()) {
             String id = entry.getKey(), source = entry.getValue();
             if (U.isNotBlank(id) && U.isNotBlank(source)) {
-                batchRequest.add(new IndexRequest(index).id(id).source(source, XContentType.JSON));
+                batchRequest.add(new IndexRequest(index).type("_doc").id(id).source(source, XContentType.JSON));
                 originalSize++;
             }
         }
