@@ -266,7 +266,8 @@ public class DataRepository {
     private String getLast(Relation relation, List<Map<String, Object>> dataList) {
         Map<String, Object> last = A.last(dataList);
         if (A.isNotEmpty(last)) {
-            Object obj = last.get(relation.getIncrementColumn());
+            String column = relation.getIncrementColumn();
+            Object obj = last.get(column.contains(".") ? column.substring(column.indexOf(".") + 1) : column);
             if (U.isNotBlank(obj)) {
                 // if was Date return 'yyyy-MM-dd HH:mm:ss', else return toStr
                 String lastData;
