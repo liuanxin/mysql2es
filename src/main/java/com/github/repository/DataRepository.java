@@ -163,10 +163,9 @@ public class DataRepository {
             // if last data was nil, can break loop
             return null;
         }
-
-        handleEquals(relation, matchTable, lastValue, matchInId);
         // write last record in temp file
         F.write(matchTable, index, lastValue);
+        handleEquals(relation, matchTable, lastValue, matchInId);
 
         // if sql: limit 1000, query data size 900, can break loop
         if (dataList.size() < relation.getLimit()) {
@@ -213,8 +212,6 @@ public class DataRepository {
                         Logs.ROOT_LOG.info("equals sql time({}ms) size({}) batch to({}) time({}ms) success({})",
                                 allSqlTime, equalsDataList.size(), index, esTime, size);
                     }
-                    // write last record in temp file
-                    F.write(matchTable, index, tempColumnValue);
 
                     if (size == 0) {
                         // if success was 0, can break equals handle
