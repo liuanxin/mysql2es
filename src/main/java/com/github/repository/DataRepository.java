@@ -7,6 +7,7 @@ import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
+import org.elasticsearch.common.UUIDs;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
@@ -309,80 +310,81 @@ public class DataRepository {
             StringBuilder idBuild = new StringBuilder();
             String idPrefix = relation.getIdPrefix();
             if (U.isNotBlank(idPrefix)) {
-                idBuild.append(idPrefix);
+                idBuild.append(idPrefix.trim());
             }
             if (relation.isPatternToId() && U.isNotBlank(matchInId)) {
                 if (idBuild.length() > 0) {
                     idBuild.append("-");
                 }
-                idBuild.append(matchInId);
+                idBuild.append(matchInId.trim());
             }
             for (String column : relation.getKeyColumn()) {
                 if (idBuild.length() > 0) {
                     idBuild.append("-");
                 }
-                idBuild.append(data.get(column));
+                String str = U.toStr(data.get(column));
+                if (U.isNotBlank(str)) {
+                    idBuild.append(str.trim());
+                }
             }
             String idSuffix = relation.getIdSuffix();
             if (U.isNotBlank(idSuffix)) {
                 if (idBuild.length() > 0) {
                     idBuild.append("-");
                 }
-                idBuild.append(idSuffix);
+                idBuild.append(idSuffix.trim());
             }
-            String id = idBuild.toString();
+            // if not has id, use es generator
+            String id = idBuild.length() == 0 ? UUIDs.base64UUID() : idBuild.toString();
 
-            // Document no id, can't be save
-            if (U.isNotBlank(id)) {
-                if (A.isNotEmpty(relation.getNestedMapping())) {
-                    for (Map.Entry<String, NestedMapping> entry : relation.getNestedMapping().entrySet()) {
-                        String nestedKey = entry.getKey();
-                        if (data.containsKey(nestedKey)) {
-                            if (Logs.ROOT_LOG.isWarnEnabled()) {
-                                Logs.ROOT_LOG.warn("nested({}) has already alias in primary sql, ignore put)", nestedKey);
-                            }
-                        } else {
-                            NestedMapping nestedValue = entry.getValue();
-                            Multimap<String, Map<String, Object>> multimap = nestedMap.get(nestedKey);
-                            if (U.isNotBlank(multimap) && multimap.size() > 0) {
-                                Collection<Map<String, Object>> list = multimap.get(U.toStr(data.get(nestedValue.getMainField())));
-                                if (A.isNotEmpty(list)) {
-                                    data.put(nestedKey, list);
-                                }
+            if (A.isNotEmpty(relation.getNestedMapping())) {
+                for (Map.Entry<String, NestedMapping> entry : relation.getNestedMapping().entrySet()) {
+                    String nestedKey = entry.getKey();
+                    if (data.containsKey(nestedKey)) {
+                        if (Logs.ROOT_LOG.isWarnEnabled()) {
+                            Logs.ROOT_LOG.warn("nested({}) has already alias in primary sql, ignore put)", nestedKey);
+                        }
+                    } else {
+                        NestedMapping nestedValue = entry.getValue();
+                        Multimap<String, Map<String, Object>> multimap = nestedMap.get(nestedKey);
+                        if (U.isNotBlank(multimap) && multimap.size() > 0) {
+                            Collection<Map<String, Object>> list = multimap.get(U.toStr(data.get(nestedValue.getMainField())));
+                            if (A.isNotEmpty(list)) {
+                                data.put(nestedKey, list);
                             }
                         }
                     }
                 }
-
-                Map<String, Object> dataMap = Maps.newHashMap();
-                for (Map.Entry<String, Object> entry : data.entrySet()) {
-                    String key = relation.useField(entry.getKey());
-                    if (U.isNotBlank(key)) {
-                        Object value = entry.getValue();
-                        // field has suggest and null, can't be write => https://elasticsearch.cn/question/4051
-                        dataMap.put(key, U.isBlank(value) ? " " : value);
-                        // dataMap.put(key, value);
-                    }
-                }
-
-                Map<String, String> sourceMap = Maps.newHashMap();
-                // Document no data, don't need to save? or update to nil?
-                if (A.isNotEmpty(dataMap)) {
-                    sourceMap.put("data", Jsons.toJson(dataMap));
-
-                    List<String> routes = Lists.newArrayList();
-                    for (String route : relation.getRouteKey()) {
-                        Object obj = data.get(route);
-                        if (U.isNotBlank(obj)) {
-                            routes.add(U.toStr(obj).trim());
-                        }
-                    }
-                    if (A.isNotEmpty(routes)) {
-                        sourceMap.put("routing", A.toStr(routes));
-                    }
-                }
-                documents.put(id, sourceMap);
             }
+
+            Map<String, Object> dataMap = Maps.newHashMap();
+            for (Map.Entry<String, Object> entry : data.entrySet()) {
+                String key = relation.useField(entry.getKey());
+                if (U.isNotBlank(key)) {
+                    Object value = entry.getValue();
+                    // field has suggest and null, can't be write => https://elasticsearch.cn/question/4051
+                    dataMap.put(key, U.isBlank(value) ? " " : value);
+                    // dataMap.put(key, value);
+                }
+            }
+
+            Map<String, String> sourceMap = Maps.newHashMap();
+            // Document no data, don't need to save? or update to nil?
+            if (A.isNotEmpty(dataMap)) {
+                sourceMap.put("data", Jsons.toJson(dataMap));
+
+                List<String> routes = Lists.newArrayList();
+                for (String route : relation.getRouteKey()) {
+                    Object obj = data.get(route);
+                    if (U.isNotBlank(obj)) {
+                        routes.add(U.toStr(obj).trim());
+                    }
+                }
+                if (A.isNotEmpty(routes)) {
+                    sourceMap.put("routing", A.toStr(routes));
+                }
+            }
+            documents.put(id, sourceMap);
         }
         return documents;
     }
