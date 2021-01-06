@@ -280,8 +280,8 @@ public class DataRepository {
         return null;
     }
     /** traverse the Database Result and organize into es Document */
-    private Map<String, String> fixDocument(Relation relation, List<Map<String, Object>> dataList,
-                                            String matchInId, Map<String, List<Map<String, Object>>> nestedData) {
+    private Map<String, Map<String, String>> fixDocument(Relation relation, List<Map<String, Object>> dataList,
+                                                         String matchInId, Map<String, List<Map<String, Object>>> nestedData) {
         Map<String, Multimap<String, Map<String, Object>>> nestedMap = Maps.newHashMap();
         if (A.isNotEmpty(relation.getNestedMapping())) {
             for (Map.Entry<String, NestedMapping> entry : relation.getNestedMapping().entrySet()) {
@@ -304,7 +304,7 @@ public class DataRepository {
             }
         }
 
-        Map<String, String> documents = Maps.newHashMap();
+        Map<String, Map<String, String>> documents = Maps.newHashMap();
         for (Map<String, Object> data : dataList) {
             StringBuilder idBuild = new StringBuilder();
             String idPrefix = relation.getIdPrefix();
@@ -364,10 +364,24 @@ public class DataRepository {
                         // dataMap.put(key, value);
                     }
                 }
+
+                Map<String, String> sourceMap = Maps.newHashMap();
                 // Document no data, don't need to save? or update to nil?
                 if (A.isNotEmpty(dataMap)) {
-                    documents.put(id, Jsons.toJson(dataMap));
+                    sourceMap.put("data", Jsons.toJson(dataMap));
+
+                    List<String> routes = Lists.newArrayList();
+                    for (String route : relation.getRouteKey()) {
+                        Object obj = data.get(route);
+                        if (U.isNotBlank(obj)) {
+                            routes.add(U.toStr(obj).trim());
+                        }
+                    }
+                    if (A.isNotEmpty(routes)) {
+                        sourceMap.put("routing", A.toStr(routes));
+                    }
                 }
+                documents.put(id, sourceMap);
             }
         }
         return documents;

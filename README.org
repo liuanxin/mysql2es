@@ -33,14 +33,15 @@ config:
       sql: select * from t_table # Custom sql statement (do not use ORDER BY and LIMIT, will be automatically added based on increment-column), no setting will automatically assemble from the database table
       limit: 2000                # The number of times to get from the database, the default is 1000
 
+      route-key: [c1,c2]         # The fields used for routing, multiple separated by commas
       pattern-to-id: false       # true: the wildcard data of the table name is used as part of the id(for example, table use t_order_% wildcard, then the table t_order_2016 will be used 2016 to the prefix of the id), the default is true
-      key-column: [id]           # The id column used to generate the index will not be automatically retrieved from the table. When the table has a primary key and multiple columns of unique index, can use this configuration when you want to use the unique index to do the index id.
+      key-column: [c1,c2]        # The id column used to generate the index will not be automatically retrieved from the table. When the table has a primary key and multiple columns of unique index, can use this configuration when you want to use the unique index to do the index id.
       id-prefix:                 # Use when you want to prefix the index id
       id-suffix:                 # Use when you want to suffix the index id
 
       mapping:                   # By default, it will be generated from the table field (c_some_type ==> someType), and only special cases can set.
         c_type: type               # table column(Use alias if there is an alias) : elasticsearch field
-      ignore-column: [c1, c2]    # The above sql does not want to write the index of the column (if the column has an alias, use the alias)
+      ignore-column: [c1,c2]     # The above sql does not want to write the index of the column (if the column has an alias, use the alias)
 
       big-count-to-sql: 2000     # Limit start in sql, start in 1000 exceeds this value will be optimized into inner join statement, the default is 2000
       primary-key: id            # The primary key name, when the table data is a lot, use  LIMIT 10million,1000  efficiency will be very slow, this field will optimize the sql statement, the default is id
