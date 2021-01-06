@@ -119,18 +119,28 @@ public class EsRepository {
     }
 
 
-    public int saveDataToEs(String index, Map<String, String> idDataMap) {
+    public int saveDataToEs(String index, Map<String, Map<String, String>> idDataMap) {
         if (A.isEmpty(idDataMap)) {
             return 0;
         }
 
         BulkRequest batchRequest = new BulkRequest();
         long originalSize = 0;
-        for (Map.Entry<String, String> entry : idDataMap.entrySet()) {
-            String id = entry.getKey(), source = entry.getValue();
-            if (U.isNotBlank(id) && U.isNotBlank(source)) {
-                batchRequest.add(new IndexRequest(index).type("_doc").id(id).source(source, XContentType.JSON));
-                originalSize++;
+        for (Map.Entry<String, Map<String, String>> entry : idDataMap.entrySet()) {
+            String id = entry.getKey();
+            Map<String, String> source = entry.getValue();
+            if (U.isNotBlank(id) && A.isNotEmpty(source)) {
+                IndexRequest doc = new IndexRequest(index).type("_doc").id(id);
+                String data = source.get("data");
+                if (U.isNotBlank(data)) {
+                    doc.source(data, XContentType.JSON);
+                    String routing = source.get("routing");
+                    if (U.isNotBlank(routing)) {
+                        doc.routing(routing);
+                    }
+                    batchRequest.add(doc);
+                    originalSize++;
+                }
             }
         }
 
