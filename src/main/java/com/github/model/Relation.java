@@ -37,6 +37,11 @@ public class Relation {
     /** whether to generate scheme of es on the database table structure */
     private boolean scheme = false;
 
+    /** whether to generate scheme of es on the database table structure */
+    private boolean columnLowerCamel = false;
+
+    private List<String> routeKey;
+
     /** If it is a multi-table mapping, whether to stitch the info on the table to the id */
     private boolean patternToId = true;
 
@@ -86,6 +91,13 @@ public class Relation {
         if (U.isNotBlank(sql)) {
             sql = U.replaceBlank(sql);
         }
+        if (A.isNotEmpty(nestedMapping)) {
+            for (Map.Entry<String, NestedMapping> entry : nestedMapping.entrySet()) {
+                String nested = entry.getKey();
+                U.assertNil(nested, "nested key can't be null");
+                entry.getValue().check(nested);
+            }
+        }
     }
 
     public String useKey() {
@@ -129,7 +141,7 @@ public class Relation {
                 return field;
             }
         }
-        return U.columnToField(column);
+        return columnLowerCamel ? U.columnToField(column) : column;
     }
 
     /** generate desc sql */

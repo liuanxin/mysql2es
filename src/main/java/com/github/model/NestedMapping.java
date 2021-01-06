@@ -25,8 +25,13 @@ public class NestedMapping {
     private String nestedField;
 
 
+    public void check(String nested) {
+        U.assertNil(mainField, "must set nested(" + nested + "): main-field");
+        U.assertNil(sql, "must set nested(" + nested + "): sql");
+        U.assertNil(nestedField, "must set nested(" + nested + "): nested-field");
+    }
     public String nestedQuerySql(List<Object> relations) {
-        if (U.isBlank(mainField) || U.isBlank(sql) || U.isBlank(nestedField) || A.isEmpty(relations)) {
+        if (A.isEmpty(relations)) {
             return U.EMPTY;
         }
 
