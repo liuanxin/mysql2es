@@ -132,27 +132,27 @@ public class DataRepository {
 
     private String handleGreaterAndEquals(Relation relation, String matchTable, String lastValue, String matchInId) {
         String sql = relation.querySql(matchTable, lastValue);
-        long sqlStart = System.currentTimeMillis();
+        long start = System.currentTimeMillis();
         List<Map<String, Object>> dataList = jdbcTemplate.queryForList(sql);
         if (A.isEmpty(dataList)) {
             // if not data, can break loop
             return null;
         }
-        long sqlTime = (System.currentTimeMillis() - sqlStart);
+        long sqlTime = (System.currentTimeMillis() - start);
         if (Logs.ROOT_LOG.isDebugEnabled()) {
             Logs.ROOT_LOG.debug("sql({}) time({}ms) return size({})", sql, sqlTime, dataList.size());
         }
 
         Map<String, List<Map<String, Object>>> nestedData = nestedData(relation, dataList);
-        long allSqlTime = (System.currentTimeMillis() - sqlStart);
+        long allSqlTime = (System.currentTimeMillis() - start);
 
         long esStart = System.currentTimeMillis();
         String index = relation.useIndex();
         int size = esRepository.saveDataToEs(index, fixDocument(relation, dataList, matchInId, nestedData));
-        long esTime = (System.currentTimeMillis() - esStart);
+        long end = System.currentTimeMillis();
         if (Logs.ROOT_LOG.isInfoEnabled()) {
-            Logs.ROOT_LOG.info("sql time({}ms) size({}) batch to({}) time({}ms) success({})",
-                    allSqlTime, dataList.size(), index, esTime, size);
+            Logs.ROOT_LOG.info("sql time({}ms) size({}) batch to({}) time({}ms) success({}), all time({}ms)",
+                    allSqlTime, dataList.size(), index, (end - esStart), size, (end - start));
         }
         if (size == 0) {
             // if write to es false, can break loop
