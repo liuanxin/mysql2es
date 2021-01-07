@@ -374,7 +374,7 @@ public class DataRepository {
                 sourceMap.put("data", Jsons.toJson(dataMap));
 
                 List<String> routes = Lists.newArrayList();
-                for (String route : relation.getRouteKey()) {
+                for (String route : relation.getRouteColumn()) {
                     Object obj = data.get(route);
                     if (U.isNotBlank(obj)) {
                         routes.add(U.toStr(obj).trim());
