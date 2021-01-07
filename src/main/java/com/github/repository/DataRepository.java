@@ -383,8 +383,8 @@ public class DataRepository {
                 if (A.isNotEmpty(routes)) {
                     sourceMap.put("routing", A.toStr(routes));
                 }
+                documents.put(id, sourceMap);
             }
-            documents.put(id, sourceMap);
         }
         return documents;
     }
