@@ -368,9 +368,9 @@ public class DataRepository {
                 }
             }
 
-            Map<String, String> sourceMap = Maps.newHashMap();
             // Document no data, don't need to save? or update to nil?
             if (A.isNotEmpty(dataMap)) {
+                Map<String, String> sourceMap = Maps.newHashMap();
                 sourceMap.put("data", Jsons.toJson(dataMap));
 
                 if (A.isNotEmpty(relation.getRouteColumn())) {
