@@ -373,15 +373,17 @@ public class DataRepository {
             if (A.isNotEmpty(dataMap)) {
                 sourceMap.put("data", Jsons.toJson(dataMap));
 
-                List<String> routes = Lists.newArrayList();
-                for (String route : relation.getRouteColumn()) {
-                    Object obj = data.get(route);
-                    if (U.isNotBlank(obj)) {
-                        routes.add(U.toStr(obj).trim());
+                if (A.isNotEmpty(relation.getRouteColumn())) {
+                    List<String> routes = Lists.newArrayList();
+                    for (String route : relation.getRouteColumn()) {
+                        Object obj = data.get(route);
+                        if (U.isNotBlank(obj)) {
+                            routes.add(U.toStr(obj).trim());
+                        }
                     }
-                }
-                if (A.isNotEmpty(routes)) {
-                    sourceMap.put("routing", A.toStr(routes));
+                    if (A.isNotEmpty(routes)) {
+                        sourceMap.put("routing", A.toStr(routes));
+                    }
                 }
                 documents.put(id, sourceMap);
             }
