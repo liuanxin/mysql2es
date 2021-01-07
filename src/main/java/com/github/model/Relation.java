@@ -40,7 +40,8 @@ public class Relation {
     /** whether to generate scheme of es on the database table structure */
     private boolean columnLowerCamel = false;
 
-    private List<String> routeKey;
+    /** database field used for routing: https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-routing-field.html */
+    private List<String> routeColumn;
 
     /** If it is a multi-table mapping, whether to stitch the info on the table to the id */
     private boolean patternToId = true;
