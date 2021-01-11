@@ -16,7 +16,7 @@ spring:
   elasticsearch.rest:
     uris: [192.168.1.2:9200,192.168.1.3:9200]  # 可以不设定, 默认是 127.0.0.1:9200
 
-config:
+db2es:
   cron: 0/5 * * * * *            # 可以不设定, 默认是每分钟执行一次
 
   relation:
