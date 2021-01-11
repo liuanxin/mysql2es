@@ -1,6 +1,5 @@
 package com.github;
 
-import com.github.model.Config;
 import com.github.model.Relation;
 import com.github.repository.DataRepository;
 import com.github.repository.EsRepository;
@@ -9,6 +8,7 @@ import com.github.util.Logs;
 import com.google.common.collect.Lists;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -21,11 +21,12 @@ import java.util.concurrent.Future;
 @RunWith(SpringRunner.class)
 public class DataTest {
 
-    private Config config;
+    @Value("${db2es.relation}")
+    private List<Relation> relations;
+
     private EsRepository esRepository;
     private DataRepository dataRepository;
-    public DataTest(Config config, EsRepository esRepository, DataRepository dataRepository) {
-        this.config = config;
+    public DataTest(EsRepository esRepository, DataRepository dataRepository) {
         this.esRepository = esRepository;
         this.dataRepository = dataRepository;
     }
@@ -35,7 +36,7 @@ public class DataTest {
     @Test
     public void test() {
         List<Future<Boolean>> resultList = Lists.newArrayList();
-        for (Relation relation : config.getRelation()) {
+        for (Relation relation : relations) {
             resultList.add(dataRepository.asyncData(relation));
         }
         for (Future<Boolean> future : resultList) {
@@ -48,7 +49,7 @@ public class DataTest {
             }
         }
 
-        for (Relation relation : config.getRelation()) {
+        for (Relation relation : relations) {
             String index = relation.useIndex();
             try {
                 boolean deleteSchemeFlag = esRepository.deleteScheme(index).get();
