@@ -1,7 +1,5 @@
 package com.github.config;
 
-import com.github.model.Config;
-import com.github.util.A;
 import com.github.util.U;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.aop.interceptor.SimpleAsyncUncaughtExceptionHandler;
@@ -16,16 +14,11 @@ import java.util.concurrent.Executor;
 @EnableAsync
 public class TaskConfig implements AsyncConfigurer {
 
-    private final Config config;
-    public TaskConfig(Config config) {
-        this.config = config;
-    }
-
     @Override
     public Executor getAsyncExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
 
-        int size = A.isEmpty(config.getRelation()) ? U.PROCESSORS : config.getRelation().size();
+        int size = U.PROCESSORS;
         executor.setCorePoolSize(size);
         executor.setMaxPoolSize(size << 2);
         executor.setQueueCapacity(size);

@@ -1,19 +1,7 @@
-package com.github.config;
+//package com.github.config;
 
-import com.github.model.Config;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-
-@Configuration
-public class DataInit {
-
-    @Bean(initMethod = "check")
-    @ConfigurationProperties(prefix = "config")
-    public Config config() {
-        return new Config();
-    }
-
+//@Configuration
+//public class DataInit {
 //    @Bean
 //    public TransportClient connect() {
 //        Config config = config();
@@ -65,4 +53,4 @@ public class DataInit {
 //        }
 //        return new RestHighLevelClient(builder);
 //    }
-}
+//}

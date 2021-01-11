@@ -1,18 +1,19 @@
 package com.github.run;
 
-import com.github.model.Config;
 import com.github.model.Relation;
 import com.github.repository.DataRepository;
 import com.github.util.Dates;
 import com.github.util.Logs;
 import com.github.util.U;
 import com.google.common.collect.Maps;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.scheduling.support.CronTrigger;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -21,10 +22,14 @@ import java.util.concurrent.Future;
 @Configuration
 public class Job implements SchedulingConfigurer {
 
-    private final Config config;
+    @Value("${db2es.relation:0 * * * * *}")
+    private String cron;
+
+    @Value("${db2es.relation}")
+    private List<Relation> relations;
+
     private final DataRepository dataRepository;
-    public Job(Config config, DataRepository dataRepository) {
-        this.config = config;
+    public Job(DataRepository dataRepository) {
         this.dataRepository = dataRepository;
     }
 
@@ -37,7 +42,7 @@ public class Job implements SchedulingConfigurer {
             }
             try {
                 Map<String, Future<Boolean>> resultMap = Maps.newHashMap();
-                for (Relation relation : config.getRelation()) {
+                for (Relation relation : relations) {
                     resultMap.put(relation.useKey(), dataRepository.asyncData(relation));
                 }
                 for (Map.Entry<String, Future<Boolean>> entry : resultMap.entrySet()) {
@@ -59,6 +64,6 @@ public class Job implements SchedulingConfigurer {
                     Logs.ROOT_LOG.info("end of run task, use time: {}.", Dates.toHuman(end - start));
                 }
             }
-        }, new CronTrigger(config.getCron()));
+        }, new CronTrigger(cron));
     }
 }
