@@ -50,7 +50,7 @@ config:
       # 优化的 sql 括号中偏移 1000万 是基于覆盖索引在处理(索引存的是索引列 + 主键), 然后再用 id 联表取数据, 因此这样是很快的
 
       nested-mapping:
-        # 如果有 t_order 和 t_order_item 表, t_order 主键是 id, t_order_item 关联字段是 order_id, 则 master-field 是 id, nested-field 是 order_id
+        # 如果有 t_order 和 t_order_item 表, t_order 主键是 id, t_order_item 关联字段是 order_id, 则 main-field 是 id, nested-field 是 order_id
         item:
           main-field: id
           sql: SELECT xx, yy, zz FROM order_item
