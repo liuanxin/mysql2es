@@ -82,7 +82,7 @@ public class Relation {
     private String idPrefix;
     private String idSuffix;
 
-    void check() {
+    public void check() {
         U.assertNil(table, "must set (db table name)");
         U.assertNil(incrementColumn, "must set (db table increment-column)");
 

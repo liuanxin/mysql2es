@@ -1,6 +1,5 @@
 package com.github.util;
 
-import com.github.model.Const;
 import com.google.common.io.Files;
 
 import java.io.File;
@@ -16,7 +15,7 @@ public class F {
         if (!tableToIndex.equals(index)) {
             sbd.append("-").append(tableToIndex);
         }
-        return U.addSuffix(Const.TMP) + sbd.toString();
+        return U.addSuffix(System.getProperty("java.io.tmpdir")) + sbd.toString();
     }
 
     public static String read(String table, String index) {
