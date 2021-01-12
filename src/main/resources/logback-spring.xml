@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <springProperty scope="context" name="applicationProfile" source="spring.profiles.active" defaultValue="dev"/>
+    <springProperty scope="context" name="applicationName" source="spring.application.name" defaultValue="log"/>
+
+    <springProperty scope="context" name="logLevel" source="log.level" defaultValue="debug"/>
+    <springProperty scope="context" name="thirdLogLevel" source="log.thirdLevel" defaultValue="warn"/>
+    <springProperty scope="context" name="filePath" source="log.filePath" defaultValue="${user.home}/logs"/>
+    <springProperty scope="context" name="fileMaxHistory" source="log.maxHistory" defaultValue="7"/>
+
+
+    <logger name="io.netty" level="${thirdLogLevel}"/>
+    <logger name="com.github" level="${thirdLogLevel}"/>
+    <logger name="com.zaxxer" level="${thirdLogLevel}"/>
+    <logger name="org.apache" level="${thirdLogLevel}"/>
+    <logger name="org.elasticsearch" level="${thirdLogLevel}"/>
+    <logger name="org.springframework" level="${thirdLogLevel}"/>
+
+
+    <springProfile name="dev">
+        <include resource="org/springframework/boot/logging/logback/defaults.xml" />
+        <property name="CONSOLE_LOG_PATTERN" value="%n%d [%clr(${PID:- }){magenta} - %clr(%t){blue} - %clr(%logger){cyan} - %clr(${LOG_LEVEL_PATTERN:-%p})]%n%class.%method\\(%file:%line\\)%n%m%n"/>
+        <include resource="org/springframework/boot/logging/logback/console-appender.xml" />
+
+        <root level="${logLevel}">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+
+    <springProfile name="prod">
+        <property name="FILE_PATH" value="${filePath}/${applicationName}-${applicationProfile}"/>
+        <property name="LOG_PATTERN" value="[%d] [\\(${PID:- }\\):\\(%t\\):\\(%logger\\):\\(%p\\)] %class{30}#%method\\(%file:%line\\) %m%n"/>
+
+        <appender name="PROJECT" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <filter class="ch.qos.logback.classic.filter.LevelFilter">
+                <level>ERROR</level>
+                <onMatch>DENY</onMatch>
+                <onMismatch>ACCEPT</onMismatch>
+            </filter>
+
+            <file>${FILE_PATH}.log</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                <fileNamePattern>${FILE_PATH}-%d{yyyy-MM-dd}.log</fileNamePattern>
+                <maxHistory>${fileMaxHistory}</maxHistory>
+            </rollingPolicy>
+            <encoder>
+                <pattern>${LOG_PATTERN}</pattern>
+            </encoder>
+        </appender>
+        <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+            <discardingThreshold>0</discardingThreshold>
+            <includeCallerData>true</includeCallerData>
+            <appender-ref ref ="PROJECT"/>
+        </appender>
+
+        <appender name="PROJECT-ERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+                <level>ERROR</level>
+            </filter>
+
+            <file>${FILE_PATH}-error.log</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                <fileNamePattern>${FILE_PATH}-error-%d{yyyy-MM-dd}.log</fileNamePattern>
+                <maxHistory>${fileMaxHistory}</maxHistory>
+            </rollingPolicy>
+            <encoder>
+                <pattern>${LOG_PATTERN}</pattern>
+            </encoder>
+        </appender>
+        <appender name="ASYNC-ERROR" class="ch.qos.logback.classic.AsyncAppender">
+            <discardingThreshold>0</discardingThreshold>
+            <includeCallerData>true</includeCallerData>
+            <appender-ref ref ="PROJECT-ERROR"/>
+        </appender>
+
+        <root level="${logLevel}">
+            <appender-ref ref="ASYNC"/>
+            <appender-ref ref="ASYNC-ERROR"/>
+        </root>
+    </springProfile>
+</configuration>
