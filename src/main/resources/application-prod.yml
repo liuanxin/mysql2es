@@ -1,5 +1,8 @@
 
-logging.config: classpath:log-dev.xml
+log:
+  level: info
+  third-level: error
+  file-path: /opt/logs
 
 spring:
   datasource:
