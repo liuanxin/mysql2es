@@ -1,7 +1,5 @@
 
-log:
-  level: info
-  third-level: error
+logging.config: classpath:log-dev.xml
 
 
 spring:
