@@ -20,7 +20,6 @@
         <elasticsearch.version>6.3.2</elasticsearch.version>
         <hikaricp.version>3.2.0</hikaricp.version>
 
-        <commons-lang3.version>3.9</commons-lang3.version>
         <guava.version>28.1-jre</guava.version>
         <jackson.version>2.10.0</jackson.version>
         <joda.version>2.10.4</joda.version>
@@ -48,11 +47,6 @@
                 <version>${hikaricp.version}</version>
             </dependency>
 
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-lang3</artifactId>
-                <version>${commons-lang3.version}</version>
-            </dependency>
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
