@@ -4,6 +4,7 @@ logging.config: classpath:log-dev.xml
 spring:
   datasource:
     url: jdbc:mysql://dev-db:3306/db?useAffectedRows=true&useSSL=false&useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&statementInterceptors=com.github.util.sql.PrintSql8
+    # driver-class-name: com.mysql.jdbc.Driver
     username: root
     password: root
     hikari:
@@ -14,7 +15,7 @@ spring:
     uris: [dev-es:9200]      # default was 127.0.0.1:9200, multiple separated by commas
 
 
-config:
+db2es:
   cron: 0/5 * * * * *        # this mean: [0 5 10 15 20 25 30 35 40 45 50 55] second
   relation:
     -

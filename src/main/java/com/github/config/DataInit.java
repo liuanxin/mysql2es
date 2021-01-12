@@ -1,7 +1,19 @@
-//package com.github.config;
+package com.github.config;
 
-//@Configuration
-//public class DataInit {
+import com.github.model.Config;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class DataInit {
+
+    @Bean(initMethod = "check")
+    @ConfigurationProperties(prefix = "db2es")
+    public Config config() {
+        return new Config();
+    }
+
 //    @Bean
 //    public TransportClient connect() {
 //        Config config = config();
@@ -53,4 +65,4 @@
 //        }
 //        return new RestHighLevelClient(builder);
 //    }
-//}
+}
