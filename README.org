@@ -13,13 +13,13 @@ English Readme | [[README-CN.org][中文说明]]
 The relevant configuration instructions are as follows:
 #+BEGIN_SRC yaml
 spring:
-  datasource:
+  datasource:                   # mysql config: org.springframework.boot.autoconfigure.jdbc.DataSourceProperties + com.zaxxer.hikari.HikariConfig
     ... for db ...
   elasticsearch.rest:
-    uris: [192.168.1.2:9200,192.168.1.3:9200]  # The default is 127.0.0.1:9200
+    uris: 192.168.1.2:9200      # es config: org.springframework.boot.autoconfigure.elasticsearch.rest.RestClientProperties
 
 db2es:
-  cron: 0/5 * * * * *            # The default is to execute once per minute
+  cron: 0/5 * * * * *           # The default is to execute once per minute
   relation:
     -
       table: t_order            # *** Must set and have primary key. The primary key will generate the id of /index/type/id in Elasticsearch, if has multi, id where append with "-". can use % as a wildcard to match multiple tables(when sharding table)

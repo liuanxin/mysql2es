@@ -11,13 +11,13 @@
 相关的配置如下:
 #+BEGIN_SRC yml
 spring:
-  datasource:
+  datasource:                   # mysql 配置见: org.springframework.boot.autoconfigure.jdbc.DataSourceProperties 和 com.zaxxer.hikari.HikariConfig
     ... 数据库配置 ...
   elasticsearch.rest:
-    uris: [192.168.1.2:9200,192.168.1.3:9200]  # 可以不设定, 默认是 127.0.0.1:9200
+    uris: 192.168.1.2:9200      # es 配置见: org.springframework.boot.autoconfigure.elasticsearch.rest.RestClientProperties
 
 db2es:
-  cron: 0/5 * * * * *            # 可以不设定, 默认是每分钟执行一次
+  cron: 0/5 * * * * *           # 可以不设定, 默认是每分钟执行一次
 
   relation:
     -
