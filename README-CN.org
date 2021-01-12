@@ -59,7 +59,9 @@ db2es:
         # 如果有 t_order 和 t_order_item 表, t_order 主键是 id, t_order_item 关联字段是 order_id, 则 main-field 是 id, nested-field 是 order_id
         item:
           main-field: id
-          sql: SELECT sku_id, name, unit_price, num, total FROM t_order_item
+          sql: "select oi.sku_id, p.name, ps.sku_desc, oi.unit_price, oi.num, oi.total
+            from t_order_item oi inner join t_product_sku ps on oi.sku_id = ps.id
+            inner join t_product p on ps.product_id = p.id"
           nested-field: order_id
     -
       table: t_product
@@ -148,6 +150,9 @@ PUT /order
             "type": "long"
           },
           "name": {
+            "type": "keyword"
+          },
+          "sku_desc": {
             "type": "keyword"
           },
           "unit_price": {

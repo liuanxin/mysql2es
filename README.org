@@ -11,7 +11,7 @@ English Readme | [[README-CN.org][中文说明]]
 
 
 The relevant configuration instructions are as follows:
-#+BEGIN_SRC yaml
+#+BEGIN_SRC yml
 spring:
   datasource:                   # mysql config: org.springframework.boot.autoconfigure.jdbc.DataSourceProperties + com.zaxxer.hikari.HikariConfig
     ... for db ...
@@ -59,7 +59,9 @@ db2es:
         # If has table `t_order` and `t_order_item`, `t_order` : id, `t_order_item` : order_id, then main-field => id, nested-field => order_id
         item:
           main-field: id
-          sql: SELECT sku_id, name, unit_price, num, total FROM t_order_item
+          sql: "select oi.sku_id, p.name, ps.sku_desc, oi.unit_price, oi.num, oi.total
+            from t_order_item oi inner join t_product_sku ps on oi.sku_id = ps.id
+            inner join t_product p on ps.product_id = p.id"
           nested-field: order_id
     -
       table: t_product
@@ -148,6 +150,9 @@ PUT /order
             "type": "long"
           },
           "name": {
+            "type": "keyword"
+          },
+          "sku_desc": {
             "type": "keyword"
           },
           "unit_price": {
