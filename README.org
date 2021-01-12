@@ -23,14 +23,15 @@ db2es:
 
   relation:
     -
-      table: t_product           # *** Must set and have primary key. The primary key will generate the id of /index/type/id in Elasticsearch, if has multi, id where append with "-". can use % as a wildcard to match multiple tables(when sharding table)
+      table: t_order           # *** Must set and have primary key. The primary key will generate the id of /index/type/id in Elasticsearch, if has multi, id where append with "-". can use % as a wildcard to match multiple tables(when sharding table)
       increment-column: id       # *** Must set. Indicates that it is used for data increment operations. Generally, it uses auto increment ~id~ or ~time~
 
       # Starting with Elasticsearch 6.0, type defaults to _doc, and the index in Elasticsearch directly corresponds to the database table name
-      index: product             # Indicates the index of /index/type/id in Elasticsearch, not set will be generated from the database table name (t_some_one ==> some-one), 6.0 start index name must be lowercase
+      index: order               # Indicates the index of /index/type/id in Elasticsearch, not set will be generated from the database table name (t_some_one ==> some-one), 6.0 start index name must be lowercase
       type: doc                  # The default is _doc
       scheme: true               # Whether to generate Elasticsearch's scheme based on the database table structure at startup, the default is false
-      sql: select * from t_table # Custom sql statement (do not use ORDER BY and LIMIT, will be automatically added based on increment-column), no setting will automatically assemble from the database table
+      sql: select * from t_order # Custom sql statement (do not use ORDER BY and LIMIT, will be automatically added based on increment-column), no setting will automatically assemble from the database table
+      table-alias: o             # If sql has join multi table, main table's alias
       limit: 2000                # The number of times to get from the database, the default is 1000
 
       route-column: [c1,c2]      # The fields used for routing, multiple separated by commas

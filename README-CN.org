@@ -21,14 +21,15 @@ db2es:
 
   relation:
     -
-      table: product             # *** 必须设定且要有主键. 主键会生成 Elasticsearch 中 /index/type/id 的 id, 如果是多列主键会用 "-" 拼接, 可以使用 % 做为通配来匹配多张表(当分表时)
+      table: order               # *** 必须设定且要有主键. 主键会生成 Elasticsearch 中 /index/type/id 的 id, 如果是多列主键会用 "-" 拼接, 可以使用 % 做为通配来匹配多张表(当分表时)
       increment-column: id       # *** 必须设定. 表示用来做数据增量操作时用, 一般使用自增 id 或 time(更新时间戳)
 
       # 6.0 开始, type 默认是 _doc, Elasticsearch 中的 index 直接对应数据库表名
-      index: product             # 可以不设定. 表示 Elasticsearch 中 /index/type/id 的 index, 不设定将会从数据库表名生成(t_some_one ==> some-one), 6.0 开始 index name 必须是小写
+      index: order               # 可以不设定. 表示 Elasticsearch 中 /index/type/id 的 index, 不设定将会从数据库表名生成(t_some_one ==> some-one), 6.0 开始 index name 必须是小写
       type: doc                  # 可以不设定. 默认是 _doc
       scheme: true               # 可以不设定. 是否在启动时基于 数据库表结构 生成 Elasticsearch 的 scheme, 默认是 false
-      sql: select * from product # 可以不设定. 自定义的 sql 语句(不要用 ORDER BY 和 LIMIT, 会基于 increment-column 自动添加), 不设定将会基于 table 来拼装
+      sql: select * from order   # 可以不设定. 自定义的 sql 语句(不要用 ORDER BY 和 LIMIT, 会基于 increment-column 自动添加), 不设定将会基于 table 来拼装
+      table-alias: o             # 可以不设定. 如果 sql 有使用多个表 join, 主表的别名
       limit: 2000                # 可以不设定. 一次从数据库获取 及 同步进 Elasticsearch 的条数, 默认是 1000
 
       route-column: [c1,c2]      # 可以不设定. 用来做分片的字段, 多个用逗号隔开
