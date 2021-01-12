@@ -1,8 +1,5 @@
 
-log:
-  level: info
-  third-level: error
-  file-path: /opt/logs
+logging.config: classpath:log-prod.xml
 
 
 spring:
