@@ -38,7 +38,6 @@ public class TaskConfig implements AsyncConfigurer {
 
         executor.setThreadNamePrefix("mysql2es-executor-");
         executor.initialize();
-
         return executor;
     }
 
