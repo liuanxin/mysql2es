@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <property name="LOG_PATTERN" value="[%d] [${PID:- } %t\\(%logger\\) : %p] %class{30}#%method\\(%file:%line\\) %m%n%n"/>
+    <property name="FILE_PATH" value="${user.home}/logs/mysql2es"/>
+
+    <appender name="PROJECT" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${FILE_PATH}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${FILE_PATH}-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>1</maxHistory>
+        </rollingPolicy>
+
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <includeCallerData>true</includeCallerData>
+        <appender-ref ref ="PROJECT"/>
+    </appender>
+
+    <logger name="io.netty" level="error"/>
+    <logger name="com.github" level="error"/>
+    <logger name="com.zaxxer" level="error"/>
+    <logger name="org.apache" level="error"/>
+    <logger name="org.elasticsearch" level="error"/>
+    <logger name="org.springframework" level="error"/>
+
+    <root level="info">
+        <appender-ref ref="ASYNC"/>
+    </root>
+</configuration>
