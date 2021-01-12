@@ -2,11 +2,8 @@ package com.github.model;
 
 import com.github.util.A;
 import com.github.util.U;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.experimental.Accessors;
 
 import java.util.List;
 
@@ -20,9 +17,6 @@ import java.util.List;
  */
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Accessors(chain = true)
 public class Config {
 
     /**
