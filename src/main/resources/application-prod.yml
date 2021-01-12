@@ -4,7 +4,7 @@ logging.config: classpath:log-dev.xml
 spring:
   datasource:
     url: jdbc:mysql://192.168.87.110:63307/gc_ods?useAffectedRows=true&useSSL=false&useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&tinyInt1isBit=false&statementInterceptors=com.github.util.sql.PrintSql5
-    driver-class-name: com.mysql.jdbc.Driver
+    # driver-class-name: com.mysql.jdbc.Driver  # If use mysql 5
     username: ods_pt_test_q
     password: ZAiw3WFK2BvuIdKy
     hikari:
@@ -15,7 +15,7 @@ spring:
     uris: 192.168.86.196:9200
 
 
-config:
+db2es:
   cron: 0/5 * * * * *
   relation:
     -

@@ -17,8 +17,9 @@
     <properties>
         <java.version>1.8</java.version>
 
-        <elasticsearch.version>6.3.2</elasticsearch.version>
+        <!--<mysql.version>5.1.49</mysql.version>-->
         <hikaricp.version>3.2.0</hikaricp.version>
+        <elasticsearch.version>6.3.2</elasticsearch.version>
 
         <guava.version>28.1-jre</guava.version>
         <jackson.version>2.10.0</jackson.version>
@@ -29,12 +30,11 @@
 
     <dependencyManagement>
         <dependencies>
-            <dependency>
+            <!--<dependency>
                 <groupId>org.elasticsearch.client</groupId>
                 <artifactId>transport</artifactId>
                 <version>${elasticsearch.version}</version>
-            </dependency>
-            <!-- 上面的 transport 方式将在 7.0 不被支持, 8.0 将会被删除, 官方开始推荐用下面的方式 -->
+            </dependency>-->
             <dependency>
                 <groupId>org.elasticsearch.client</groupId>
                 <artifactId>elasticsearch-rest-high-level-client</artifactId>
