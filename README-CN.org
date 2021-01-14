@@ -55,13 +55,22 @@ db2es:
       # 原先的 sql 执行时先通过索引找到 id, 再去存数据的物理块取记录, 最后在结果集里偏移 1000万 后再取 1000 条, 所以效率好不了
       # 优化的 sql 括号中偏移 1000万 是基于覆盖索引在处理(索引存的是索引列 + 主键), 然后再用 id 联表取数据, 因此这样是很快的
 
+      # 与主表 一对一 关联的子表数据, 最终会跟主表数据平级(在上面的 sql 中使用 left join 也可以, 如果 left join 的 sql 查询性能不如单表查询时, 可以使用此种方式)
+      relation-mapping:
+        address:
+          main-field: id
+          sql: SELECT receiver, province, city, area, address, phone FROM t_order_address
+          nested-field: order_id
+
+      # 与主表 多对一 关联的子表数据, 最终会组装成 List 属性(对应 nested 结构)
       nested-mapping:
         # 如果有 t_order 和 t_order_item 表, t_order 主键是 id, t_order_item 关联字段是 order_id, 则 main-field 是 id, nested-field 是 order_id
         item:
           main-field: id
-          sql: "select oi.sku_id, p.name, ps.sku_desc, oi.unit_price, oi.num, oi.total
-            from t_order_item oi inner join t_product_sku ps on oi.sku_id = ps.id
-            inner join t_product p on ps.product_id = p.id"
+          sql: "SELECT oi.sku_id, p.name, ps.sku_desc, oi.unit_price, oi.num, oi.total
+            FROM t_order_item oi
+            INNER JOIN t_product_sku ps ON oi.sku_id = ps.id
+            INNER JOIN t_product p ON ps.product_id = p.id"
           nested-field: order_id
     -
       table: t_product

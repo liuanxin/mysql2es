@@ -55,8 +55,11 @@ public class Relation {
     /** table column -> es field. if not, will generate by column(c_some_type ==> someType) */
     private Map<String, String> mapping;
 
-    /** nested mapping */
-    private Map<String, NestedMapping> nestedMapping;
+    /** one to one child mapping */
+    private Map<String, ChildMapping> relationMapping;
+
+    /** one to many(nested) child mapping */
+    private Map<String, ChildMapping> nestedMapping;
 
     /**
      * primary key, will generate to id in es, query from db table, if not, can't create index in es
@@ -92,10 +95,17 @@ public class Relation {
         if (U.isNotBlank(sql)) {
             sql = U.replaceBlank(sql);
         }
-        if (A.isNotEmpty(nestedMapping)) {
-            for (Map.Entry<String, NestedMapping> entry : nestedMapping.entrySet()) {
+        if (A.isNotEmpty(relationMapping)) {
+            for (Map.Entry<String, ChildMapping> entry : relationMapping.entrySet()) {
                 String nested = entry.getKey();
-                U.assertNil(nested, "nested key can't be null");
+                U.assertNil(nested, "one to one child key can't be null");
+                entry.getValue().check(nested);
+            }
+        }
+        if (A.isNotEmpty(nestedMapping)) {
+            for (Map.Entry<String, ChildMapping> entry : nestedMapping.entrySet()) {
+                String nested = entry.getKey();
+                U.assertNil(nested, "nested child key can't be null");
                 entry.getValue().check(nested);
             }
         }
