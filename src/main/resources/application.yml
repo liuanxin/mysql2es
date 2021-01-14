@@ -13,7 +13,7 @@ spring:
       maximumPoolSize: 1
       maxLifetime: 1500000
   elasticsearch.rest:
-    uris: [dev-es:9200]      # default was 127.0.0.1:9200, multiple separated by commas
+    uris: dev-es:9200        # default was 127.0.0.1:9200, multiple separated by commas
 
 
 db2es:
