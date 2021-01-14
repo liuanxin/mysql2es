@@ -158,6 +158,10 @@ public class DataRepository {
             // if write to es false, can break loop
             return null;
         }
+        if (size < dataList.size()) {
+            // if write to es size can't equals data size, has error, can break loop
+            return null;
+        }
 
         lastValue = getLast(relation, dataList);
         if (U.isBlank(lastValue)) {
