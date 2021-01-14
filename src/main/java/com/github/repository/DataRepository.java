@@ -1,6 +1,6 @@
 package com.github.repository;
 
-import com.github.model.NestedMapping;
+import com.github.model.ChildMapping;
 import com.github.model.Relation;
 import com.github.util.*;
 import com.google.common.collect.LinkedHashMultimap;
@@ -143,12 +143,13 @@ public class DataRepository {
             Logs.ROOT_LOG.debug("sql({}) time({}ms) return size({})", sql, sqlTime, dataList.size());
         }
 
-        Map<String, List<Map<String, Object>>> nestedData = nestedData(relation, dataList);
+        Map<String, List<Map<String, Object>>> relationData = childData(relation.getRelationMapping(), dataList);
+        Map<String, List<Map<String, Object>>> nestedData = childData(relation.getNestedMapping(), dataList);
         long allSqlTime = (System.currentTimeMillis() - start);
 
         long esStart = System.currentTimeMillis();
         String index = relation.useIndex();
-        int size = esRepository.saveDataToEs(index, fixDocument(relation, dataList, matchInId, nestedData));
+        int size = esRepository.saveDataToEs(index, fixDocument(relation, dataList, matchInId, relationData, nestedData));
         long end = System.currentTimeMillis();
         if (Logs.ROOT_LOG.isInfoEnabled()) {
             Logs.ROOT_LOG.info("sql time({}ms) size({}) batch to({}) time({}ms) success({}), all time({}ms)",
@@ -210,11 +211,12 @@ public class DataRepository {
                                 equalsSql, sqlTime, equalsDataList.size());
                     }
 
-                    Map<String, List<Map<String, Object>>> nestedData = nestedData(relation, equalsDataList);
+                    Map<String, List<Map<String, Object>>> relationData = childData(relation.getRelationMapping(), equalsDataList);
+                    Map<String, List<Map<String, Object>>> nestedData = childData(relation.getNestedMapping(), equalsDataList);
                     long allSqlTime = (System.currentTimeMillis() - sqlStart);
 
                     long esStart = System.currentTimeMillis();
-                    int size = esRepository.saveDataToEs(index, fixDocument(relation, equalsDataList, matchInId, nestedData));
+                    int size = esRepository.saveDataToEs(index, fixDocument(relation, equalsDataList, matchInId, relationData, nestedData));
                     long esTime = (System.currentTimeMillis() - esStart);
                     if (Logs.ROOT_LOG.isInfoEnabled()) {
                         Logs.ROOT_LOG.info("equals sql time({}ms) size({}) batch to({}) time({}ms) success({})",
@@ -235,16 +237,16 @@ public class DataRepository {
         }
     }
 
-    private Map<String, List<Map<String, Object>>> nestedData(Relation relation, List<Map<String, Object>> dataList) {
+    private Map<String, List<Map<String, Object>>> childData(Map<String, ChildMapping> childMapping, List<Map<String, Object>> dataList) {
         if (A.isEmpty(dataList)) {
             return Collections.emptyMap();
         }
 
         Map<String, List<Map<String, Object>>> returnMap = Maps.newHashMap();
-        if (A.isNotEmpty(relation.getNestedMapping())) {
-            for (Map.Entry<String, NestedMapping> entry : relation.getNestedMapping().entrySet()) {
+        if (A.isNotEmpty(childMapping)) {
+            for (Map.Entry<String, ChildMapping> entry : childMapping.entrySet()) {
                 String key = entry.getKey();
-                NestedMapping nested = entry.getValue();
+                ChildMapping nested = entry.getValue();
 
                 List<Object> relations = Lists.newArrayList();
                 for (Map<String, Object> data : dataList) {
@@ -288,13 +290,35 @@ public class DataRepository {
         return null;
     }
     /** traverse the Database Result and organize into es Document */
-    private Map<String, Map<String, String>> fixDocument(Relation relation, List<Map<String, Object>> dataList,
-                                                         String matchInId, Map<String, List<Map<String, Object>>> nestedData) {
+    private Map<String, Map<String, String>> fixDocument(Relation relation, List<Map<String, Object>> dataList, String matchInId,
+                                                         Map<String, List<Map<String, Object>>> relationData,
+                                                         Map<String, List<Map<String, Object>>> nestedData) {
+        Map<String, Map<String, Map<String, Object>>> relationMap = Maps.newHashMap();
+        if (A.isNotEmpty(relation.getRelationMapping())) {
+            for (Map.Entry<String, ChildMapping> entry : relation.getRelationMapping().entrySet()) {
+                String key = entry.getKey();
+                ChildMapping nested = entry.getValue();
+
+                List<Map<String, Object>> list = relationData.get(key);
+                if (A.isNotEmpty(list)) {
+                    String tableField = nested.getNestedField();
+                    Map<String, Map<String, Object>> dataMap = Maps.newHashMap();
+                    for (Map<String, Object> data : list) {
+                        String fieldData = U.toStr(data.get(tableField));
+                        if (U.isNotBlank(fieldData)) {
+                            data.remove(tableField);
+                            dataMap.put(fieldData, data);
+                        }
+                    }
+                    relationMap.put(key, dataMap);
+                }
+            }
+        }
         Map<String, Multimap<String, Map<String, Object>>> nestedMap = Maps.newHashMap();
         if (A.isNotEmpty(relation.getNestedMapping())) {
-            for (Map.Entry<String, NestedMapping> entry : relation.getNestedMapping().entrySet()) {
+            for (Map.Entry<String, ChildMapping> entry : relation.getNestedMapping().entrySet()) {
                 String key = entry.getKey();
-                NestedMapping nested = entry.getValue();
+                ChildMapping nested = entry.getValue();
 
                 List<Map<String, Object>> list = nestedData.get(key);
                 if (A.isNotEmpty(list)) {
@@ -344,15 +368,45 @@ public class DataRepository {
             // if not has id, use es generator
             String id = idBuild.length() == 0 ? UUIDs.base64UUID() : idBuild.toString();
 
-            if (A.isNotEmpty(relation.getNestedMapping())) {
-                for (Map.Entry<String, NestedMapping> entry : relation.getNestedMapping().entrySet()) {
+            if (A.isNotEmpty(relation.getRelationMapping())) {
+                for (Map.Entry<String, ChildMapping> entry : relation.getRelationMapping().entrySet()) {
                     String nestedKey = entry.getKey();
                     if (data.containsKey(nestedKey)) {
                         if (Logs.ROOT_LOG.isWarnEnabled()) {
-                            Logs.ROOT_LOG.warn("nested({}) has already alias in primary sql, ignore put)", nestedKey);
+                            Logs.ROOT_LOG.warn("one to one mapping({}) has already alias in primary sql, ignore put)", nestedKey);
                         }
                     } else {
-                        NestedMapping nestedValue = entry.getValue();
+                        ChildMapping nestedValue = entry.getValue();
+                        Map<String, Map<String, Object>> dataMap = relationMap.get(nestedKey);
+                        if (A.isNotEmpty(dataMap)) {
+                            Map<String, Object> map = dataMap.get(U.toStr(data.get(nestedValue.getMainField())));
+                            if (A.isNotEmpty(map)) {
+                                // data.putAll(map); // cover all fields
+                                for (Map.Entry<String, Object> me : map.entrySet()) {
+                                    if (data.containsKey(me.getKey())) {
+                                        if (Logs.ROOT_LOG.isWarnEnabled()) {
+                                            Logs.ROOT_LOG.warn("one to one mapping({}) field({}) has already alias in primary sql, ignore put)",
+                                                    nestedKey, me.getKey());
+                                        }
+                                    } else {
+                                        data.put(me.getKey(), me.getValue());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (A.isNotEmpty(relation.getNestedMapping())) {
+                for (Map.Entry<String, ChildMapping> entry : relation.getNestedMapping().entrySet()) {
+                    String nestedKey = entry.getKey();
+                    if (data.containsKey(nestedKey)) {
+                        if (Logs.ROOT_LOG.isWarnEnabled()) {
+                            Logs.ROOT_LOG.warn("nested mapping({}) has already alias in primary sql, ignore put)", nestedKey);
+                        }
+                    } else {
+                        ChildMapping nestedValue = entry.getValue();
                         Multimap<String, Map<String, Object>> multimap = nestedMap.get(nestedKey);
                         if (U.isNotBlank(multimap) && multimap.size() > 0) {
                             Collection<Map<String, Object>> list = multimap.get(U.toStr(data.get(nestedValue.getMainField())));

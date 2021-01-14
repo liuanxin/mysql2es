@@ -7,17 +7,17 @@ import lombok.Setter;
 
 import java.util.List;
 
+/**
+ * If has table `t_order` and `t_order_item`,
+ *
+ * `t_order` field has `id`, `t_order_item` relation field has `order_id`,
+ *
+ * then master-field => id, nested-field => order_id
+ */
 @Getter
 @Setter
-public class NestedMapping {
+public class ChildMapping {
 
-    /**
-     * If has table `t_order` and `t_order_item`,
-     *
-     * `t_order` field has `id`, `t_order_item` relation field has `order_id`,
-     *
-     * then master-field => id, nested-field => order_id
-     */
     private String mainField;
 
     private String sql;
@@ -26,9 +26,9 @@ public class NestedMapping {
 
 
     public void check(String nested) {
-        U.assertNil(mainField, "must set nested(" + nested + "): main-field");
-        U.assertNil(sql, "must set nested(" + nested + "): sql");
-        U.assertNil(nestedField, "must set nested(" + nested + "): nested-field");
+        U.assertNil(mainField, "must set child(" + nested + "): main-field");
+        U.assertNil(sql, "must set child(" + nested + "): sql");
+        U.assertNil(nestedField, "must set child(" + nested + "): nested-field");
     }
     public String nestedQuerySql(List<Object> relations) {
         if (A.isEmpty(relations)) {
