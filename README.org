@@ -55,12 +55,21 @@ db2es:
       # Original sql :  SELECT ... FROM t_table WHERE time > '2010-01-01 00:00:01' LIMIT 10million,1000
       # Optimized sql:  SELECT ... FROM t_table c inner join (SELECT id FROM t_table WHERE time > '2010-01-01 00:00:01' LIMIT 10million,1000) t on t.id = c.id
 
+      # The child table that is associated one-to-one with the main table data will eventually be a peer, with the main table data(used in the above SQL Left join or, if the SQL left join query performance than a single query, can use this way)
+      relation-mapping:
+        address:
+          main-field: id
+          sql: SELECT receiver, province, city, area, address, phone FROM t_order_address
+          nested-field: order_id
+
+      # On a child table that is associated with the main table data will eventually build a personal List properties(for nested structures)
       nested-mapping:
         # If has table `t_order` and `t_order_item`, `t_order` : id, `t_order_item` : order_id, then main-field => id, nested-field => order_id
         item:
           main-field: id
           sql: "select oi.sku_id, p.name, ps.sku_desc, oi.unit_price, oi.num, oi.total
-            from t_order_item oi inner join t_product_sku ps on oi.sku_id = ps.id
+            from t_order_item oi
+            inner join t_product_sku ps on oi.sku_id = ps.id
             inner join t_product p on ps.product_id = p.id"
           nested-field: order_id
     -
