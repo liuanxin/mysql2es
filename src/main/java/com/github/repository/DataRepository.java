@@ -160,6 +160,9 @@ public class DataRepository {
         }
         if (size < dataList.size()) {
             // if write to es size can't equals data size, has error, can break loop
+            if (Logs.ROOT_LOG.isErrorEnabled()) {
+                Logs.ROOT_LOG.error("!!!sql size({}) --> es({}) size({}), check it!!!", dataList.size(), index, size);
+            }
             return null;
         }
 
