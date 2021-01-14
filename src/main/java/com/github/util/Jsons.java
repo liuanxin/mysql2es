@@ -3,7 +3,9 @@ package com.github.util;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.TimeZone;
 
 /** util with Json */
 @SuppressWarnings("unused")
@@ -13,6 +15,8 @@ public class Jsons {
 	private static class BasicObjectMapper extends ObjectMapper {
 		private BasicObjectMapper() {
 			super();
+			setTimeZone(TimeZone.getTimeZone("GMT+8"));
+            setDateFormat(new SimpleDateFormat(Dates.Type.YYYY_MM_DD_HH_MM_SS.getValue()));
 			configure(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL, true);
 			configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		}
