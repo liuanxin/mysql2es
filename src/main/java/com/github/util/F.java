@@ -13,7 +13,7 @@ public class F {
         sbd.append(index);
         String tableToIndex = U.tableToIndex(table);
         if (!tableToIndex.equals(index)) {
-            sbd.append("-").append(tableToIndex);
+            sbd.append("+").append(tableToIndex);
         }
         return U.addSuffix(System.getProperty("java.io.tmpdir")) + sbd.toString();
     }
