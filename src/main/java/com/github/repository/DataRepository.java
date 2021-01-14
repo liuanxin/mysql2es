@@ -434,6 +434,10 @@ public class DataRepository {
                     // field has suggest and null, can't be write => https://elasticsearch.cn/question/4051
                     dataMap.put(key, U.isBlank(value) ? " " : value);
                     // dataMap.put(key, value);
+                } else {
+                    if (Logs.ROOT_LOG.isWarnEnabled()) {
+                        Logs.ROOT_LOG.warn("data id({}) not key({})", id, key);
+                    }
                 }
             }
 
