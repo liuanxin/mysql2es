@@ -113,7 +113,7 @@ public class EsRepository {
             }
         } catch (IOException e) {
             if (Logs.ROOT_LOG.isErrorEnabled()) {
-                Logs.ROOT_LOG.error(String.format("create index(%s) exception", index), e);
+                Logs.ROOT_LOG.error(String.format("put index(%s) mapping exception", index), e);
             }
         }
     }

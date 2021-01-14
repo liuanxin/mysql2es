@@ -45,7 +45,7 @@ public class Job implements SchedulingConfigurer {
                         }
                     } catch (InterruptedException | ExecutionException e) {
                         if (Logs.ROOT_LOG.isErrorEnabled()) {
-                            Logs.ROOT_LOG.error("async db data to es exception", e);
+                            Logs.ROOT_LOG.error("async db to es exception", e);
                         }
                     }
                 }
