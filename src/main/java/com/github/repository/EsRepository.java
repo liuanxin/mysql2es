@@ -140,6 +140,14 @@ public class EsRepository {
                     }
                     batchRequest.add(doc);
                     originalSize++;
+                } else {
+                    if (Logs.ROOT_LOG.isWarnEnabled()) {
+                        Logs.ROOT_LOG.warn("index({}) id({}) not data({})", index, id, data);
+                    }
+                }
+            } else {
+                if (Logs.ROOT_LOG.isWarnEnabled()) {
+                    Logs.ROOT_LOG.warn("index({}) no id({}) or source({})", index, id, Jsons.toJson(source));
                 }
             }
         }

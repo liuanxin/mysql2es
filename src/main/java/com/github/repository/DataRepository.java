@@ -228,6 +228,14 @@ public class DataRepository {
                         return;
                     }
 
+                    if (size < equalsDataList.size()) {
+                        // if write to es size can't equals data size, has error, can break loop
+                        if (Logs.ROOT_LOG.isErrorEnabled()) {
+                            Logs.ROOT_LOG.error("!!!equals sql size({}) --> es({}) size({}), check it!!!", equalsDataList.size(), index, size);
+                        }
+                        return;
+                    }
+
                     // if sql: limit 1000, 1000, query data size 900, can break equals handle
                     if (equalsDataList.size() < relation.getLimit()) {
                         return;
