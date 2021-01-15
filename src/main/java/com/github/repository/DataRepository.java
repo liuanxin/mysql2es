@@ -159,13 +159,6 @@ public class DataRepository {
             // if write to es false, can break loop
             return null;
         }
-        /*if (size < dataList.size()) {
-            // if write to es size can't equals data size, has error, can break loop
-            if (Logs.ROOT_LOG.isErrorEnabled()) {
-                Logs.ROOT_LOG.error("!!!sql size({}) --> es({}) size({}), check it!!!", dataList.size(), index, size);
-            }
-            return null;
-        }*/
 
         lastValue = getLast(relation, dataList);
         if (U.isBlank(lastValue)) {
@@ -227,14 +220,6 @@ public class DataRepository {
                         // if success was 0, can break equals handle
                         return;
                     }
-
-                    /*if (size < equalsDataList.size()) {
-                        // if write to es size can't equals data size, has error, can break loop
-                        if (Logs.ROOT_LOG.isErrorEnabled()) {
-                            Logs.ROOT_LOG.error("!!!equals sql size({}) --> es({}) size({}), check it!!!", equalsDataList.size(), index, size);
-                        }
-                        return;
-                    }*/
 
                     // if sql: limit 1000, 1000, query data size 900, can break equals handle
                     if (equalsDataList.size() < relation.getLimit()) {
@@ -455,10 +440,6 @@ public class DataRepository {
                     }
                 }
                 documents.put(id, sourceMap);
-            } else {
-                if (Logs.ROOT_LOG.isErrorEnabled()) {
-                    Logs.ROOT_LOG.error("!!!data ({}) --> no es data!!!", Jsons.toJson(data));
-                }
             }
         }
         if (documents.size() < dataList.size()) {
