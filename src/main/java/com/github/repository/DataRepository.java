@@ -434,10 +434,6 @@ public class DataRepository {
                     // field has suggest and null, can't be write => https://elasticsearch.cn/question/4051
                     dataMap.put(key, U.isBlank(value) ? " " : value);
                     // dataMap.put(key, value);
-                } else {
-                    if (Logs.ROOT_LOG.isWarnEnabled()) {
-                        Logs.ROOT_LOG.warn("data id({}) not data({}) by key({}: {})", id, Jsons.toJson(data), Jsons.toJson(relation), entry.getKey());
-                    }
                 }
             }
 
@@ -459,6 +455,12 @@ public class DataRepository {
                     }
                 }
                 documents.put(id, sourceMap);
+            }
+        }
+        if (documents.size() < dataList.size()) {
+            // if write to es size can't equals data size, has error, can break loop
+            if (Logs.ROOT_LOG.isErrorEnabled()) {
+                Logs.ROOT_LOG.error("!!!data size({}) --> es size({})!!!", documents.size(), dataList.size());
             }
         }
         return documents;
