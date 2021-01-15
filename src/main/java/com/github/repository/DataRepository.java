@@ -436,7 +436,7 @@ public class DataRepository {
                     // dataMap.put(key, value);
                 } else {
                     if (Logs.ROOT_LOG.isWarnEnabled()) {
-                        Logs.ROOT_LOG.warn("data id({}) not data({}) by key({}: {})", id, Jsons.toJson(data), Jsons.toJson(entry), key);
+                        Logs.ROOT_LOG.warn("data id({}) not data({}) by key({}: {})", id, Jsons.toJson(data), Jsons.toJson(entry), entry.getKey());
                     }
                 }
             }
