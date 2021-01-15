@@ -455,12 +455,15 @@ public class DataRepository {
                     }
                 }
                 documents.put(id, sourceMap);
+            } else {
+                if (Logs.ROOT_LOG.isErrorEnabled()) {
+                    Logs.ROOT_LOG.error("!!!data ({}) --> no es data!!!", Jsons.toJson(data));
+                }
             }
         }
         if (documents.size() < dataList.size()) {
-            // if write to es size can't equals data size, has error, can break loop
             if (Logs.ROOT_LOG.isErrorEnabled()) {
-                Logs.ROOT_LOG.error("!!!data size({}) --> es size({})!!!", documents.size(), dataList.size());
+                Logs.ROOT_LOG.error("!!!data size({}) --> es size({})!!!", dataList.size(), documents.size());
             }
         }
         return documents;
