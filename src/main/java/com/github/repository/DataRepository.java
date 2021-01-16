@@ -20,6 +20,8 @@ import java.util.concurrent.Future;
 @SuppressWarnings({ "rawtypes", "DuplicatedCode" })
 public class DataRepository {
 
+    private static final String EQUALS_SUFFIX = "<=-_-=>";
+
     private final JdbcTemplate jdbcTemplate;
     private final EsRepository esRepository;
     public DataRepository(JdbcTemplate jdbcTemplate, EsRepository esRepository) {
@@ -131,6 +133,12 @@ public class DataRepository {
     }
 
     private String handleGreaterAndEquals(Relation relation, String matchTable, String lastValue, String matchInId) {
+        if (lastValue.endsWith(EQUALS_SUFFIX)) {
+            lastValue = lastValue.substring(0, lastValue.length() - EQUALS_SUFFIX.length());
+            handleEquals(relation, matchTable, lastValue, matchInId);
+            return lastValue;
+        }
+
         String sql = relation.querySql(matchTable, lastValue);
         long start = System.currentTimeMillis();
         List<Map<String, Object>> dataList = jdbcTemplate.queryForList(sql);
@@ -219,11 +227,12 @@ public class DataRepository {
                     if (size == 0) {
                         // if success was 0, can break equals handle
                         return;
-                    }
-
-                    // if sql: limit 1000, 1000, query data size 900, can break equals handle
-                    if (equalsDataList.size() < relation.getLimit()) {
+                    } else if (equalsDataList.size() < relation.getLimit()) {
+                        // if sql: limit 1000, 1000, query data size 900, can break equals handle
                         return;
+                    } else {
+                        // write current equals record in temp file
+                        F.write(matchTable, index, tempColumnValue + EQUALS_SUFFIX);
                     }
                 }
             }
@@ -443,8 +452,8 @@ public class DataRepository {
             }
         }
         if (documents.size() < dataList.size()) {
-            if (Logs.ROOT_LOG.isErrorEnabled()) {
-                Logs.ROOT_LOG.error("!!!data size({}) --> es size({})!!!", dataList.size(), documents.size());
+            if (Logs.ROOT_LOG.isWarnEnabled()) {
+                Logs.ROOT_LOG.warn("data size({}) <--> es size({}), may be has duplicate id", dataList.size(), documents.size());
             }
         }
         return documents;
