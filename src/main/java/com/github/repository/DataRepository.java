@@ -165,9 +165,9 @@ public class DataRepository {
             // if last data was nil, can break loop
             return null;
         }
+        handleEquals(relation, matchTable, lastValue, matchInId);
         // write last record in temp file
         F.write(matchTable, index, lastValue);
-        handleEquals(relation, matchTable, lastValue, matchInId);
 
         // if sql: limit 1000, query data size 900, can break loop
         if (dataList.size() < relation.getLimit()) {
