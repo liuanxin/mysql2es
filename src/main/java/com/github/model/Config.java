@@ -12,12 +12,15 @@ import java.util.List;
  * DB：Databases --> Tables --> Rows      --> Columns
  * ES：Indices   --> Types  --> Documents --> Fields
  *
- * new es changes: Indices to Tables, 'Types' use default: _doc
+ * new(>= 6.x version) es changes: Indices to Tables, 'Types' use default: _doc
  * </pre>
  */
 @Getter
 @Setter
 public class Config {
+
+    /** false will disabled to sync mysql data to es */
+    private boolean enable = true;
 
     /**
      * <pre>
@@ -43,7 +46,7 @@ public class Config {
      *     "type": "es type1 name",
      *     "sql": "sql",
      *     "limit": 10,
-     *     "incrementColumn": "UPDATE_TIME",
+     *     "incrementColumn": "update_time",
      *     "mapping": {
      *       "table1 column1" : "type1 field1",
      *       "table1 column2" : "type1 field2",
@@ -51,7 +54,7 @@ public class Config {
      *     }
      *   },{
      *     "table": "type2 name",
-     *     "incrementColumn": "CREATE_TIME",
+     *     "incrementColumn": "id",
      *     ...
      *   }
      *   ...
@@ -61,6 +64,10 @@ public class Config {
     private List<Relation> relation;
 
     public void check() {
+        if (!enable) {
+            return;
+        }
+
         U.assertException(A.isEmpty(relation), "must set [db es] relation");
         for (Relation r : relation) {
             r.check();

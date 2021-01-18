@@ -25,6 +25,10 @@ public class Runner implements ApplicationRunner {
     @SuppressWarnings({"RedundantThrows", "rawtypes"})
     @Override
     public void run(ApplicationArguments args) throws Exception {
+        if (!config.isEnable()) {
+            return;
+        }
+
         long start = System.currentTimeMillis();
         if (Logs.ROOT_LOG.isInfoEnabled()) {
             Logs.ROOT_LOG.info("begin to generate scheme");
