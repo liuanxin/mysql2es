@@ -31,7 +31,7 @@ public class Relation {
 
     // begin with 6.0, type will be remove, replace with _doc
     // https://www.elastic.co/guide/en/elasticsearch/reference/current/removal-of-types.html
-    // /** es type */
+    //** es type */
     // private String type = "_doc";
 
     /** whether to generate scheme of es on the database table structure */
@@ -61,11 +61,7 @@ public class Relation {
     /** one to many(nested) child mapping */
     private Map<String, ChildMapping> nestedMapping;
 
-    /**
-     * primary key, will generate to id in es, query from db table, if not, can't create index in es
-     *
-     * @see org.elasticsearch.client.support.AbstractClient#prepareIndex(String, String, String)
-     */
+    /** primary key, will generate to id in es, query from db table, if not, can't create index in es */
     private List<String> keyColumn;
 
     /** If want to ignore some column in SQL */
@@ -191,22 +187,14 @@ public class Relation {
         }
     }
 
-    /** select count(*) from ... where (id > xxx | time > '2010-01-01 01:00:00') */
-    public String countSql(String table, String param) {
-        return countSql(GT, table, param);
-    }
     /** select ... from ... where (id > xxx | time > '2010-10-10 00:00:01') order by (id | time) limit 1000 */
     public String querySql(String table, String param) {
         // just limit 1000, not limit 1000000, 1000
         return querySql(GT, table, param, 0);
     }
 
-    /** select count(*) from ... where time = '2010-10-10 00:00:01' */
-    public String equalsCountSql(String table, String param) {
-        return countSql(EQUALS, table, param);
-    }
     /**
-     * select ... from ... where time = '2010-10-10 00:00:01' limit 0,1000|1000,1000
+     * select ... from ... where time = '2010-10-10 00:00:01' limit 0|1000 , 1000
      * <br><br>or<br><br>
      * select cur.* from ... as cur inner join (select id from ... where time = '2010-01-01 00:00:01' limit 2000,1000) t on t.id = cur.id
      */
@@ -227,7 +215,8 @@ public class Relation {
         return loop;
     }
 
-    private String countSql(String operate, String table, String param) {
+    /** select count(*) from ... where time = '2010-10-10 00:00:01' */
+    public String equalsCountSql(String table, String param) {
         String count = "SELECT COUNT(*) FROM ";
 
         StringBuilder sbd = new StringBuilder();
@@ -237,7 +226,7 @@ public class Relation {
         } else {
             sbd.append(count).append("`").append(table).append("`");
         }
-        appendWhere(operate, param, sbd);
+        appendWhere(EQUALS, param, sbd);
         return sbd.toString();
     }
     private void appendWhere(String operate, String param, StringBuilder sbd) {
