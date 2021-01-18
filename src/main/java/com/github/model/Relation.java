@@ -196,7 +196,7 @@ public class Relation {
     /**
      * select ... from ... where time = '2010-10-10 00:00:01' limit 0|1000 , 1000
      * <br><br>or<br><br>
-     * select cur.* from ... as cur inner join (select id from ... where time = '2010-01-01 00:00:01' limit 2000,1000) t on t.id = cur.id
+     * select cur.* from ... as cur inner join (select id from ... where time = '2010-01-01 00:00:01' limit 2000,1000) tmp on cur.id = tmp.id
      */
     public String equalsQuerySql(String table, String param, int page) {
         int pageStart = page * limit;
