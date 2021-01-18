@@ -27,6 +27,10 @@ public class Job implements SchedulingConfigurer {
     @Override
     public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
         taskRegistrar.addTriggerTask(() -> {
+            if (!config.isEnable()) {
+                return;
+            }
+
             long start = System.currentTimeMillis();
             if (Logs.ROOT_LOG.isInfoEnabled()) {
                 Logs.ROOT_LOG.info("begin to run task");
