@@ -1,0 +1,29 @@
+
+logging.config: classpath:log-prod.xml
+
+
+spring:
+  datasource:
+    url: jdbc:mysql://192.168.1.2:3306/xxx?useAffectedRows=true&useSSL=false&useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&tinyInt1isBit=false&statementInterceptors=com.github.util.sql.PrintSql5
+    # driver-class-name: com.mysql.jdbc.Driver  # If use mysql 5
+    username: root
+    password: root
+    hikari:
+      minimumIdle: 1
+      maximumPoolSize: 1
+      maxLifetime: 1500000
+  elasticsearch.rest:
+    uris: 127.0.0.1:9200
+
+
+db2es:
+  cron: 0/5 * * * * *
+  relation:
+    -
+      table: t_property
+      increment-column: id
+      limit: 5000
+    -
+      table: t_value
+      increment-column: id
+      limit: 2000
