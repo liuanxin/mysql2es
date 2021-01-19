@@ -1,5 +1,5 @@
 
-English Readme | [[README.org][中文说明]]
+[[README.org][中文说明]] | English Readme
 
 ** MariaDB/MySQL to Elasticsearch
 
