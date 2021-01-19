@@ -202,6 +202,7 @@ for example:  0/5 * * * * *  means that it runs every 5 seconds
 #+BEGIN_SRC bash
 git clone https://github.com/liuanxin/mysql2es.git
 cd mysql2es
+git checkout ${es_version}
 mvn clean package -DskipTests
 
 # change application-prod.yml to your setting
