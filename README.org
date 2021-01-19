@@ -78,6 +78,55 @@ db2es:
 #+END_SRC
 
 
+** 运行
+#+BEGIN_SRC bash
+git clone https://github.com/liuanxin/mysql2es.git
+cd mysql2es
+git checkout ${es_version}
+mvn clean package -DskipTests
+
+# 更改 application-prod.yml 成你自己的配置
+nohup java -jar -Dspring.profiles.active=prod target/mysql2es.jar >/dev/null 2>&1 &
+
+或者
+
+# 添加你的配置文件到任意地方, 如: ~/application.yml(建议基于 application-prod.yml 修改即可)
+nohup java -jar -Dspring.config.location=~/application.yml target/mysql2es.jar >/dev/null 2>&1 &
+
+
+# 日志在 ~/logs/mysql2es.log 中
+#+END_SRC
+
+
+** 说明
+
+建议先在 Elasticsearch 中建好 index 的 scheme(如果想基于数据库表字段类型来生成可以在配置中设置 ~scheme~ 为 ~true~).  \\
+
+系统启动后会根据定时规则来同步数据, 同步时基于 sql 拼接增量字段来获取分页数据并批量写入 Elasticsearch 直到没有数据为止,
+最后的记录会存到临时文件供下次同步时会用到(如果到了下次运行时间, 但上次还没有运行结束将会顺延).
+
+PS:  \\
+如果数据量很大, 第一次同步会耗费一点时间. 调整 *limit* 的值可以提升同步速度.
+临时文件会每个索引生成一个, 比如有 ~product~ 和 ~order~ 这样两个索引, 会生成两个临时文件 ~/tmp/product~ 和 ~/tmp/order~,
+windows 在 ~C:\Users\current_user\AppData\Local\Temp~ 目录下, 可以在运行的命令行加上 ~-Djava.io.tmpdir=/path/to/tmpdir~ 来修改,
+如果将索引对应的临时文件手动删除, 下一次同步时此索引将会进行全量操作.
+
+
+cron 的说明如下
+#+BEGIN_EXAMPLE
+.------------------- second (0 - 59)   if (0/10) then (0, 10, 20, 30, 40, 50) run
+.  .---------------- minute (0 - 59)
+.  .  .------------- hour (0 - 23)
+.  .  .  .---------- day of month (1 - 31)
+.  .  .  .  .------- month (1 - 12)   OR jan,feb,mar,apr,may,jun,jul,aug,sep,oct,nov,dec
+.  .  .  .  .  .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat
+.  .  .  .  .  .
+?  *  *  *  *  *
+
+如  0/5 * * * * *  表示每 5 秒运行一次
+#+END_EXAMPLE
+
+
 es 索引相关的 scheme 示例如下
 #+BEGIN_SRC yml
 DELETE /order
@@ -181,51 +230,3 @@ PUT /order
   }
 }
 #+END_SRC
-
-
-cron 的说明如下
-#+BEGIN_EXAMPLE
-.------------------- second (0 - 59)   if (0/10) then (0, 10, 20, 30, 40, 50) run
-.  .---------------- minute (0 - 59)
-.  .  .------------- hour (0 - 23)
-.  .  .  .---------- day of month (1 - 31)
-.  .  .  .  .------- month (1 - 12)   OR jan,feb,mar,apr,may,jun,jul,aug,sep,oct,nov,dec
-.  .  .  .  .  .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat
-.  .  .  .  .  .
-?  *  *  *  *  *
-
-如  0/5 * * * * *  表示每 5 秒运行一次
-#+END_EXAMPLE
-
-
-** 运行
-#+BEGIN_SRC bash
-git clone https://github.com/liuanxin/mysql2es.git
-cd mysql2es
-mvn clean package -DskipTests
-
-# 更改 application-prod.yml 成你自己的配置
-nohup java -jar -Dspring.profiles.active=prod target/mysql2es.jar >/dev/null 2>&1 &
-
-或者
-
-# 添加你的配置文件到任意地方, 如: ~/application.yml(建议基于 application-prod.yml 修改即可)
-nohup java -jar -Dspring.config.location=~/application.yml target/mysql2es.jar >/dev/null 2>&1 &
-
-
-# 日志在 ~/logs/mysql2es.log 中
-#+END_SRC
-
-
-** 说明
-
-建议先在 Elasticsearch 中建好 index 的 scheme(如果想基于数据库表字段类型来生成可以在配置中设置 ~scheme~ 为 ~true~).  \\
-
-系统启动后会根据定时规则来同步数据, 同步时基于 sql 拼接增量字段来获取分页数据并批量写入 Elasticsearch 直到没有数据为止,
-最后的记录会存到临时文件供下次同步时会用到(如果到了下次运行时间, 但上次还没有运行结束将会顺延).
-
-PS:  \\
-如果数据量很大, 第一次同步会耗费一点时间. 调整 *limit* 的值可以提升同步速度.
-临时文件会每个索引生成一个, 比如有 ~product~ 和 ~order~ 这样两个索引, 会生成两个临时文件 ~/tmp/product~ 和 ~/tmp/order~,
-windows 在 ~C:\Users\current_user\AppData\Local\Temp~ 目录下, 可以在运行的命令行加上 ~-Djava.io.tmpdir=/path/to/tmpdir~ 来修改,
-如果将索引对应的临时文件手动删除, 下一次同步时此索引将会进行全量操作.
