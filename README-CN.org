@@ -202,6 +202,7 @@ cron 的说明如下
 #+BEGIN_SRC bash
 git clone https://github.com/liuanxin/mysql2es.git
 cd mysql2es
+git checkout ${es_version}
 mvn clean package -DskipTests
 
 # 更改 application-prod.yml 成你自己的配置
