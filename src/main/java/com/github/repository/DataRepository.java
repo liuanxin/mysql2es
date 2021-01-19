@@ -426,8 +426,9 @@ public class DataRepository {
                 if (U.isNotBlank(key)) {
                     Object value = entry.getValue();
                     // field has suggest and null, can't be write => https://elasticsearch.cn/question/4051
-                    dataMap.put(key, U.isBlank(value) ? " " : value);
-                    // dataMap.put(key, value);
+                    // use    IFNULL(xxx, ' ')    in SQL
+                    // dataMap.put(key, U.isBlank(value) ? "" : value);
+                    dataMap.put(key, value);
                 }
             }
 
