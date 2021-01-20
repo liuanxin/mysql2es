@@ -60,18 +60,18 @@ db2es:
         address:
           main-field: id
           sql: SELECT receiver, province, city, area, address, phone FROM t_order_address
-          nested-field: order_id
+          child-field: order_id
 
       # 与主表 多对一 关联的子表数据, 最终会组装成 List 属性(对应 nested 结构)
       nested-mapping:
-        # 如果有 t_order 和 t_order_item 表, t_order 主键是 id, t_order_item 关联字段是 order_id, 则 main-field 是 id, nested-field 是 order_id
+        # 如果有 t_order 和 t_order_item 表, t_order 主键是 id, t_order_item 关联字段是 order_id, 则 main-field 是 id, child-field 是 order_id
         item:
           main-field: id
           sql: "SELECT oi.sku_id, p.name, ps.sku_desc, oi.unit_price, oi.num, oi.total
             FROM t_order_item oi
             INNER JOIN t_product_sku ps ON oi.sku_id = ps.id
             INNER JOIN t_product p ON ps.product_id = p.id"
-          nested-field: order_id
+          child-field: order_id
     -
       table: t_product
       increment-column: update_time
