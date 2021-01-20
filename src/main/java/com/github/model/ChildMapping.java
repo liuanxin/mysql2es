@@ -12,7 +12,7 @@ import java.util.List;
  *
  * `t_order` field has `id`, `t_order_item` relation field has `order_id`,
  *
- * then master-field => id, nested-field => order_id
+ * then master-field => id, child-field => order_id
  */
 @Getter
 @Setter
@@ -22,13 +22,13 @@ public class ChildMapping {
 
     private String sql;
 
-    private String nestedField;
+    private String childField;
 
 
     public void check(String nested) {
         U.assertNil(mainField, "must set child(" + nested + "): main-field");
         U.assertNil(sql, "must set child(" + nested + "): sql");
-        U.assertNil(nestedField, "must set child(" + nested + "): nested-field");
+        U.assertNil(childField, "must set child(" + nested + "): nested-field");
     }
     public String nestedQuerySql(List<Object> relations) {
         if (A.isEmpty(relations)) {
@@ -39,7 +39,7 @@ public class ChildMapping {
         boolean hasQueryRelationInSql = false;
         for (String s : sql.split(" ")) {
             for (String s1 : s.split(",")) {
-                if (s1.trim().equals(nestedField.trim())) {
+                if (s1.trim().equals(childField.trim())) {
                     hasQueryRelationInSql = true;
                     break;
                 }
@@ -48,9 +48,9 @@ public class ChildMapping {
         if (hasQueryRelationInSql) {
             sbd.append(sql.trim());
         } else {
-            sbd.append(sql.trim().replaceFirst("^(?i)SELECT ", "SELECT " + nestedField + ", "));
+            sbd.append(sql.trim().replaceFirst("^(?i)SELECT ", "SELECT " + childField + ", "));
         }
-        sbd.append(" WHERE ").append(nestedField);
+        sbd.append(" WHERE ").append(childField);
         if (relations.size() == 1) {
             sbd.append(" = ");
 

@@ -260,7 +260,7 @@ public class DataRepository {
                         long start = System.currentTimeMillis();
                         List<Map<String, Object>> nestedDataList = jdbcTemplate.queryForList(sql);
                         if (Logs.ROOT_LOG.isDebugEnabled()) {
-                            Logs.ROOT_LOG.debug("nested({}) sql({}) time({}ms) return size({})",
+                            Logs.ROOT_LOG.debug("child({}) sql({}) time({}ms) return size({})",
                                     key, sql, (System.currentTimeMillis() - start), nestedDataList.size());
                         }
                         returnMap.put(key, nestedDataList);
@@ -299,11 +299,11 @@ public class DataRepository {
         if (A.isNotEmpty(relation.getRelationMapping())) {
             for (Map.Entry<String, ChildMapping> entry : relation.getRelationMapping().entrySet()) {
                 String key = entry.getKey();
-                ChildMapping nested = entry.getValue();
+                ChildMapping child = entry.getValue();
 
                 List<Map<String, Object>> list = relationData.get(key);
                 if (A.isNotEmpty(list)) {
-                    String tableField = nested.getNestedField();
+                    String tableField = child.getChildField();
                     Map<String, Map<String, Object>> dataMap = Maps.newHashMap();
                     for (Map<String, Object> data : list) {
                         String fieldData = U.toStr(data.get(tableField));
@@ -324,7 +324,7 @@ public class DataRepository {
 
                 List<Map<String, Object>> list = nestedData.get(key);
                 if (A.isNotEmpty(list)) {
-                    String tableField = nested.getNestedField();
+                    String tableField = nested.getChildField();
                     Multimap<String, Map<String, Object>> multiMap = LinkedHashMultimap.create();
                     for (Map<String, Object> data : list) {
                         String fieldData = U.toStr(data.get(tableField));
