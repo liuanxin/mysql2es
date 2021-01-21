@@ -184,7 +184,7 @@ public class DataRepository {
         return lastValue;
     }
     private void handleEquals(Relation relation, String matchTable, String tempColumnValue, String matchInId) {
-        //  time > '2010-10-10 00:00:01', this: time = '2010-10-10 00:00:01'
+        // pre: time > '2010-10-10 00:00:01', current: time = '2010-10-10 00:00:01'
         String equalsCountSql = relation.equalsCountSql(matchTable, tempColumnValue);
         long start = System.currentTimeMillis();
         Integer equalsCount = A.first(jdbcTemplate.queryForList(equalsCountSql, Integer.class));
