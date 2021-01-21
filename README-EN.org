@@ -83,7 +83,7 @@ db2es:
 git clone https://github.com/liuanxin/mysql2es.git
 cd mysql2es
 
-# all branch
+# all branch --> es_version
 echo "`git branch`"
 git checkout ${es_version}
 mvn clean package -DskipTests
