@@ -1,12 +1,12 @@
 
 中文说明 | [[README-EN.org][English Readme]]
 
-** MariaDB/MySQL to Elasticsearch
+** MariaDB/MySQL to ElasticSearch
 
-  同步 MariaDB/MySQL 表的数据到 Elasticsearch, 支持添加和更新, 不支持物理删除(物理删除需要根据 binlog 才能处理),
+  同步 MariaDB/MySQL 表的数据到 ElasticSearch, 不支持物理删除(物理删除需要根据 binlog 才能处理),
   建议使用逻辑删除(业务系统使用逻辑删除本身就是一件很自然的事), 比如在表中添加 deleted(1 已删除, 默认是 0)字段.
 
-  基于 jdk 8 和 spring boot 2, 支持 Elasticsearch 6.3.2
+  基于 jdk 8 和 spring boot 2
 
 相关的配置如下:
 #+BEGIN_SRC yml
@@ -100,7 +100,7 @@ nohup java -jar -Dspring.config.location=~/application.yml target/mysql2es.jar >
 
 ** 说明
 
-建议先在 Elasticsearch 中建好 index 的 scheme(如果想基于数据库表字段类型来生成可以在配置中设置 ~scheme~ 为 ~true~).  \\
+建议先在 ElasticSearch 中建好 index 的 scheme(如果想基于数据库表字段类型来生成可以在配置中设置 ~scheme~ 为 ~true~).  \\
 
 系统启动后会根据定时规则来同步数据, 同步时基于 sql 拼接增量字段来获取分页数据并批量写入 ElasticSearch 直到没有数据为止,
 最后的记录会存到临时文件供下次同步时使用(如果到了下次运行时间, 但上次还没有运行结束将会顺延).
