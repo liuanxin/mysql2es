@@ -184,57 +184,55 @@ public class DataRepository {
         return lastValue;
     }
     private void handleEquals(Relation relation, String matchTable, String tempColumnValue, String matchInId) {
-        // if was number: id > 123, don't need to id = 123
-        // not number: time > '2010-10-10 00:00:01', this: time = '2010-10-10 00:00:01'
-        if (U.isNotNumber(tempColumnValue)) {
-            String equalsCountSql = relation.equalsCountSql(matchTable, tempColumnValue);
-            long start = System.currentTimeMillis();
-            Integer equalsCount = A.first(jdbcTemplate.queryForList(equalsCountSql, Integer.class));
+        //  time > '2010-10-10 00:00:01', this: time = '2010-10-10 00:00:01'
+        String equalsCountSql = relation.equalsCountSql(matchTable, tempColumnValue);
+        long start = System.currentTimeMillis();
+        Integer equalsCount = A.first(jdbcTemplate.queryForList(equalsCountSql, Integer.class));
+        if (Logs.ROOT_LOG.isDebugEnabled()) {
+            Logs.ROOT_LOG.debug("equals count sql({}) time({}ms) return({})",
+                    equalsCountSql, (System.currentTimeMillis() - start), equalsCount);
+        }
+        if (U.less0(equalsCount)) {
+            return;
+        }
+
+        String index = relation.useIndex();
+        int equalsLoopCount = relation.loopCount(equalsCount);
+        for (int i = 0; i < equalsLoopCount; i++) {
+            String equalsSql = relation.equalsQuerySql(matchTable, tempColumnValue, i);
+            long sqlStart = System.currentTimeMillis();
+            List<Map<String, Object>> equalsDataList = jdbcTemplate.queryForList(equalsSql);
+            if (A.isEmpty(equalsDataList)) {
+                // if not data, can break equals handle
+                return;
+            }
+            long sqlTime = (System.currentTimeMillis() - sqlStart);
             if (Logs.ROOT_LOG.isDebugEnabled()) {
-                Logs.ROOT_LOG.debug("equals count sql({}) time({}ms) return({})",
-                        equalsCountSql, (System.currentTimeMillis() - start), equalsCount);
+                Logs.ROOT_LOG.debug("equals sql({}) time({}ms) return size({})",
+                        equalsSql, sqlTime, equalsDataList.size());
             }
 
-            if (U.greater0(equalsCount)) {
-                String index = relation.useIndex();
-                int equalsLoopCount = relation.loopCount(equalsCount);
-                for (int i = 0; i < equalsLoopCount; i++) {
-                    String equalsSql = relation.equalsQuerySql(matchTable, tempColumnValue, i);
-                    long sqlStart = System.currentTimeMillis();
-                    List<Map<String, Object>> equalsDataList = jdbcTemplate.queryForList(equalsSql);
-                    if (A.isEmpty(equalsDataList)) {
-                        // if not data, can break equals handle
-                        return;
-                    }
-                    long sqlTime = (System.currentTimeMillis() - sqlStart);
-                    if (Logs.ROOT_LOG.isDebugEnabled()) {
-                        Logs.ROOT_LOG.debug("equals sql({}) time({}ms) return size({})",
-                                equalsSql, sqlTime, equalsDataList.size());
-                    }
+            Map<String, List<Map<String, Object>>> relationData = childData(relation.getRelationMapping(), equalsDataList);
+            Map<String, List<Map<String, Object>>> nestedData = childData(relation.getNestedMapping(), equalsDataList);
+            long allSqlTime = (System.currentTimeMillis() - sqlStart);
 
-                    Map<String, List<Map<String, Object>>> relationData = childData(relation.getRelationMapping(), equalsDataList);
-                    Map<String, List<Map<String, Object>>> nestedData = childData(relation.getNestedMapping(), equalsDataList);
-                    long allSqlTime = (System.currentTimeMillis() - sqlStart);
+            long esStart = System.currentTimeMillis();
+            int size = esRepository.saveDataToEs(index, fixDocument(relation, equalsDataList, matchInId, relationData, nestedData));
+            long esTime = (System.currentTimeMillis() - esStart);
+            if (Logs.ROOT_LOG.isInfoEnabled()) {
+                Logs.ROOT_LOG.info("equals sql time({}ms) size({}) batch to({}) time({}ms) success({})",
+                        allSqlTime, equalsDataList.size(), index, esTime, size);
+            }
 
-                    long esStart = System.currentTimeMillis();
-                    int size = esRepository.saveDataToEs(index, fixDocument(relation, equalsDataList, matchInId, relationData, nestedData));
-                    long esTime = (System.currentTimeMillis() - esStart);
-                    if (Logs.ROOT_LOG.isInfoEnabled()) {
-                        Logs.ROOT_LOG.info("equals sql time({}ms) size({}) batch to({}) time({}ms) success({})",
-                                allSqlTime, equalsDataList.size(), index, esTime, size);
-                    }
-
-                    if (size == 0) {
-                        // if success was 0, can break equals handle
-                        return;
-                    } else if (equalsDataList.size() < relation.getLimit()) {
-                        // if sql: limit 1000, 1000, query data size 900, can break equals handle
-                        return;
-                    } else {
-                        // write current equals record in temp file
-                        F.write(matchTable, index, tempColumnValue + EQUALS_SUFFIX);
-                    }
-                }
+            if (size == 0) {
+                // if success was 0, can break equals handle
+                return;
+            } else if (equalsDataList.size() < relation.getLimit()) {
+                // if sql: limit 1000, 1000, query data size 900, can break equals handle
+                return;
+            } else {
+                // write current equals record in temp file
+                F.write(matchTable, index, tempColumnValue + EQUALS_SUFFIX);
             }
         }
     }
