@@ -1,13 +1,13 @@
 
 [[README.org][中文说明]] | English Readme
 
-** MariaDB/MySQL to Elasticsearch
+** MariaDB/MySQL to ElasticSearch
 
-   Synchronize the MariaDB/MySQL table data to Elasticsearch, only supports adding and updating,
+   Synchronize the MariaDB/MySQL table data to ElasticSearch,
    does not support physical deletion (physical deletion needs to be processed according to binlog),
    it is recommended to use logical deletion. For example, add the deleted(1 deleted, default 0) field to the table.
 
-   Based on jdk 8 and spring boot 2, support Elasticsearch 6.3.2
+   Based on jdk 8 and spring boot 2
 
 
 The relevant configuration instructions are as follows:
@@ -22,12 +22,12 @@ db2es:
   cron: 0/5 * * * * *           # The default is to execute once per minute
   relation:
     -
-      table: t_order            # *** Must set and have primary key. The primary key will generate the id of /index/type/id in Elasticsearch, if has multi, id where append with "-". can use % as a wildcard to match multiple tables(when sharding table)
+      table: t_order            # *** Must set and have primary key. The primary key will generate the id of /index/type/id in ElasticSearch, if has multi, id where append with "-". can use % as a wildcard to match multiple tables(when sharding table)
       increment-column: id      # *** Must set. Indicates that it is used for data increment operations. Generally, it uses auto increment ~id~ or ~time~
 
-      # Starting with Elasticsearch 6.0, type defaults to _doc, and the index in Elasticsearch directly corresponds to the database table name
-      index: order              # Indicates the index of /index/type/id in Elasticsearch, not set will be generated from the database table name (t_some_one ==> some-one), 6.0 start index name must be lowercase
-      scheme: true              # Whether to generate Elasticsearch's scheme based on the database table structure at startup, the default is false
+      # Starting with ElasticSearch 6.0, type defaults to _doc, and the index in ElasticSearch directly corresponds to the database table name
+      index: order              # Indicates the index of /index/type/id in ElasticSearch, not set will be generated from the database table name (t_some_one ==> some-one), 6.0 start index name must be lowercase
+      scheme: true              # Whether to generate ElasticSearch's scheme based on the database table structure at startup, the default is false
 
       # Custom sql statement (do not use ORDER BY and LIMIT, will be automatically added based on increment-column), no setting will automatically assemble from the database table
       sql: "select o.id, o.order_no, o.customer_code, o.order_status, ifnull(o.price,0) price, ifnull(o.sum,0) sum,
@@ -100,10 +100,10 @@ nohup java -jar -Dspring.config.location=~/application.yml target/mysql2es.jar >
 
 ** Comment
 
-It is recommended to build the index scheme in Elasticsearch first (if want to generate based on the database table field type, you can set the ~scheme~ to ~true~ in the configuration).  \\
+It is recommended to build the index scheme in ElasticSearch first (if want to generate based on the database table field type, you can set the ~scheme~ to ~true~ in the configuration).  \\
 
 Then, the data is synchronized based on the timing rule.
-When synchronizing, the sql splicing increment field is used to obtain the paging data and write Elasticsearch in batches until there is no data.
+When synchronizing, the sql splicing increment field is used to obtain the paging data and write ElasticSearch in batches until there is no data.
 The value corresponding to the last increment field will be stored in the temporary file,
 which will be used in the next synchronization(If it is the next run time but the last time it has not run, it will be postponed).
 
