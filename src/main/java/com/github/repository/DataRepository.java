@@ -1,12 +1,14 @@
 package com.github.repository;
 
 import com.github.model.ChildMapping;
+import com.github.model.IncrementStorageType;
 import com.github.model.Relation;
 import com.github.util.*;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
+import lombok.AllArgsConstructor;
 import org.elasticsearch.common.UUIDs;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -17,16 +19,51 @@ import java.util.*;
 import java.util.concurrent.Future;
 
 @Component
+@AllArgsConstructor
 @SuppressWarnings({ "rawtypes", "DuplicatedCode" })
 public class DataRepository {
 
     private static final String EQUALS_SUFFIX = "<=-_-=>";
 
+    private static final String GENERATE_TABLE =
+            "CREATE TABLE IF NOT EXISTS `t_db_to_es` (" +
+            "  `table_index` varchar(64) NOT NULL," +
+            "  `increment_value` varchar(256) NOT NULL," +
+            "  PRIMARY KEY (`table_index`)" +
+            ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+    private static final String ADD_INCREMENT = "REPLACE INTO `t_db_to_es`(`table_index`, `increment_value`) VALUES(?, ?)";
+    private static final String GET_INCREMENT = "SELECT `increment_value` FROM `t_db_to_es` WHERE `table_index` = ?";
+
     private final JdbcTemplate jdbcTemplate;
     private final EsRepository esRepository;
-    public DataRepository(JdbcTemplate jdbcTemplate, EsRepository esRepository) {
-        this.jdbcTemplate = jdbcTemplate;
-        this.esRepository = esRepository;
+
+
+    public void generateIncrementTable() {
+        jdbcTemplate.execute(GENERATE_TABLE);
+    }
+
+    private String getLastValue(IncrementStorageType incrementType, String table, String index) {
+        if (U.isBlank(incrementType)) {
+            return F.read(table, index);
+        } else if (incrementType == IncrementStorageType.TEMP_FILE) {
+            return F.read(table, index);
+        } else if (incrementType == IncrementStorageType.MYSQL) {
+            String name = F.fileNameOrTableKey(table, index);
+            return A.first(jdbcTemplate.queryForList(GET_INCREMENT, String.class, name));
+        } else {
+            return null;
+        }
+    }
+
+    private void saveLastValue(IncrementStorageType incrementType, String table, String index, String value) {
+        if (U.isBlank(incrementType)) {
+            F.write(table, index, value);
+        } else if (incrementType == IncrementStorageType.TEMP_FILE) {
+            F.write(table, index, value);
+        } else if (incrementType == IncrementStorageType.MYSQL) {
+            String name = F.fileNameOrTableKey(table, index);
+            jdbcTemplate.update(ADD_INCREMENT, name, value);
+        }
     }
 
     /** generate scheme of es on the database table structure */
@@ -91,14 +128,11 @@ public class DataRepository {
 
     /** async data to es */
     @Async
-    public Future<Boolean> asyncData(Relation relation) {
+    public Future<Boolean> asyncData(IncrementStorageType incrementType, Relation relation) {
         if (A.isEmpty(relation.getKeyColumn())) {
             dbToEsScheme(relation);
         }
-        saveData(relation);
-        return new AsyncResult<>(true);
-    }
-    private void saveData(Relation relation) {
+
         String table = relation.getTable();
         String index = relation.useIndex();
         if (U.isNotBlank(table) && U.isNotBlank(index)) {
@@ -116,26 +150,28 @@ public class DataRepository {
                 matchTables = Collections.singletonList(table);
             }
             for (String matchTable : matchTables) {
-                saveSingleTable(relation, index, matchTable);
+                saveSingleTable(incrementType, relation, index, matchTable);
             }
         }
+        return new AsyncResult<>(true);
     }
 
-    private void saveSingleTable(Relation relation, String index, String matchTable) {
-        String lastValue = F.read(matchTable, index);
+    private void saveSingleTable(IncrementStorageType incrementType, Relation relation, String index, String matchTable) {
+        String lastValue = getLastValue(incrementType, matchTable, index);
         String matchInId = relation.matchInfo(matchTable);
         for (;;) {
-            lastValue = handleGreaterAndEquals(relation, matchTable, lastValue, matchInId);
+            lastValue = handleGreaterAndEquals(incrementType, relation, matchTable, lastValue, matchInId);
             if (U.isBlank(lastValue)) {
                 return;
             }
         }
     }
 
-    private String handleGreaterAndEquals(Relation relation, String matchTable, String lastValue, String matchInId) {
-        if (lastValue.endsWith(EQUALS_SUFFIX)) {
+    private String handleGreaterAndEquals(IncrementStorageType incrementType, Relation relation,
+                                          String matchTable, String lastValue, String matchInId) {
+        if (U.isNotBlank(lastValue) && lastValue.endsWith(EQUALS_SUFFIX)) {
             lastValue = lastValue.substring(0, lastValue.length() - EQUALS_SUFFIX.length());
-            handleEquals(relation, matchTable, lastValue, matchInId);
+            handleEquals(incrementType, relation, matchTable, lastValue, matchInId);
             return lastValue;
         }
 
@@ -173,9 +209,9 @@ public class DataRepository {
             // if last data was nil, can break loop
             return null;
         }
-        handleEquals(relation, matchTable, lastValue, matchInId);
-        // write last record in temp file
-        F.write(matchTable, index, lastValue);
+        handleEquals(incrementType, relation, matchTable, lastValue, matchInId);
+        // write last record
+        saveLastValue(incrementType, matchTable, index, lastValue);
 
         // if sql: limit 1000, query data size 900, can break loop
         if (dataList.size() < relation.getLimit()) {
@@ -183,7 +219,8 @@ public class DataRepository {
         }
         return lastValue;
     }
-    private void handleEquals(Relation relation, String matchTable, String tempColumnValue, String matchInId) {
+    private void handleEquals(IncrementStorageType incrementType, Relation relation, String matchTable,
+                              String tempColumnValue, String matchInId) {
         // pre: time > '2010-10-10 00:00:01' | 1286640001000, current: time = '2010-10-10 00:00:01' | 1286640001000
         String equalsCountSql = relation.equalsCountSql(matchTable, tempColumnValue);
         long start = System.currentTimeMillis();
@@ -231,8 +268,8 @@ public class DataRepository {
                 // if sql: limit 1000, 1000, query data size 900, can break equals handle
                 return;
             } else {
-                // write current equals record in temp file
-                F.write(matchTable, index, tempColumnValue + EQUALS_SUFFIX);
+                // write current equals record
+                saveLastValue(incrementType, matchTable, index, tempColumnValue + EQUALS_SUFFIX);
             }
         }
     }
@@ -445,6 +482,17 @@ public class DataRepository {
                     }
                     if (A.isNotEmpty(routes)) {
                         sourceMap.put("routing", A.toStr(routes));
+                    }
+                }
+                if (U.isNotBlank(relation.getVersionColumn())) {
+                    String version = U.toStr(data.get(relation.getVersionColumn()));
+                    if (U.isNumber(version) && U.greater0(Double.parseDouble(version))) {
+                        sourceMap.put("version", version);
+                    } else {
+                        Date datetime = Dates.parse(version);
+                        if (U.isNotBlank(datetime)) {
+                            sourceMap.put("version", U.toStr(datetime.getTime()));
+                        }
                     }
                 }
                 documents.put(id, sourceMap);

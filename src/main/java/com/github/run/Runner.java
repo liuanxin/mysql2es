@@ -1,6 +1,7 @@
 package com.github.run;
 
 import com.github.model.Config;
+import com.github.model.IncrementStorageType;
 import com.github.model.Relation;
 import com.github.repository.DataRepository;
 import com.github.repository.EsRepository;
@@ -27,6 +28,10 @@ public class Runner implements ApplicationRunner {
     public void run(ApplicationArguments args) throws Exception {
         if (!config.isEnable()) {
             return;
+        }
+
+        if (config.getIncrementType() == IncrementStorageType.MYSQL) {
+            dataRepository.generateIncrementTable();
         }
 
         long start = System.currentTimeMillis();

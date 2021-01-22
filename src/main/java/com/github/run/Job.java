@@ -38,7 +38,7 @@ public class Job implements SchedulingConfigurer {
             try {
                 Map<String, Future<Boolean>> resultMap = Maps.newHashMap();
                 for (Relation relation : config.getRelation()) {
-                    resultMap.put(relation.useKey(), dataRepository.asyncData(relation));
+                    resultMap.put(relation.useKey(), dataRepository.asyncData(config.getIncrementType(), relation));
                 }
                 for (Map.Entry<String, Future<Boolean>> entry : resultMap.entrySet()) {
                     try {

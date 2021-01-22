@@ -4,6 +4,7 @@ import com.github.util.A;
 import com.github.util.Jsons;
 import com.github.util.Logs;
 import com.github.util.U;
+import lombok.AllArgsConstructor;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
@@ -16,6 +17,7 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.IndicesClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.VersionType;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Component;
@@ -25,14 +27,11 @@ import java.util.Map;
 import java.util.concurrent.Future;
 
 @Component
+@AllArgsConstructor
 @SuppressWarnings("rawtypes")
 public class EsRepository {
 
     private final RestHighLevelClient client;
-    public EsRepository(RestHighLevelClient client) {
-        this.client = client;
-    }
-
 
     @Async
     public Future<Boolean> deleteScheme(String index) {
@@ -138,16 +137,12 @@ public class EsRepository {
                     if (U.isNotBlank(routing)) {
                         doc.routing(routing);
                     }
+                    Long version = U.toLong(source.get("version"));
+                    if (U.greater0(version)) {
+                        doc.versionType(VersionType.EXTERNAL).version(version);
+                    }
                     batchRequest.add(doc);
                     originalSize++;
-                } else {
-                    if (Logs.ROOT_LOG.isWarnEnabled()) {
-                        Logs.ROOT_LOG.warn("index({}) id({}) not data({})", index, id, data);
-                    }
-                }
-            } else {
-                if (Logs.ROOT_LOG.isWarnEnabled()) {
-                    Logs.ROOT_LOG.warn("index({}) no id({}) or source({})", index, id, Jsons.toJson(source));
                 }
             }
         }
@@ -156,20 +151,21 @@ public class EsRepository {
             BulkResponse responses = client.bulk(batchRequest);
             int size = responses.getItems().length;
 
-            BulkItemResponse.Failure fail = null;
             for (BulkItemResponse response : responses) {
                 if (response.isFailed()) {
-                    fail = response.getFailure();
+                    BulkItemResponse.Failure failure = response.getFailure();
+                    if (!"version_conflict_engine_exception".equals(failure.getType())) {
+                        if (Logs.ROOT_LOG.isErrorEnabled()) {
+                            Logs.ROOT_LOG.error("batch save({}) size({}) success({}), has error({})",
+                                    index, originalSize, size, failure);
+                        }
+                    }
                     size--;
                 }
             }
             if (size == originalSize) {
                 if (Logs.ROOT_LOG.isDebugEnabled()) {
                     Logs.ROOT_LOG.debug("batch save({}) size({}) success({})", index, originalSize, size);
-                }
-            } else {
-                if (Logs.ROOT_LOG.isErrorEnabled()) {
-                    Logs.ROOT_LOG.error("batch save({}) size({}) success({}), has error({})", index, originalSize, size, fail);
                 }
             }
             return size;
