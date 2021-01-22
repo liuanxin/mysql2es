@@ -4,6 +4,7 @@ import com.github.model.Relation;
 import com.github.repository.DataRepository;
 import com.github.repository.EsRepository;
 import com.github.util.A;
+import lombok.RequiredArgsConstructor;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,6 +15,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import java.util.List;
 import java.util.Map;
 
+@RequiredArgsConstructor
 @SpringBootTest
 @RunWith(SpringRunner.class)
 @SuppressWarnings("rawtypes")
@@ -24,10 +26,6 @@ public class SchemeTest {
 
     private final EsRepository esRepository;
     private final DataRepository dataRepository;
-    public SchemeTest(EsRepository esRepository, DataRepository dataRepository) {
-        this.esRepository = esRepository;
-        this.dataRepository = dataRepository;
-    }
 
     @Sql({"classpath:sql/scheme.sql"})
     @Sql(value = {"classpath:sql/delete.sql"}, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
