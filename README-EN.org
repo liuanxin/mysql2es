@@ -43,6 +43,7 @@ db2es:
       id-prefix:                # Use when you want to prefix the index id
       id-suffix:                # Use when you want to suffix the index id
       route-column: c1,c2       # The fields used for routing, multiple separated by commas
+      version-column: updated   # The field used for version
       pattern-to-id: false      # true: the wildcard data of the table name is used as part of the id(for example, table use t_order_% wildcard, then the table t_order_2016 will be used 2016 to the prefix of the id), the default is true
 
       column-lower-camel: true  # Whether the attribute is converted to camel case, true will convert user_name in the table to userName, the default is false
