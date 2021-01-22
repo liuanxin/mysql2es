@@ -22,6 +22,8 @@ public class Dates {
         /** yyyy-MM-ddTHH:mm:ss */
         T("yyyy-MM-dd'T'HH:mm:ss"),
 
+        /** yyyy-MM-dd HH:mm:ss.SSS */
+        YYYY_MM_DD_HH_MM_SSSSS("yyyy-MM-dd HH:mm:ss.SSS"),
         /** yyyy-MM-dd HH:mm:ss SSS */
         YYYY_MM_DD_HH_MM_SS_SSS("yyyy-MM-dd HH:mm:ss SSS"),
         /** yyyy-MM-dd HH:mm:ss */

@@ -67,6 +67,19 @@ public final class U {
         return obj == null || obj.doubleValue() <= 0;
     }
 
+    public static Long toLong(Object obj) {
+        if (isBlank(obj)) {
+            return null;
+        }
+        if (obj instanceof Number) {
+            return ((Number) obj).longValue();
+        }
+        try {
+            return Long.parseLong(obj.toString().trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
 
     public static boolean isBlank(Object obj) {
         return obj == null || obj.toString().trim().length() == 0 || "null".equalsIgnoreCase(obj.toString().trim());

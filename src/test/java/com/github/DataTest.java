@@ -1,11 +1,13 @@
 package com.github;
 
+import com.github.model.IncrementStorageType;
 import com.github.model.Relation;
 import com.github.repository.DataRepository;
 import com.github.repository.EsRepository;
 import com.github.util.F;
 import com.github.util.Logs;
 import com.google.common.collect.Lists;
+import lombok.RequiredArgsConstructor;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,19 +19,19 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+@RequiredArgsConstructor
 @SpringBootTest
 @RunWith(SpringRunner.class)
 public class DataTest {
 
+    @Value("${db2es.incrementType}")
+    private IncrementStorageType incrementType;
+
     @Value("${db2es.relation}")
     private List<Relation> relations;
 
-    private EsRepository esRepository;
-    private DataRepository dataRepository;
-    public DataTest(EsRepository esRepository, DataRepository dataRepository) {
-        this.esRepository = esRepository;
-        this.dataRepository = dataRepository;
-    }
+    private final EsRepository esRepository;
+    private final DataRepository dataRepository;
 
     @Sql({"classpath:sql/scheme.sql", "classpath:sql/insert.sql"})
     @Sql(value = {"classpath:sql/delete.sql"}, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
@@ -37,7 +39,7 @@ public class DataTest {
     public void test() {
         List<Future<Boolean>> resultList = Lists.newArrayList();
         for (Relation relation : relations) {
-            resultList.add(dataRepository.asyncData(relation));
+            resultList.add(dataRepository.asyncData(incrementType, relation));
         }
         for (Future<Boolean> future : resultList) {
             try {

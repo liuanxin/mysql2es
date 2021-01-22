@@ -43,6 +43,12 @@ public class Relation {
     /** database field used for routing: https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-routing-field.html */
     private List<String> routeColumn;
 
+    /**
+     * https://www.elastic.co/guide/en/elasticsearch/reference/current/optimistic-concurrency-control.html
+     * https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html#index-versioning
+     */
+    private String versionColumn;
+
     /** If it is a multi-table mapping, whether to stitch the info on the table to the id */
     private boolean patternToId = true;
 
