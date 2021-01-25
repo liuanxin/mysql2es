@@ -237,28 +237,29 @@ public class Relation {
     }
     private void appendWhere(String operate, String param, StringBuilder sbd) {
         // param split length = increment column size
-        if (U.isNotBlank(param)) {
-            String where = " WHERE ";
+        if (U.isBlank(param)) {
+            param = "0";
+        }
 
-            boolean containsWhere = sbd.toString().toUpperCase().contains(where);
-            if (containsWhere) {
-                sbd.append(" AND ").append("( ");
-            } else {
-                sbd.append(where);
-            }
-            if (U.isNotBlank(tableAlias)) {
-                sbd.append(tableAlias).append(".");
-            }
-            sbd.append(incrementColumn).append(operate);
-            if (U.isNumber(param)) {
-                sbd.append(param);
-            } else {
-                sbd.append("'").append(param).append("'");
-            }
+        String where = " WHERE ";
+        boolean containsWhere = sbd.toString().toUpperCase().contains(where);
+        if (containsWhere) {
+            sbd.append(" AND ").append("( ");
+        } else {
+            sbd.append(where);
+        }
+        if (U.isNotBlank(tableAlias)) {
+            sbd.append(tableAlias).append(".");
+        }
+        sbd.append(incrementColumn).append(operate);
+        if (U.isNumber(param)) {
+            sbd.append(param);
+        } else {
+            sbd.append("'").append(param).append("'");
+        }
 
-            if (containsWhere) {
-                sbd.append(" )");
-            }
+        if (containsWhere) {
+            sbd.append(" )");
         }
     }
     private String querySql(String operate, String table, String param, int pageStart) {
