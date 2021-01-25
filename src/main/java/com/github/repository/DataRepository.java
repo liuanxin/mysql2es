@@ -27,8 +27,8 @@ public class DataRepository {
 
     private static final String GENERATE_TABLE =
             "CREATE TABLE IF NOT EXISTS `t_db_to_es` (" +
-            "  `table_index` varchar(64) NOT NULL," +
-            "  `increment_value` varchar(256) NOT NULL," +
+            "  `table_index` varchar(64) NOT NULL COMMENT '表 + es index'," +
+            "  `increment_value` varchar(256) NOT NULL COMMENT '增量数据值'," +
             "  PRIMARY KEY (`table_index`)" +
             ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
     private static final String ADD_INCREMENT = "REPLACE INTO `t_db_to_es`(`table_index`, `increment_value`) VALUES(?, ?)";
