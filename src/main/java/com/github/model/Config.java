@@ -67,10 +67,6 @@ public class Config {
     private List<Relation> relation;
 
     public void check() {
-        if (!enable) {
-            return;
-        }
-
         U.assertException(A.isEmpty(relation), "must set [db es] relation");
         for (Relation r : relation) {
             r.check();
