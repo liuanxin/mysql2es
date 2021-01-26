@@ -42,26 +42,26 @@ public class DataRepository {
         jdbcTemplate.execute(GENERATE_TABLE);
     }
 
-    private String getLastValue(IncrementStorageType incrementType, String table, String index) {
-        if (U.isBlank(incrementType)) {
-            return F.read(table, index);
-        } else if (incrementType == IncrementStorageType.TEMP_FILE) {
-            return F.read(table, index);
+    private String getLastValue(IncrementStorageType incrementType, String table, String incrementColumn, String index) {
+        String tableColumn = getTableColumn(table, incrementColumn);
+        if (U.isBlank(incrementType) || incrementType == IncrementStorageType.TEMP_FILE) {
+            return F.read(tableColumn, index);
         } else if (incrementType == IncrementStorageType.MYSQL) {
-            String name = F.fileNameOrTableKey(table, index);
+            String name = F.fileNameOrTableKey(tableColumn, index);
             return A.first(jdbcTemplate.queryForList(GET_INCREMENT, String.class, name));
         } else {
             return null;
         }
     }
-
-    private void saveLastValue(IncrementStorageType incrementType, String table, String index, String value) {
-        if (U.isBlank(incrementType)) {
-            F.write(table, index, value);
-        } else if (incrementType == IncrementStorageType.TEMP_FILE) {
-            F.write(table, index, value);
+    private String getTableColumn(String table, String incrementColumn) {
+        return table + "-" + incrementColumn;
+    }
+    private void saveLastValue(IncrementStorageType incrementType, String table, String incrementColumn, String index, String value) {
+        String tableColumn = getTableColumn(table, incrementColumn);
+        if (U.isBlank(incrementType) || incrementType == IncrementStorageType.TEMP_FILE) {
+            F.write(tableColumn, index, value);
         } else if (incrementType == IncrementStorageType.MYSQL) {
-            String name = F.fileNameOrTableKey(table, index);
+            String name = F.fileNameOrTableKey(tableColumn, index);
             jdbcTemplate.update(ADD_INCREMENT, name, value);
         }
     }
@@ -157,7 +157,7 @@ public class DataRepository {
     }
 
     private void saveSingleTable(IncrementStorageType incrementType, Relation relation, String index, String matchTable) {
-        String lastValue = getLastValue(incrementType, matchTable, index);
+        String lastValue = getLastValue(incrementType, matchTable, relation.getIncrementColumn(), index);
         String matchInId = relation.matchInfo(matchTable);
         for (;;) {
             lastValue = handleGreaterAndEquals(incrementType, relation, matchTable, lastValue, matchInId);
@@ -211,7 +211,7 @@ public class DataRepository {
         }
         handleEquals(incrementType, relation, matchTable, lastValue, matchInId);
         // write last record
-        saveLastValue(incrementType, matchTable, index, lastValue);
+        saveLastValue(incrementType, matchTable, relation.getIncrementColumn(), index, lastValue);
 
         // if sql: limit 1000, query data size 900, can break loop
         if (dataList.size() < relation.getLimit()) {
@@ -269,7 +269,7 @@ public class DataRepository {
                 return;
             } else {
                 // write current equals record
-                saveLastValue(incrementType, matchTable, index, tempColumnValue + EQUALS_SUFFIX);
+                saveLastValue(incrementType, matchTable, relation.getIncrementColumn(), index, tempColumnValue + EQUALS_SUFFIX);
             }
         }
     }
