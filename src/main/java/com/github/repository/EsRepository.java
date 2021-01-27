@@ -7,13 +7,13 @@ import com.github.util.U;
 import lombok.AllArgsConstructor;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.client.IndicesClient;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -41,7 +41,7 @@ public class EsRepository {
         try {
             if (indices.exists(new GetIndexRequest().indices(index), RequestOptions.DEFAULT)) {
                 long start = System.currentTimeMillis();
-                DeleteIndexResponse resp = indices.delete(new DeleteIndexRequest(index), RequestOptions.DEFAULT);
+                AcknowledgedResponse resp = indices.delete(new DeleteIndexRequest(index), RequestOptions.DEFAULT);
                 boolean flag = resp.isAcknowledged();
                 if (Logs.ROOT_LOG.isDebugEnabled()) {
                     Logs.ROOT_LOG.debug("delete scheme ({}) time({}) return({})", index, (System.currentTimeMillis() - start + "ms"), flag);
