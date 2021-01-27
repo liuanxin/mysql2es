@@ -129,7 +129,7 @@ public class EsRepository {
             String id = entry.getKey();
             Map<String, String> source = entry.getValue();
             if (U.isNotBlank(id) && A.isNotEmpty(source)) {
-                IndexRequest doc = new IndexRequest(index).type("_doc").id(id);
+                IndexRequest doc = new IndexRequest(index).id(id);
                 String data = source.get("data");
                 if (U.isNotBlank(data)) {
                     doc.source(data, XContentType.JSON);
@@ -139,7 +139,7 @@ public class EsRepository {
                     }
                     Long version = U.toLong(source.get("version"));
                     if (U.greater0(version)) {
-                        doc.versionType(VersionType.EXTERNAL).version(version);
+                        doc.versionType(VersionType.EXTERNAL_GTE).version(version);
                     }
                     batchRequest.add(doc);
                     originalSize++;
