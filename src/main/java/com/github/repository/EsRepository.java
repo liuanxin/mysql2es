@@ -139,7 +139,7 @@ public class EsRepository {
                     }
                     Long version = U.toLong(source.get("version"));
                     if (U.greater0(version)) {
-                        doc.versionType(VersionType.EXTERNAL).version(version);
+                        doc.versionType(VersionType.EXTERNAL_GTE).version(version);
                     }
                     batchRequest.add(doc);
                     originalSize++;
