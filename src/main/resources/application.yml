@@ -3,6 +3,7 @@ logging.config: classpath:log-dev.xml
 
 
 spring:
+  application.name: mysql2es
   datasource:
     url: jdbc:mysql://dev-db:3306/db?useAffectedRows=true&useSSL=false&useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&statementInterceptors=com.github.util.sql.PrintSql8
     # driver-class-name: com.mysql.jdbc.Driver
