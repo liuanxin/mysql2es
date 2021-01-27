@@ -36,9 +36,8 @@ public class EsRepository {
 
     @Async
     public Future<Boolean> deleteScheme(String index) {
-        IndicesClient indices = client.indices();
-
         try {
+            IndicesClient indices = client.indices();
             if (indices.exists(new GetIndexRequest().indices(index), RequestOptions.DEFAULT)) {
                 long start = System.currentTimeMillis();
                 DeleteIndexResponse resp = indices.delete(new DeleteIndexRequest(index), RequestOptions.DEFAULT);
