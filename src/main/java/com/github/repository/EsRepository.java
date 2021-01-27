@@ -5,10 +5,7 @@ import com.github.util.Jsons;
 import com.github.util.Logs;
 import com.github.util.U;
 import lombok.AllArgsConstructor;
-import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
-import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -17,6 +14,9 @@ import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.client.IndicesClient;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.CreateIndexRequest;
+import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.client.indices.PutMappingRequest;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.VersionType;
 import org.springframework.scheduling.annotation.Async;
@@ -39,7 +39,7 @@ public class EsRepository {
         IndicesClient indices = client.indices();
 
         try {
-            if (indices.exists(new GetIndexRequest().indices(index), RequestOptions.DEFAULT)) {
+            if (indices.exists(new GetIndexRequest(index), RequestOptions.DEFAULT)) {
                 long start = System.currentTimeMillis();
                 AcknowledgedResponse resp = indices.delete(new DeleteIndexRequest(index), RequestOptions.DEFAULT);
                 boolean flag = resp.isAcknowledged();
@@ -70,7 +70,7 @@ public class EsRepository {
     private boolean existsIndex(IndicesClient indices, String index) {
         try {
             long start = System.currentTimeMillis();
-            boolean ack = indices.exists(new GetIndexRequest().indices(index), RequestOptions.DEFAULT);
+            boolean ack = indices.exists(new GetIndexRequest(index), RequestOptions.DEFAULT);
             if (Logs.ROOT_LOG.isDebugEnabled()) {
                 Logs.ROOT_LOG.debug("query index({}) exists time({}) return({})",
                         index, (System.currentTimeMillis() - start + "ms"), ack);
