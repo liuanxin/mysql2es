@@ -25,14 +25,24 @@ public class DataRepository {
 
     private static final String EQUALS_SUFFIX = "<=-_-=>";
 
+    /**
+     * <pre>
+     * CREATE TABLE IF NOT EXISTS `t_db_to_es` (
+     *   `table_index` VARCHAR(64) NOT NULL COMMENT '表 + es index',
+     *   `increment_value` VARCHAR(256) NOT NULL COMMENT '增量数据值',
+     *   PRIMARY KEY (`table_index`)
+     * ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT 'db 到 es 的增量记录';
+     * </pre>
+     */
     private static final String GENERATE_TABLE =
             "CREATE TABLE IF NOT EXISTS `t_db_to_es` (" +
-            "  `table_index` varchar(64) NOT NULL COMMENT '表 + es index'," +
-            "  `increment_value` varchar(256) NOT NULL COMMENT '增量数据值'," +
+            "  `table_index` VARCHAR(64) NOT NULL," +
+            "  `increment_value` VARCHAR(256) NOT NULL," +
             "  PRIMARY KEY (`table_index`)" +
             ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
     private static final String ADD_INCREMENT = "REPLACE INTO `t_db_to_es`(`table_index`, `increment_value`) VALUES(?, ?)";
     private static final String GET_INCREMENT = "SELECT `increment_value` FROM `t_db_to_es` WHERE `table_index` = ?";
+
 
     private final JdbcTemplate jdbcTemplate;
     private final EsRepository esRepository;
