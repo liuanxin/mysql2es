@@ -107,22 +107,13 @@ nohup java -jar -Dspring.config.location=~/application.yml target/mysql2es.jar >
 
 ** Comment
 
-It is recommended to build the index scheme in ElasticSearch first (if want to generate based on the database table field type, you can set the ~scheme~ to ~true~ in the configuration).  \\
+It is recommended to build the index scheme in ElasticSearch first (if want to generate based
+on the database table field type, you can set the ~scheme~ to ~true~ in the configuration).  \\
 
 Then, the data is synchronized based on the timing rule.
-When synchronizing, the sql splicing increment field is used to obtain the paging data and write ElasticSearch in batches until there is no data.
-The value corresponding to the last increment field will be stored in the temporary file,
+When synchronizing, the sql splicing increment field is used to obtain the paging data and write ElasticSearch
+in batches until there is no data. The value corresponding to the last increment field will be stored,
 which will be used in the next synchronization(If it is the next run time but the last time it has not run, it will be postponed).
-
-PS:  \\
-If the amount of data is large, the first synchronization takes some time.
-Increasing the value of *limit* can increase the synchronization speed.
-Temporary files will be generated for each index, such as two indexes with ~product~ and ~order~,
-which will generate two temporary files ~/tmp/product~ and ~/tmp/order~.
-Windows in the ~C:\Users\current_user\AppData\Local\Temp~ directory,
-you can modify it by running ~-Djava.io.tmpdir=/path/to/tmpdir~ on the command line,
-If the temporary file corresponding to the index is manually deleted,
-the index will be fully manipulated the next time it is synchronized.
 
 
 about cron
