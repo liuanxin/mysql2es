@@ -17,6 +17,8 @@ spring:
     uris: 192.168.1.2:9200      # es 配置见: org.springframework.boot.autoconfigure.elasticsearch.rest.RestClientProperties
 
 db2es:
+  enable: false                 # 是否启用同步, 不设置可以默认是 true
+  increment-type: mysql         # 增量数据保存在哪, 不设置则保存在临时文件(默认在 /tmp 下, 使用 -Djava.io.tmpdir=/path 自定义位置), 只支持保存在临时文件和 mysql(会自动生成一个 t_db_to_es 的 kv 表)
   cron: 0/5 * * * * *           # 可以不设定, 默认是每分钟执行一次
 
   relation:
