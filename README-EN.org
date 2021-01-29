@@ -19,7 +19,10 @@ spring:
     uris: 192.168.1.2:9200      # es config: org.springframework.boot.autoconfigure.elasticsearch.rest.RestClientProperties
 
 db2es:
+  enable: false                 # Disabled to sync if set false, default is true
+  increment-type: mysql         # Where are the incremental fields stored, default temp-file, only supports temp-file and mysql
   cron: 0/5 * * * * *           # The default is to execute once per minute
+
   relation:
     -
       table: t_order            # *** Must set and have primary key. The primary key will generate the id of /index/type/id in ElasticSearch, if has multi, id where append with "-". can use % as a wildcard to match multiple tables(when sharding table)
