@@ -94,7 +94,7 @@ public class DataRepository {
         List<Map<String, Object>> mapList = jdbcTemplate.queryForList(relation.descSql(table));
         if (A.isNotEmpty(mapList)) {
             boolean scheme = relation.isScheme();
-            List<String> keyList = Lists.newArrayList();
+            List<String> idList = Lists.newArrayList();
             Map<String, Map> propertyMap = Maps.newHashMap();
             Map<String, Boolean> fieldMap = Maps.newHashMap();
             for (Map<String, Object> map : mapList) {
@@ -107,7 +107,7 @@ public class DataRepository {
 
                     Object key = map.get("Key");
                     if (U.isNotBlank(key) && "PRI".equals(key)) {
-                        keyList.add(field);
+                        idList.add(field);
                     }
                     if (scheme) {
                         propertyMap.put(relation.useField(field), Searchs.dbToEsType(type.toString()));
@@ -115,19 +115,19 @@ public class DataRepository {
                 }
             }
 
-            List<String> keyColumn = relation.getKeyColumn();
-            if (A.isEmpty(keyColumn)) {
-                if (A.isEmpty(keyList)) {
+            List<String> idColumn = relation.getIdColumn();
+            if (A.isEmpty(idColumn)) {
+                if (A.isEmpty(idList)) {
                     U.assertException(String.format("table (%s) no primary key, can't create index in es!", table));
                 }
-                if (keyList.size() > 1) {
+                if (idList.size() > 1) {
                     if (Logs.ROOT_LOG.isWarnEnabled()) {
-                        Logs.ROOT_LOG.warn("table ({}) has multi primary key({})", table, A.toStr(keyList));
+                        Logs.ROOT_LOG.warn("table ({}) has multi primary key({})", table, A.toStr(idList));
                     }
                 }
-                relation.setKeyColumn(keyList);
+                relation.setIdColumn(idList);
             } else {
-                for (String key : keyColumn) {
+                for (String key : idColumn) {
                     U.assertNil(fieldMap.get(key), String.format("table (%s) don't have column (%s)", table, key));
                 }
             }
@@ -139,7 +139,7 @@ public class DataRepository {
     /** async data to es */
     @Async
     public Future<Boolean> asyncData(IncrementStorageType incrementType, Relation relation) {
-        if (A.isEmpty(relation.getKeyColumn())) {
+        if (A.isEmpty(relation.getIdColumn())) {
             dbToEsScheme(relation);
         }
 
@@ -396,7 +396,7 @@ public class DataRepository {
                 }
                 idBuild.append(matchInId.trim());
             }
-            for (String column : relation.getKeyColumn()) {
+            for (String column : relation.getIdColumn()) {
                 if (idBuild.length() > 0) {
                     idBuild.append("-");
                 }
