@@ -39,12 +39,13 @@ db2es:
       table-alias: o            # 可以不设定. 如果 sql 有使用多个表 join, 主表的别名
       limit: 2000               # 可以不设定. 一次从数据库获取 及 同步进 es 的条数, 默认是 1000
 
-      key-column: c1,c2         # 可以不设定. 用来生成 index 的 id 列, 不设置将会自动从表中获取, 当表中有主键又有多列唯一索引, 想用唯一索引来做 index 的 id 时可以使用此配置
+      id-column: c1,c2          # 可以不设定. 用来生成 index 的 id 列, 不设置将会自动从表中获取, 当表中有主键又有多列唯一索引, 想用唯一索引来做 index 的 id 时可以使用此配置
       id-prefix:                # 可以不设定. 当想在 index 的 id 上加前缀时使用
+      pattern-to-id: false      # 可以不设定. true 表示将表名的通配数据做为 id 的一部分(比如上面的 table 使用 t_order_% 通配, 则表 t_order_2016 同步时 2016 将做为 id 的前缀), 默认是 true
       id-suffix:                # 可以不设定. 当想在 index 的 id 上加后缀时使用
+
       route-column: c1,c2       # 可以不设定. 数据保存进 es 时用来做分片的字段, 多个用逗号隔开
       version-column: updated   # 可以不设定. 数据保存进 es 时用来表示版本的字段, id 或 时间戳
-      pattern-to-id: false      # 可以不设定. true 表示将表名的通配数据做为 id 的一部分(比如上面的 table 使用 t_order_% 通配, 则表 t_order_2016 同步时 2016 将做为 id 的前缀), 默认是 true
 
       column-lower-camel: true  # 属性是否转为驼峰, true 则将表中的 user_name 转换成 userName, 默认是 false
       mapping:                  # 可以不设定. 默认将会从表字段生成, 只设置特殊情况即可

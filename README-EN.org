@@ -42,12 +42,13 @@ db2es:
       table-alias: o            # If sql has join multi table, main table's alias
       limit: 2000               # The number of times to get from the database, the default is 1000
 
-      key-column: c1,c2         # The id column used to generate the index will not be automatically retrieved from the table. When the table has a primary key and multiple columns of unique index, can use this configuration when you want to use the unique index to do the index id.
+      id-column: c1,c2          # The id column used to generate the index will not be automatically retrieved from the table. When the table has a primary key and multiple columns of unique index, can use this configuration when you want to use the unique index to do the index id.
       id-prefix:                # Use when you want to prefix the index id
+      pattern-to-id: false      # true: the wildcard data of the table name is used as part of the id(for example, table use t_order_% wildcard, then the table t_order_2016 will be used 2016 to the prefix of the id), the default is true
       id-suffix:                # Use when you want to suffix the index id
+
       route-column: c1,c2       # The fields used for routing, multiple separated by commas
       version-column: updated   # The field used for version
-      pattern-to-id: false      # true: the wildcard data of the table name is used as part of the id(for example, table use t_order_% wildcard, then the table t_order_2016 will be used 2016 to the prefix of the id), the default is true
 
       column-lower-camel: true  # Whether the attribute is converted to camel case, true will convert user_name in the table to userName, the default is false
       mapping:                  # By default, it will be generated from the table field (c_some_type ==> someType), and only special cases can set.
