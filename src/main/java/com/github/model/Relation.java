@@ -68,7 +68,7 @@ public class Relation {
     private Map<String, ChildMapping> nestedMapping;
 
     /** primary key, will generate to id in es, query from db table, if not, can't create index in es */
-    private List<String> keyColumn;
+    private List<String> idColumn;
 
     /** If want to ignore some column in SQL */
     private List<String> ignoreColumn;
