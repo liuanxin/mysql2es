@@ -51,10 +51,9 @@ public class ChildMapping {
             sbd.append(sql.trim().replaceFirst("^(?i)SELECT ", "SELECT " + childField + ", "));
         }
         sbd.append(" WHERE ").append(childField);
+        Object relation = A.first(relations);
         if (relations.size() == 1) {
             sbd.append(" = ");
-
-            Object relation = A.first(relations);
             if (U.isNumber(relation)) {
                 sbd.append(relation);
             } else {
@@ -62,7 +61,7 @@ public class ChildMapping {
             }
         } else {
             sbd.append(" IN (");
-            boolean hasNumber = U.isNumber(relations.get(0));
+            boolean hasNumber = U.isNumber(relation);
             for (int i = 0; i < relations.size(); i++) {
                 if (i > 0) {
                     sbd.append(",");
