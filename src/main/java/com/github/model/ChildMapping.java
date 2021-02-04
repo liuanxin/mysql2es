@@ -62,14 +62,7 @@ public class ChildMapping {
             }
         } else {
             sbd.append(" IN (");
-
-            boolean hasNumber = true;
-            for (Object r : relations) {
-                if (U.isNotNumber(r)) {
-                    hasNumber = false;
-                    break;
-                }
-            }
+            boolean hasNumber = U.isNumber(relations.get(0));
             for (int i = 0; i < relations.size(); i++) {
                 if (i > 0) {
                     sbd.append(",");
