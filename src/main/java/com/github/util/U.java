@@ -91,6 +91,22 @@ public final class U {
         return obj == null ? null : obj.toString();
     }
 
+    public static String toStr(Object obj, int maxLen, int leftRightLen) {
+        String str = toStr(obj);
+        if (isBlank(str)) {
+            return EMPTY;
+        }
+
+        int length = str.length();
+        if (length > maxLen) {
+            int returnLength = leftRightLen * 2 + 5;
+            if (maxLen > returnLength) {
+                return str.substring(0, leftRightLen) + " ... " + str.substring(length - leftRightLen, length);
+            }
+        }
+        return str;
+    }
+
     public static String uuid() {
         return UUID.randomUUID().toString();
     }
