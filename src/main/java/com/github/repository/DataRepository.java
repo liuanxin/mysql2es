@@ -85,7 +85,8 @@ public class DataRepository {
             List<String> matchTables = jdbcTemplate.queryForList(sql, String.class);
             table = A.first(matchTables);
             if (Logs.ROOT_LOG.isInfoEnabled()) {
-                Logs.ROOT_LOG.info("sql({}) return({}), use `{}` to check basic info", sql, A.toStr(matchTables), table);
+                Logs.ROOT_LOG.info("sql({}) return({}), use `{}` to check basic info",
+                        getSql(sql), A.toStr(matchTables), table);
             }
         } else {
             table = relationTable;
@@ -154,7 +155,7 @@ public class DataRepository {
                 long sqlTime = (System.currentTimeMillis() - start);
                 if (Logs.ROOT_LOG.isDebugEnabled()) {
                     Logs.ROOT_LOG.debug("sql({}) time({}ms) return({}), size({})",
-                            sql, sqlTime, A.toStr(matchTables), matchTables.size());
+                            getSql(sql), sqlTime, A.toStr(matchTables), matchTables.size());
                 }
             } else {
                 matchTables = Collections.singletonList(table);
@@ -194,7 +195,7 @@ public class DataRepository {
         }
         long sqlTime = (System.currentTimeMillis() - start);
         if (Logs.ROOT_LOG.isDebugEnabled()) {
-            Logs.ROOT_LOG.debug("sql({}) time({}ms) return size({})", sql, sqlTime, dataList.size());
+            Logs.ROOT_LOG.debug("sql({}) time({}ms) return size({})", getSql(sql), sqlTime, dataList.size());
         }
 
         Map<String, List<Map<String, Object>>> relationData = childData(relation.getRelationMapping(), dataList);
@@ -237,7 +238,7 @@ public class DataRepository {
         Integer equalsCount = A.first(jdbcTemplate.queryForList(equalsCountSql, Integer.class));
         if (Logs.ROOT_LOG.isDebugEnabled()) {
             Logs.ROOT_LOG.debug("equals count sql({}) time({}ms) return({})",
-                    equalsCountSql, (System.currentTimeMillis() - start), equalsCount);
+                    getSql(equalsCountSql), (System.currentTimeMillis() - start), equalsCount);
         }
         if (U.less0(equalsCount)) {
             return;
@@ -256,7 +257,7 @@ public class DataRepository {
             long sqlTime = (System.currentTimeMillis() - sqlStart);
             if (Logs.ROOT_LOG.isDebugEnabled()) {
                 Logs.ROOT_LOG.debug("equals sql({}) time({}ms) return size({})",
-                        equalsSql, sqlTime, equalsDataList.size());
+                        getSql(equalsSql), sqlTime, equalsDataList.size());
             }
 
             Map<String, List<Map<String, Object>>> relationData = childData(relation.getRelationMapping(), equalsDataList);
@@ -306,7 +307,7 @@ public class DataRepository {
                         List<Map<String, Object>> nestedDataList = jdbcTemplate.queryForList(sql);
                         if (Logs.ROOT_LOG.isDebugEnabled()) {
                             Logs.ROOT_LOG.debug("child({}) sql({}) time({}ms) return size({})",
-                                    key, sql, (System.currentTimeMillis() - start), nestedDataList.size());
+                                    key, getSql(sql), (System.currentTimeMillis() - start), nestedDataList.size());
                         }
                         returnMap.put(key, nestedDataList);
                     }
@@ -316,6 +317,9 @@ public class DataRepository {
         return returnMap;
     }
 
+    private String getSql(String sql) {
+        return U.isBlank(sql) ? U.EMPTY : U.toStr(sql, 200, 30);
+    }
     /** write last record in temp file */
     private String getLast(Relation relation, List<Map<String, Object>> dataList) {
         Map<String, Object> last = A.last(dataList);
