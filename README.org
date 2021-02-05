@@ -4,7 +4,7 @@
 ** MariaDB/MySQL to ElasticSearch
 
   同步 MariaDB/MySQL 表的数据到 ElasticSearch, 不支持物理删除(物理删除需要根据 binlog 才能处理),
-  建议使用逻辑删除(业务系统使用逻辑删除本身就是一件很自然的事), 比如在表中添加 deleted(1 已删除, 默认是 0)字段.
+  建议使用逻辑删除(业务系统使用逻辑删除本身就是一件很自然的事), 比如在表中添加「deleted(1 已删除, 默认是 0)」字段.
 
   基于 jdk 8 和 spring boot 2
 

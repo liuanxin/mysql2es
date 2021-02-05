@@ -5,7 +5,7 @@
 
    Synchronize the MariaDB/MySQL table data to ElasticSearch,
    does not support physical deletion (physical deletion needs to be processed according to binlog),
-   it is recommended to use logical deletion. For example, add the deleted(1 deleted, default 0) field to the table.
+   it is recommended to use logical deletion. For example, add the「deleted(1 deleted, default 0)」field to the table.
 
    Based on jdk 8 and spring boot 2
 
