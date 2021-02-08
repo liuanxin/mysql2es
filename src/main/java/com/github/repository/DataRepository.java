@@ -4,10 +4,7 @@ import com.github.model.ChildMapping;
 import com.github.model.IncrementStorageType;
 import com.github.model.Relation;
 import com.github.util.*;
-import com.google.common.collect.LinkedHashMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.*;
 import lombok.AllArgsConstructor;
 import org.elasticsearch.common.UUIDs;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -24,6 +21,7 @@ import java.util.concurrent.Future;
 public class DataRepository {
 
     private static final String EQUALS_SUFFIX = "<=-_-=>";
+    private static final Date NIL_DATE_TIME = new Date(0L);
 
     /**
      * <pre>
@@ -474,10 +472,18 @@ public class DataRepository {
                 String key = relation.useField(entry.getKey());
                 if (U.isNotBlank(key)) {
                     Object value = entry.getValue();
-                    // field has suggest and null, can't be write => https://elasticsearch.cn/question/4051
-                    // use    IFNULL(xxx, ' ')    in SQL
-                    // dataMap.put(key, U.isBlank(value) ? "" : value);
-                    dataMap.put(key, value);
+                    if (U.isNotBlank(value)) {
+                        if (Sets.newHashSet("0000-00-00", "00:00:00", "0000-00-00 00:00:00").contains(value.toString())) {
+                            dataMap.put(key, NIL_DATE_TIME);
+                        } else {
+                            dataMap.put(key, value);
+                        }
+                    } else {
+                        // field has suggest and null, can't be write => https://elasticsearch.cn/question/4051
+                        // use    IFNULL(xxx, ' ')    in SQL
+                        // dataMap.put(key, U.isBlank(value) ? "" : value);
+                        dataMap.put(key, "");
+                    }
                 }
             }
 
