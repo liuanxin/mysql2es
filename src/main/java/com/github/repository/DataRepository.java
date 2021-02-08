@@ -20,7 +20,8 @@ import java.util.concurrent.Future;
 @SuppressWarnings({ "rawtypes", "DuplicatedCode" })
 public class DataRepository {
 
-    private static final String EQUALS_SUFFIX = "<=-_-=>";
+    private static final String EQUALS_SUFFIX = "<-_->";
+    private static final String EQUALS_SPLIT = "<=_=>";
     private static final Date NIL_DATE_TIME = new Date(0L);
 
     /**
@@ -230,8 +231,10 @@ public class DataRepository {
     }
     private void handleEquals(IncrementStorageType incrementType, Relation relation, String matchTable,
                               String tempColumnValue, String matchInId) {
+        String[] equalsValueArr = tempColumnValue.split(EQUALS_SPLIT);
+        String equalsValue = equalsValueArr[0];
         // pre: time > '2010-10-10 00:00:01' | 1286640001000, current: time = '2010-10-10 00:00:01' | 1286640001000
-        String equalsCountSql = relation.equalsCountSql(matchTable, tempColumnValue);
+        String equalsCountSql = relation.equalsCountSql(matchTable, equalsValue);
         long start = System.currentTimeMillis();
         Integer equalsCount = A.first(jdbcTemplate.queryForList(equalsCountSql, Integer.class));
         if (Logs.ROOT_LOG.isDebugEnabled()) {
@@ -244,8 +247,19 @@ public class DataRepository {
 
         String index = relation.useIndex();
         int equalsLoopCount = relation.loopCount(equalsCount);
-        for (int i = 0; i < equalsLoopCount; i++) {
-            String equalsSql = relation.equalsQuerySql(matchTable, tempColumnValue, i);
+        int i = 0;
+        if (equalsValueArr.length == 2) {
+            i = U.toInt(equalsValueArr[1]);
+            // if count = 1000, limit = 10, save has 101
+            if (i > (equalsCount / relation.getLimit())) {
+                return;
+            }
+            if (i < 0) {
+                i = 0;
+            }
+        }
+        for (; i < equalsLoopCount; i++) {
+            String equalsSql = relation.equalsQuerySql(matchTable, equalsValue, i);
             long sqlStart = System.currentTimeMillis();
             List<Map<String, Object>> equalsDataList = jdbcTemplate.queryForList(equalsSql);
             if (A.isEmpty(equalsDataList)) {
@@ -278,7 +292,8 @@ public class DataRepository {
                 return;
             } else {
                 // write current equals record
-                saveLastValue(incrementType, matchTable, relation.getIncrementColumn(), index, tempColumnValue + EQUALS_SUFFIX);
+                String valueToSave = tempColumnValue + EQUALS_SPLIT + i + EQUALS_SUFFIX;
+                saveLastValue(incrementType, matchTable, relation.getIncrementColumn(), index, valueToSave);
             }
         }
     }
