@@ -264,10 +264,10 @@ public class DataRepository {
 
             long esStart = System.currentTimeMillis();
             int size = esRepository.saveDataToEs(index, fixDocument(relation, equalsDataList, matchInId, relationData, nestedData));
-            long esTime = (System.currentTimeMillis() - esStart);
+            long end = System.currentTimeMillis();
             if (Logs.ROOT_LOG.isInfoEnabled()) {
-                Logs.ROOT_LOG.info("equals sql time({}ms) size({}) batch to({}) time({}ms) success({})",
-                        allSqlTime, equalsDataList.size(), index, esTime, size);
+                Logs.ROOT_LOG.info("equals sql time({}ms) size({}) batch to({}) time({}ms) success({}), all time({}ms)",
+                        allSqlTime, equalsDataList.size(), index, (end - esStart), size, (end - start));
             }
 
             if (size == 0) {
