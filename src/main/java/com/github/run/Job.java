@@ -1,9 +1,11 @@
 package com.github.run;
 
 import com.github.model.Config;
+import com.github.model.IncrementStorageType;
 import com.github.model.Relation;
 import com.github.repository.DataRepository;
 import com.github.util.Dates;
+import com.github.util.F;
 import com.github.util.Logs;
 import com.github.util.U;
 import com.google.common.collect.Maps;
@@ -36,9 +38,15 @@ public class Job implements SchedulingConfigurer {
                 Logs.ROOT_LOG.info("begin to run task");
             }
             try {
+                IncrementStorageType incrementType = config.getIncrementType();
+                boolean deleteEveryTime = incrementType == IncrementStorageType.TEMP_FILE && config.isDeleteTempEveryTime();
                 Map<String, Future<Boolean>> resultMap = Maps.newHashMap();
                 for (Relation relation : config.getRelation()) {
-                    resultMap.put(relation.useKey(), dataRepository.asyncData(config.getIncrementType(), relation));
+                    resultMap.put(relation.useKey(), dataRepository.asyncData(incrementType, relation));
+
+                    if (deleteEveryTime) {
+                        F.delete(relation.getTable(), relation.getIndex());
+                    }
                 }
                 for (Map.Entry<String, Future<Boolean>> entry : resultMap.entrySet()) {
                     try {
