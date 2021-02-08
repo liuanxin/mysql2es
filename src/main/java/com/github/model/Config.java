@@ -25,6 +25,9 @@ public class Config {
     /** increment value storage, default has temp file: -Djava.io.tmpdir=/path/ */
     private IncrementStorageType incrementType = IncrementStorageType.TEMP_FILE;
 
+    /** delete temporary files every time when sync */
+    private boolean deleteTempEveryTime = false;
+
     /**
      * <pre>
      * .---------------- second (0 - 59)         if (0/10) then (0, 10, 20, 30, 40, 50) run
