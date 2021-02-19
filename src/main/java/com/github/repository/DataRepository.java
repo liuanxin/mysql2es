@@ -407,7 +407,7 @@ public class DataRepository {
             if (U.isNotBlank(idPrefix)) {
                 idBuild.append(idPrefix.trim());
             }
-            if (relation.isPatternToId() && U.isNotBlank(matchInId)) {
+            if (U.isNotBlank(matchInId)) {
                 if (idBuild.length() > 0) {
                     idBuild.append("-");
                 }
