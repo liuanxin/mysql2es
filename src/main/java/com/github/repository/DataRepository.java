@@ -281,7 +281,7 @@ public class DataRepository {
             long end = System.currentTimeMillis();
             if (Logs.ROOT_LOG.isInfoEnabled()) {
                 Logs.ROOT_LOG.info("equals sql time({}ms) size({}) batch to({}) time({}ms) success({}), all time({}ms)",
-                        allSqlTime, equalsDataList.size(), index, (end - esStart), size, (end - start));
+                        allSqlTime, equalsDataList.size(), index, (end - esStart), size, (end - sqlStart));
             }
 
             if (size == 0) {
