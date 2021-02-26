@@ -208,8 +208,8 @@ public class DataRepository {
         int size = esRepository.saveDataToEs(index, fixDocument(relation, dataList, matchInId, relationData, nestedData));
         long end = System.currentTimeMillis();
         if (Logs.ROOT_LOG.isInfoEnabled()) {
-            Logs.ROOT_LOG.info("sql time({}ms) size({}) batch to({}) time({}ms) success({}), all time({}ms)",
-                    allSqlTime, dataList.size(), index, (end - esStart), size, (end - start));
+            Logs.ROOT_LOG.info("greater({}) sql time({}ms) size({}) batch to({}) time({}ms) success({}), all time({}ms)",
+                    lastValue, allSqlTime, dataList.size(), index, (end - esStart), size, (end - start));
         }
         if (size == 0) {
             // if write to es false, can break loop
