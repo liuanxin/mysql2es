@@ -21,7 +21,7 @@ import java.util.concurrent.Future;
 public class DataRepository {
 
     private static final String EQUALS_SUFFIX = "<-_->";
-    private static final String EQUALS_SPLIT = "<=_=>";
+    private static final String EQUALS_I_SPLIT = "<=_=>";
     private static final Date NIL_DATE_TIME = new Date(0L);
 
     /**
@@ -37,6 +37,8 @@ public class DataRepository {
             "CREATE TABLE IF NOT EXISTS `t_db_to_es` (" +
             "  `table_index` VARCHAR(64) NOT NULL," +
             "  `increment_value` VARCHAR(256) NOT NULL," +
+            "  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP," +
+            "  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP," +
             "  PRIMARY KEY (`table_index`)" +
             ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
     private static final String ADD_INCREMENT = "REPLACE INTO `t_db_to_es`(`table_index`, `increment_value`) VALUES(?, ?)";
@@ -231,7 +233,7 @@ public class DataRepository {
     }
     private void handleEquals(IncrementStorageType incrementType, Relation relation, String matchTable,
                               String tempColumnValue, String matchInId) {
-        String[] equalsValueArr = tempColumnValue.split(EQUALS_SPLIT);
+        String[] equalsValueArr = tempColumnValue.split(EQUALS_I_SPLIT);
         String equalsValue = equalsValueArr[0];
         // pre: time > '2010-10-10 00:00:01' | 1286640001000, current: time = '2010-10-10 00:00:01' | 1286640001000
         String equalsCountSql = relation.equalsCountSql(matchTable, equalsValue);
@@ -280,8 +282,8 @@ public class DataRepository {
             int size = esRepository.saveDataToEs(index, fixDocument(relation, equalsDataList, matchInId, relationData, nestedData));
             long end = System.currentTimeMillis();
             if (Logs.ROOT_LOG.isInfoEnabled()) {
-                Logs.ROOT_LOG.info("equals sql time({}ms) size({}) batch to({}) time({}ms) success({}), all time({}ms)",
-                        allSqlTime, equalsDataList.size(), index, (end - esStart), size, (end - sqlStart));
+                Logs.ROOT_LOG.info("equals({}-{}: {}) sql time({}ms) size({}) batch to({}) time({}ms) success({}), all time({}ms)",
+                        equalsValue, i, equalsLoopCount, allSqlTime, equalsDataList.size(), index, (end - esStart), size, (end - sqlStart));
             }
 
             if (size == 0) {
@@ -292,7 +294,7 @@ public class DataRepository {
                 return;
             } else {
                 // write current equals record
-                String valueToSave = tempColumnValue + EQUALS_SPLIT + i + EQUALS_SUFFIX;
+                String valueToSave = equalsValue + EQUALS_I_SPLIT + i + EQUALS_SUFFIX;
                 saveLastValue(incrementType, matchTable, relation.getIncrementColumn(), index, valueToSave);
             }
         }
