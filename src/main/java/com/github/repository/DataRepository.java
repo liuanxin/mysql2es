@@ -37,6 +37,8 @@ public class DataRepository {
             "CREATE TABLE IF NOT EXISTS `t_db_to_es` (" +
             "  `table_index` VARCHAR(64) NOT NULL," +
             "  `increment_value` VARCHAR(256) NOT NULL," +
+            "  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP," +
+            "  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP," +
             "  PRIMARY KEY (`table_index`)" +
             ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
     private static final String ADD_INCREMENT = "REPLACE INTO `t_db_to_es`(`table_index`, `increment_value`) VALUES(?, ?)";
