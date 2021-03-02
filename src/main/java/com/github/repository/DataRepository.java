@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Component
 @AllArgsConstructor
@@ -29,6 +30,8 @@ public class DataRepository {
      * CREATE TABLE IF NOT EXISTS `t_db_to_es` (
      *   `table_index` VARCHAR(64) NOT NULL COMMENT '表 + es index',
      *   `increment_value` VARCHAR(256) NOT NULL COMMENT '增量数据值',
+     *   `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+     *   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
      *   PRIMARY KEY (`table_index`)
      * ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT 'db 到 es 的增量记录';
      * </pre>
@@ -140,11 +143,12 @@ public class DataRepository {
 
     /** async data to es */
     @Async
-    public Future<Boolean> asyncData(IncrementStorageType incrementType, Relation relation) {
+    public Future<Long> asyncData(IncrementStorageType incrementType, Relation relation) {
         if (A.isEmpty(relation.getIdColumn())) {
             dbToEsScheme(relation);
         }
 
+        long count = 0;
         String table = relation.getTable();
         String index = relation.useIndex();
         if (U.isNotBlank(table) && U.isNotBlank(index)) {
@@ -161,29 +165,33 @@ public class DataRepository {
             } else {
                 matchTables = Collections.singletonList(table);
             }
+
+            AtomicLong increment = new AtomicLong();
             for (String matchTable : matchTables) {
-                saveSingleTable(incrementType, relation, index, matchTable);
+                saveSingleTable(incrementType, relation, index, matchTable, increment);
             }
+            count = increment.get();
         }
-        return new AsyncResult<>(true);
+        return new AsyncResult<>(count);
     }
 
-    private void saveSingleTable(IncrementStorageType incrementType, Relation relation, String index, String matchTable) {
+    private void saveSingleTable(IncrementStorageType incrementType, Relation relation, String index,
+                                 String matchTable, AtomicLong increment) {
         String lastValue = getLastValue(incrementType, matchTable, relation.getIncrementColumn(), index);
         String matchInId = relation.matchInfo(matchTable);
         for (;;) {
-            lastValue = handleGreaterAndEquals(incrementType, relation, matchTable, lastValue, matchInId);
+            lastValue = handleGreaterAndEquals(incrementType, relation, matchTable, lastValue, matchInId, increment);
             if (U.isBlank(lastValue)) {
                 return;
             }
         }
     }
 
-    private String handleGreaterAndEquals(IncrementStorageType incrementType, Relation relation,
-                                          String matchTable, String lastValue, String matchInId) {
+    private String handleGreaterAndEquals(IncrementStorageType incrementType, Relation relation, String matchTable,
+                                          String lastValue, String matchInId, AtomicLong increment) {
         if (U.isNotBlank(lastValue) && lastValue.endsWith(EQUALS_SUFFIX)) {
             lastValue = lastValue.substring(0, lastValue.length() - EQUALS_SUFFIX.length());
-            handleEquals(incrementType, relation, matchTable, lastValue, matchInId);
+            handleEquals(incrementType, relation, matchTable, lastValue, matchInId, increment);
             return lastValue;
         }
 
@@ -206,6 +214,7 @@ public class DataRepository {
         long esStart = System.currentTimeMillis();
         String index = relation.useIndex();
         int size = esRepository.saveDataToEs(index, fixDocument(relation, dataList, matchInId, relationData, nestedData));
+        increment.addAndGet(size);
         long end = System.currentTimeMillis();
         if (Logs.ROOT_LOG.isInfoEnabled()) {
             Logs.ROOT_LOG.info("greater({}) sql time({}ms) size({}) batch to({}) time({}ms) success({}), all time({}ms)",
@@ -221,7 +230,7 @@ public class DataRepository {
             // if last data was nil, can break loop
             return null;
         }
-        handleEquals(incrementType, relation, matchTable, lastValue, matchInId);
+        handleEquals(incrementType, relation, matchTable, lastValue, matchInId, increment);
         // write last record
         saveLastValue(incrementType, matchTable, relation.getIncrementColumn(), index, lastValue);
 
@@ -232,7 +241,7 @@ public class DataRepository {
         return lastValue;
     }
     private void handleEquals(IncrementStorageType incrementType, Relation relation, String matchTable,
-                              String tempColumnValue, String matchInId) {
+                              String tempColumnValue, String matchInId, AtomicLong increment) {
         String[] equalsValueArr = tempColumnValue.split(EQUALS_I_SPLIT);
         String equalsValue = equalsValueArr[0];
         // pre: time > '2010-10-10 00:00:01' | 1286640001000, current: time = '2010-10-10 00:00:01' | 1286640001000
@@ -280,6 +289,7 @@ public class DataRepository {
 
             long esStart = System.currentTimeMillis();
             int size = esRepository.saveDataToEs(index, fixDocument(relation, equalsDataList, matchInId, relationData, nestedData));
+            increment.addAndGet(size);
             long end = System.currentTimeMillis();
             if (Logs.ROOT_LOG.isInfoEnabled()) {
                 Logs.ROOT_LOG.info("equals({}-{}: {}) sql time({}ms) size({}) batch to({}) time({}ms) success({}), all time({}ms)",
