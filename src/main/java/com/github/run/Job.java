@@ -18,10 +18,13 @@ import org.springframework.scheduling.support.CronTrigger;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Configuration
 @AllArgsConstructor
 public class Job implements SchedulingConfigurer {
+
+    private static final AtomicBoolean RUN = new AtomicBoolean(false);
 
     private final Config config;
     private final DataRepository dataRepository;
@@ -32,11 +35,17 @@ public class Job implements SchedulingConfigurer {
             if (!config.isEnable()) {
                 return;
             }
+            if (!RUN.compareAndSet(false, true)) {
+                if (Logs.ROOT_LOG.isInfoEnabled()) {
+                    Logs.ROOT_LOG.info("task has be running");
+                }
+                return;
+            }
 
-            long start = System.currentTimeMillis();
             if (Logs.ROOT_LOG.isInfoEnabled()) {
                 Logs.ROOT_LOG.info("begin to run task");
             }
+            long start = System.currentTimeMillis();
             try {
                 IncrementStorageType incrementType = config.getIncrementType();
                 boolean deleteEveryTime = incrementType == IncrementStorageType.TEMP_FILE && config.isDeleteTempEveryTime();
@@ -72,6 +81,7 @@ public class Job implements SchedulingConfigurer {
                     long end = System.currentTimeMillis();
                     Logs.ROOT_LOG.info("end of run task, use time: {}.", Dates.toHuman(end - start));
                 }
+                RUN.set(false);
             }
         }, new CronTrigger(config.getCron()));
     }
