@@ -175,8 +175,8 @@ public class DataRepository {
         return new AsyncResult<>(count);
     }
 
-    private void saveSingleTable(IncrementStorageType incrementType, Relation relation, String index,
-                                 String matchTable, AtomicLong increment) {
+    private void saveSingleTable(IncrementStorageType incrementType, Relation relation,
+                                 String index, String matchTable, AtomicLong increment) {
         String lastValue = getLastValue(incrementType, matchTable, relation.getIncrementColumn(), index);
         String matchInId = relation.matchInfo(matchTable);
         for (;;) {
