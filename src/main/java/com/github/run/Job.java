@@ -40,7 +40,7 @@ public class Job implements SchedulingConfigurer {
             try {
                 IncrementStorageType incrementType = config.getIncrementType();
                 boolean deleteEveryTime = incrementType == IncrementStorageType.TEMP_FILE && config.isDeleteTempEveryTime();
-                Map<String, Future<Boolean>> resultMap = Maps.newHashMap();
+                Map<String, Future<Long>> resultMap = Maps.newHashMap();
                 for (Relation relation : config.getRelation()) {
                     resultMap.put(relation.useKey(), dataRepository.asyncData(incrementType, relation));
 
@@ -48,12 +48,14 @@ public class Job implements SchedulingConfigurer {
                         F.delete(relation.getTable(), relation.getIndex());
                     }
                 }
-                for (Map.Entry<String, Future<Boolean>> entry : resultMap.entrySet()) {
+                for (Map.Entry<String, Future<Long>> entry : resultMap.entrySet()) {
                     try {
-                        Boolean flag = entry.getValue().get();
-                        if (Logs.ROOT_LOG.isDebugEnabled()) {
-                            String status = (U.isNotBlank(flag) && flag) ? "success" : "fail";
-                            Logs.ROOT_LOG.debug("async db to es({}) {}", entry.getKey(), status);
+                        Long count = entry.getValue().get();
+                        if (U.isNotBlank(count)) {
+                            if (Logs.ROOT_LOG.isInfoEnabled()) {
+                                Logs.ROOT_LOG.info("async db to es({}) count({}), time({}ms)", entry.getKey(),
+                                        count, System.currentTimeMillis() - start);
+                            }
                         }
                     } catch (InterruptedException | ExecutionException e) {
                         if (Logs.ROOT_LOG.isErrorEnabled()) {
