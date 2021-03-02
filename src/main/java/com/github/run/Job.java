@@ -59,6 +59,10 @@ public class Job implements SchedulingConfigurer {
                         }
                     } catch (InterruptedException | ExecutionException e) {
                         if (Logs.ROOT_LOG.isErrorEnabled()) {
+                            Logs.ROOT_LOG.error("async db to es Thread exception", e);
+                        }
+                    } catch (Exception e) {
+                        if (Logs.ROOT_LOG.isErrorEnabled()) {
                             Logs.ROOT_LOG.error("async db to es exception", e);
                         }
                     }
