@@ -191,7 +191,7 @@ public class DataRepository {
                                           String lastValue, String matchInId, AtomicLong increment) {
         if (U.isNotBlank(lastValue) && lastValue.endsWith(EQUALS_SUFFIX)) {
             lastValue = lastValue.substring(0, lastValue.length() - EQUALS_SUFFIX.length());
-            handleEquals(incrementType, relation, matchTable, lastValue, matchInId, increment);
+            handleEquals(incrementType, relation, matchTable, lastValue, matchInId, 0, increment);
             return lastValue;
         }
 
@@ -230,7 +230,7 @@ public class DataRepository {
             // if last data was nil, can break loop
             return null;
         }
-        handleEquals(incrementType, relation, matchTable, lastValue, matchInId, increment);
+        handleEquals(incrementType, relation, matchTable, lastValue, matchInId, 0, increment);
         // write last record
         saveLastValue(incrementType, matchTable, relation.getIncrementColumn(), index, lastValue);
 
@@ -241,7 +241,7 @@ public class DataRepository {
         return lastValue;
     }
     private void handleEquals(IncrementStorageType incrementType, Relation relation, String matchTable,
-                              String tempColumnValue, String matchInId, AtomicLong increment) {
+                              String tempColumnValue, String matchInId, int lastEqualsCount, AtomicLong increment) {
         String[] equalsValueArr = tempColumnValue.split(EQUALS_I_SPLIT);
         String equalsValue = equalsValueArr[0];
         // pre: time > '2010-10-10 00:00:01' | 1286640001000, current: time = '2010-10-10 00:00:01' | 1286640001000
@@ -253,6 +253,9 @@ public class DataRepository {
                     getSql(equalsCountSql), (System.currentTimeMillis() - start), equalsCount);
         }
         if (U.less0(equalsCount)) {
+            return;
+        }
+        if (lastEqualsCount > 0 && lastEqualsCount == equalsCount) {
             return;
         }
 
@@ -269,6 +272,7 @@ public class DataRepository {
                 i = 0;
             }
         }
+        Date equalsDate = Dates.parse(equalsValue);
         for (; i < equalsLoopCount; i++) {
             String equalsSql = relation.equalsQuerySql(matchTable, equalsValue, i);
             long sqlStart = System.currentTimeMillis();
@@ -301,6 +305,23 @@ public class DataRepository {
                 return;
             } else if (equalsDataList.size() < relation.getLimit()) {
                 // if sql: limit 1000, 1000, query data size 900, can break equals handle
+
+                // if increment dateTime ms has current second, sleep to next second, then retry 「equals data」 to handle
+                // avoid the current second has not passed, there is no more data to process,
+                // but database may operate the data in milliseconds after the current second
+                long nowMs = System.currentTimeMillis();
+                long equalsMs = U.isBlank(equalsDate) ? 0L : equalsDate.getTime();
+                if (U.isNotBlank(equalsDate) && (nowMs > equalsMs) && (equalsMs / 1000 == nowMs / 1000)) {
+                    try {
+                        long nextSecondMs = ((nowMs / 1000) + 1) * 1000;
+                        Thread.sleep(nextSecondMs - nowMs);
+                        handleEquals(incrementType, relation, matchTable, equalsValue + EQUALS_I_SPLIT + i, matchInId, equalsCount, increment);
+                    } catch (InterruptedException e) {
+                        if (Logs.ROOT_LOG.isErrorEnabled()) {
+                            Logs.ROOT_LOG.error("increment value has current ms, sleep to next second exception", e);
+                        }
+                    }
+                }
                 return;
             } else {
                 // write current equals record
