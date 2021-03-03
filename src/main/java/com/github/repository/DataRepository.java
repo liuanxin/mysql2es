@@ -244,6 +244,8 @@ public class DataRepository {
                               String tempColumnValue, String matchInId, int lastEqualsCount, AtomicLong increment) {
         String[] equalsValueArr = tempColumnValue.split(EQUALS_I_SPLIT);
         String equalsValue = equalsValueArr[0];
+        long nowMs = System.currentTimeMillis();
+
         // pre: time > '2010-10-10 00:00:01' | 1286640001000, current: time = '2010-10-10 00:00:01' | 1286640001000
         String equalsCountSql = relation.equalsCountSql(matchTable, equalsValue);
         long start = System.currentTimeMillis();
@@ -253,9 +255,11 @@ public class DataRepository {
                     getSql(equalsCountSql), (System.currentTimeMillis() - start), equalsCount);
         }
         if (U.less0(equalsCount)) {
+            currentSecondHandle(equalsValue, nowMs, incrementType, relation, matchTable, 0, matchInId, 0, increment);
             return;
         }
         if (lastEqualsCount > 0 && lastEqualsCount == equalsCount) {
+            currentSecondHandle(equalsValue, nowMs, incrementType, relation, matchTable, 0, matchInId, equalsCount, increment);
             return;
         }
 
@@ -265,20 +269,21 @@ public class DataRepository {
         if (equalsValueArr.length == 2) {
             i = U.toInt(equalsValueArr[1]);
             // if count = 1000, limit = 10, save has 101
-            if (i > (equalsCount / relation.getLimit())) {
+            if (i * relation.getLimit() > equalsCount) {
+                currentSecondHandle(equalsValue, nowMs, incrementType, relation, matchTable, 0, matchInId, equalsCount, increment);
                 return;
             }
             if (i < 0) {
                 i = 0;
             }
         }
-        Date equalsDate = Dates.parse(equalsValue);
         for (; i < equalsLoopCount; i++) {
             String equalsSql = relation.equalsQuerySql(matchTable, equalsValue, i);
             long sqlStart = System.currentTimeMillis();
             List<Map<String, Object>> equalsDataList = jdbcTemplate.queryForList(equalsSql);
+            // if not data, can break equals handle
             if (A.isEmpty(equalsDataList)) {
-                // if not data, can break equals handle
+                currentSecondHandle(equalsValue, nowMs, incrementType, relation, matchTable, i, matchInId, equalsCount, increment);
                 return;
             }
             long sqlTime = (System.currentTimeMillis() - sqlStart);
@@ -300,33 +305,46 @@ public class DataRepository {
                         equalsValue, i, equalsLoopCount, allSqlTime, equalsDataList.size(), index, (end - esStart), size, (end - sqlStart));
             }
 
-            if (size == 0) {
-                // if success was 0, can break equals handle
-                return;
-            } else if (equalsDataList.size() < relation.getLimit()) {
-                // if sql: limit 1000, 1000, query data size 900, can break equals handle
-
-                // if increment dateTime ms has current second, sleep to next second, then retry 「equals data」 to handle
-                // avoid the current second has not passed, there is no more data to process,
-                // but database may operate the data in milliseconds after the current second
-                long nowMs = System.currentTimeMillis();
-                long equalsMs = U.isBlank(equalsDate) ? 0L : equalsDate.getTime();
-                if (U.isNotBlank(equalsDate) && (nowMs > equalsMs) && (equalsMs / 1000 == nowMs / 1000)) {
-                    try {
-                        long nextSecondMs = ((nowMs / 1000) + 1) * 1000;
-                        Thread.sleep(nextSecondMs - nowMs);
-                        handleEquals(incrementType, relation, matchTable, equalsValue + EQUALS_I_SPLIT + i, matchInId, equalsCount, increment);
-                    } catch (InterruptedException e) {
-                        if (Logs.ROOT_LOG.isErrorEnabled()) {
-                            Logs.ROOT_LOG.error("increment value has current ms, sleep to next second exception", e);
-                        }
-                    }
-                }
+            // if success was 0, can break equals handle
+            // if sql: limit 1000, 1000, query data size 900, can break equals handle
+            if ((size == 0) || (equalsDataList.size() < relation.getLimit())) {
+                currentSecondHandle(equalsValue, nowMs, incrementType, relation, matchTable, i, matchInId, equalsCount, increment);
                 return;
             } else {
                 // write current equals record
                 String valueToSave = equalsValue + EQUALS_I_SPLIT + i + EQUALS_SUFFIX;
                 saveLastValue(incrementType, matchTable, relation.getIncrementColumn(), index, valueToSave);
+            }
+        }
+    }
+
+    /**
+     * If the incremental data is the current second, sleep to the next second and perform the above = operation again.
+     * This is to avoid writing when there is no processing in the current second during synchronization (such as
+     * the millisecond before the current second) and then jump Elapsed, but when it comes to the milliseconds
+     * after the current second, the database (especially mysql will automatically round off when
+     * processing milliseconds) has manipulated the data again.
+     *
+     * If this is not done, the records of database operations will not be synchronized
+     * when the number of milliseconds after the current second
+     */
+    private void currentSecondHandle(String equalsValue, long nowMs, IncrementStorageType incrementType,
+                                     Relation relation, String matchTable, int i,
+                                     String matchInId, int currentEqualsCount, AtomicLong increment) {
+        Date equalsDate = Dates.parse(equalsValue);
+        if (U.isNotBlank(equalsDate)) {
+            long equalsMs = equalsDate.getTime();
+            boolean needSleepToNextSecond = (nowMs > equalsMs) && (equalsMs / 1000 == nowMs / 1000);
+            if (needSleepToNextSecond) {
+                try {
+                    long nextSecondMs = ((nowMs / 1000) + 1) * 1000;
+                    Thread.sleep(nextSecondMs - nowMs);
+                    handleEquals(incrementType, relation, matchTable, equalsValue + EQUALS_I_SPLIT + i, matchInId, currentEqualsCount, increment);
+                } catch (InterruptedException e) {
+                    if (Logs.ROOT_LOG.isErrorEnabled()) {
+                        Logs.ROOT_LOG.error("increment value has current ms, sleep to next second exception", e);
+                    }
+                }
             }
         }
     }
