@@ -62,24 +62,25 @@ public class Job implements SchedulingConfigurer {
                         Long count = entry.getValue().get();
                         if (U.isNotBlank(count)) {
                             if (Logs.ROOT_LOG.isInfoEnabled()) {
-                                Logs.ROOT_LOG.info("async db to es({}) count({}), time({}ms)", entry.getKey(),
-                                        count, System.currentTimeMillis() - start);
+                                Logs.ROOT_LOG.info("async({}) count({}) time({})", entry.getKey(),
+                                        count, Dates.toHuman(System.currentTimeMillis() - start));
                             }
                         }
                     } catch (InterruptedException | ExecutionException e) {
                         if (Logs.ROOT_LOG.isErrorEnabled()) {
-                            Logs.ROOT_LOG.error("async db to es Thread exception", e);
+                            Logs.ROOT_LOG.error(String.format("async(%s) Thread exception, time(%s)",
+                                    entry.getKey(), Dates.toHuman(System.currentTimeMillis() - start)), e);
                         }
                     } catch (Exception e) {
                         if (Logs.ROOT_LOG.isErrorEnabled()) {
-                            Logs.ROOT_LOG.error("async db to es exception", e);
+                            Logs.ROOT_LOG.error(String.format("async(%s) exception, time(%s)",
+                                    entry.getKey(), Dates.toHuman(System.currentTimeMillis() - start)), e);
                         }
                     }
                 }
             } finally {
                 if (Logs.ROOT_LOG.isInfoEnabled()) {
-                    long end = System.currentTimeMillis();
-                    Logs.ROOT_LOG.info("end of run task, use time: {}.", Dates.toHuman(end - start));
+                    Logs.ROOT_LOG.info("end of run task, time({})", Dates.toHuman(System.currentTimeMillis() - start));
                 }
                 RUN.set(false);
             }
