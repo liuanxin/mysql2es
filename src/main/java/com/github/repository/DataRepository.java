@@ -44,7 +44,10 @@ public class DataRepository {
             "  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP," +
             "  PRIMARY KEY (`table_index`)" +
             ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
-    private static final String ADD_INCREMENT = "REPLACE INTO `t_db_to_es`(`table_index`, `increment_value`) VALUES(?, ?)";
+    private static final String SELECT_COUNT = "SELECT COUNT(*) FROM `t_db_to_es` WHERE `table_index` = ?";
+    /* 「replace into」 will cover create_time and update_time to now() */
+    private static final String ADD_INCREMENT = "INSERT INTO `t_db_to_es`(`table_index`, `increment_value`) VALUES(?, ?)";
+    private static final String UPDATE_INCREMENT = "UPDATE `t_db_to_es` SET `increment_value` = ? WHERE `table_index` = ?";
     private static final String GET_INCREMENT = "SELECT `increment_value` FROM `t_db_to_es` WHERE `table_index` = ?";
 
 
@@ -76,7 +79,12 @@ public class DataRepository {
             F.write(tableColumn, index, value);
         } else if (incrementType == IncrementStorageType.MYSQL) {
             String name = F.fileNameOrTableKey(tableColumn, index);
-            jdbcTemplate.update(ADD_INCREMENT, name, value);
+            Integer count = A.first(jdbcTemplate.queryForList(SELECT_COUNT, Integer.class, name));
+            if (U.greater0(count)) {
+                jdbcTemplate.update(UPDATE_INCREMENT, value, name);
+            } else {
+                jdbcTemplate.update(ADD_INCREMENT, name, value);
+            }
         }
     }
 
