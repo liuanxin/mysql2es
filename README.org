@@ -160,27 +160,27 @@ PUT /order
       },
       "create_time": {
         "type": "date",
-        "format": "epoch_millis||yyyy-MM-dd||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss SSS"
+        "format": "epoch_millis||yyyy-MM-dd||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSS"
       },
       "update_time": {
         "type": "date",
-        "format": "epoch_millis||yyyy-MM-dd||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss SSS"
+        "format": "epoch_millis||yyyy-MM-dd||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSS"
       },
       "pay_time": {
         "type": "date",
-        "format": "epoch_millis||yyyy-MM-dd||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss SSS"
+        "format": "epoch_millis||yyyy-MM-dd||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSS"
       },
       "ship_time": {
         "type": "date",
-        "format": "epoch_millis||yyyy-MM-dd||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss SSS"
+        "format": "epoch_millis||yyyy-MM-dd||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSS"
       },
       "receipt_time": {
         "type": "date",
-        "format": "epoch_millis||yyyy-MM-dd||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss SSS"
+        "format": "epoch_millis||yyyy-MM-dd||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSS"
       },
       "success_time": {
         "type": "date",
-        "format": "epoch_millis||yyyy-MM-dd||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss SSS"
+        "format": "epoch_millis||yyyy-MM-dd||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSS"
       },
 
       "receiver": {
