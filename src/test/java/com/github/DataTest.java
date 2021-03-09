@@ -37,11 +37,11 @@ public class DataTest {
     @Sql(value = {"classpath:sql/delete.sql"}, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
     @Test
     public void test() {
-        List<Future<Boolean>> resultList = Lists.newArrayList();
+        List<Future<Long>> resultList = Lists.newArrayList();
         for (Relation relation : relations) {
             resultList.add(dataRepository.asyncData(incrementType, relation));
         }
-        for (Future<Boolean> future : resultList) {
+        for (Future<Long> future : resultList) {
             try {
                 future.get();
             } catch (InterruptedException | ExecutionException e) {
