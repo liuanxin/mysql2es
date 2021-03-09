@@ -62,8 +62,10 @@ public class Job implements SchedulingConfigurer {
                         Long count = entry.getValue().get();
                         if (U.isNotBlank(count)) {
                             if (Logs.ROOT_LOG.isInfoEnabled()) {
-                                Logs.ROOT_LOG.info("async({}) count({}) time({})", entry.getKey(),
-                                        count, Dates.toHuman(System.currentTimeMillis() - start));
+                                long ms = System.currentTimeMillis() - start;
+                                String tps = (count > 0 && ms > 0) ? String.valueOf(count * 1000 / ms) : "0";
+                                Logs.ROOT_LOG.info("async({}) count({}) time({}) tps({})",
+                                        entry.getKey(), count, Dates.toHuman(ms), tps);
                             }
                         }
                     } catch (InterruptedException | ExecutionException e) {
