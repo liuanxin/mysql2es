@@ -15,6 +15,8 @@ import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.scheduling.support.CronTrigger;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -62,8 +64,16 @@ public class Job implements SchedulingConfigurer {
                         Long count = entry.getValue().get();
                         if (U.isNotBlank(count)) {
                             if (Logs.ROOT_LOG.isInfoEnabled()) {
-                                Logs.ROOT_LOG.info("async({}) count({}) time({})", entry.getKey(),
-                                        count, Dates.toHuman(System.currentTimeMillis() - start));
+                                long ms = System.currentTimeMillis() - start;
+                                String tps;
+                                if (count > 0 && ms > 0) {
+                                    tps = new BigDecimal(count * 1000)
+                                            .divide(new BigDecimal(ms), 0, RoundingMode.DOWN).toString();
+                                } else {
+                                    tps = "0";
+                                }
+                                Logs.ROOT_LOG.info("async({}) count({}) time({}) tps({})",
+                                        entry.getKey(), count, Dates.toHuman(ms), tps);
                             }
                         }
                     } catch (InterruptedException | ExecutionException e) {
