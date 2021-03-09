@@ -119,9 +119,12 @@ public class Dates {
                 } catch (ParseException | IllegalArgumentException ignore) {
                 }
             } else {
-                Date date = getDateFormat(type).parseDateTime(source).toDate();
-                if (date != null) {
-                    return date;
+                try {
+                    Date date = getDateFormat(type).parseDateTime(source).toDate();
+                    if (date != null) {
+                        return date;
+                    }
+                } catch (Exception ignore) {
                 }
             }
         }
