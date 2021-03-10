@@ -276,7 +276,7 @@ public class DataRepository {
         int i = 0;
         if (equalsValueArr.length == 2) {
             i = U.toInt(equalsValueArr[1]);
-            // if count = 1000, limit = 10, save has 101
+            // if count = 1000, limit = 10, save in file has 101, can be return right now!
             if (i * relation.getLimit() > equalsCount) {
                 currentSecondHandle(equalsValue, nowMs, incrementType, relation, matchTable, 0, matchInId, equalsCount, increment);
                 return;
