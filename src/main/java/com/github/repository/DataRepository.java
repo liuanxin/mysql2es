@@ -225,8 +225,8 @@ public class DataRepository {
         increment.addAndGet(size);
         long end = System.currentTimeMillis();
         if (Logs.ROOT_LOG.isInfoEnabled()) {
-            Logs.ROOT_LOG.info("greater({}) sql time({}ms) size({}) batch to({}) time({}ms) success({}), all time({}ms)",
-                    lastValue, allSqlTime, dataList.size(), index, (end - esStart), size, (end - start));
+            Logs.ROOT_LOG.info("greater({}) sql table({}) time({}ms) size({}) batch to es({}) time({}ms) success({}), all time({}ms)",
+                    lastValue, matchTable, allSqlTime, dataList.size(), index, (end - esStart), size, (end - start));
         }
         if (size == 0) {
             // if write to es false, can break loop
@@ -276,7 +276,7 @@ public class DataRepository {
         int i = 0;
         if (equalsValueArr.length == 2) {
             i = U.toInt(equalsValueArr[1]);
-            // if count = 1000, limit = 10, save has 101
+            // if count = 1000, limit = 10, save in file has 101, can be return right now!
             if (i * relation.getLimit() > equalsCount) {
                 currentSecondHandle(equalsValue, nowMs, incrementType, relation, matchTable, 0, matchInId, equalsCount, increment);
                 return;
@@ -309,8 +309,8 @@ public class DataRepository {
             increment.addAndGet(size);
             long end = System.currentTimeMillis();
             if (Logs.ROOT_LOG.isInfoEnabled()) {
-                Logs.ROOT_LOG.info("equals({}-{}: {}) sql time({}ms) size({}) batch to({}) time({}ms) success({}), all time({}ms)",
-                        equalsValue, i, equalsLoopCount, allSqlTime, equalsDataList.size(), index, (end - esStart), size, (end - sqlStart));
+                Logs.ROOT_LOG.info("equals({} : {} -> {}) sql table({}) time({}ms) size({}) batch to es({}) time({}ms) success({}), all time({}ms)",
+                        equalsValue, i, equalsLoopCount, matchTable, allSqlTime, equalsDataList.size(), index, (end - esStart), size, (end - sqlStart));
             }
 
             // if success was 0, can break equals handle
