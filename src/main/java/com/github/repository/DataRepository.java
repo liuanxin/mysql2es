@@ -507,7 +507,7 @@ public class DataRepository {
                 dataCountMap.put(lastData, U.greater0(count) ? (count + 1) : 1);
             }
         }
-        return null;
+        return dataCountMap;
     }
 
     /** traverse the Database Result and organize into es Document */
