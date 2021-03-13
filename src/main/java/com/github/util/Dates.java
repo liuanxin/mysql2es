@@ -1,5 +1,6 @@
 package com.github.util;
 
+import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
@@ -129,6 +130,10 @@ public class Dates {
             }
         }
         return null;
+    }
+
+    public static Date addSecond(Date date, int minute) {
+        return new DateTime(date).plusSeconds(minute).toDate();
     }
 
     public static String toHuman(long intervalMs) {
