@@ -490,7 +490,7 @@ public class DataRepository {
     private Map<String, Integer> getLast(Relation relation, List<Map<String, Object>> dataList) {
         String column = relation.getIncrementColumn();
         Map<String, Integer> dataCountMap = Maps.newHashMap();
-        for (int i = dataList.size() - 1; i <= 0; i++) {
+        for (int i = dataList.size() - 1; i >= 0; i--) {
             Map<String, Object> data = dataList.get(i);
             Object obj = data.get(column.contains(".") ? column.substring(column.indexOf(".") + 1) : column);
             if (U.isNotBlank(obj)) {
