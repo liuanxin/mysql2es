@@ -21,7 +21,11 @@ spring:
 db2es:
   enable: false                 # Disabled to sync if set false, default is true
   increment-type: mysql         # Where are the incremental fields stored, default temp-file, only supports temp-file and mysql
-  cron: 0/5 * * * * *           # The default is to execute once per minute
+  cron: 0/5 * * * * *           # Default is to execute once per minute
+
+  enable-compensate: true       # enable data compensation, default is false
+  compensate-cron: 1 * * * * *  # The expression of the timed task used in data compensation
+  compensate-second: 60         # The number of seconds before the data compensation
 
   relation:
     -
