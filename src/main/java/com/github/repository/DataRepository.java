@@ -4,6 +4,7 @@ import com.github.model.ChildMapping;
 import com.github.model.IncrementStorageType;
 import com.github.model.Relation;
 import com.github.util.*;
+import com.google.common.base.Joiner;
 import com.google.common.collect.*;
 import lombok.AllArgsConstructor;
 import org.elasticsearch.common.UUIDs;
@@ -23,6 +24,7 @@ public class DataRepository {
 
     private static final String EQUALS_SUFFIX = "<-_->";
     private static final String EQUALS_I_SPLIT = "<=_=>";
+    private static final String COMPENSATE_SUFFIX = "=compensate";
     private static final Date NIL_DATE_TIME = new Date(0L);
 
     /**
@@ -73,7 +75,8 @@ public class DataRepository {
     private String getTableColumn(String table, String incrementColumn) {
         return table + "-" + incrementColumn;
     }
-    private void saveLastValue(IncrementStorageType incrementType, String table, String incrementColumn, String index, String value) {
+    private void saveLastValue(IncrementStorageType incrementType, String table,
+                               String incrementColumn, String index, String value) {
         String tableColumn = getTableColumn(table, incrementColumn);
         if (U.isBlank(incrementType) || incrementType == IncrementStorageType.TEMP_FILE) {
             F.write(tableColumn, index, value);
@@ -149,6 +152,35 @@ public class DataRepository {
         return Collections.emptyMap();
     }
 
+    @Async
+    public Future<Long> asyncCompensateData(IncrementStorageType incrementType, Relation relation, int compensateSecond) {
+        long count = 0;
+        String table = relation.getTable();
+        String index = relation.useIndex();
+        if (U.isNotBlank(table) && U.isNotBlank(index)) {
+            List<String> matchTables;
+            if (relation.checkMatch()) {
+                long start = System.currentTimeMillis();
+                String sql = relation.matchSql();
+                matchTables = jdbcTemplate.queryForList(sql, String.class);
+                long sqlTime = (System.currentTimeMillis() - start);
+                if (Logs.ROOT_LOG.isDebugEnabled()) {
+                    Logs.ROOT_LOG.debug("compensate sql({}) time({}ms) return({}), size({})",
+                            getSql(sql), sqlTime, A.toStr(matchTables), matchTables.size());
+                }
+            } else {
+                matchTables = Collections.singletonList(table);
+            }
+
+            AtomicLong increment = new AtomicLong();
+            for (String matchTable : matchTables) {
+                saveSingleTable(incrementType, relation, index, matchTable, increment, compensateSecond);
+            }
+            count = increment.get();
+        }
+        return new AsyncResult<>(count);
+    }
+
     /** async data to es */
     @Async
     public Future<Long> asyncData(IncrementStorageType incrementType, Relation relation) {
@@ -176,19 +208,31 @@ public class DataRepository {
 
             AtomicLong increment = new AtomicLong();
             for (String matchTable : matchTables) {
-                saveSingleTable(incrementType, relation, index, matchTable, increment);
+                saveSingleTable(incrementType, relation, index, matchTable, increment, 0);
             }
             count = increment.get();
         }
         return new AsyncResult<>(count);
     }
 
-    private void saveSingleTable(IncrementStorageType incrementType, Relation relation,
-                                 String index, String matchTable, AtomicLong increment) {
+    private void saveSingleTable(IncrementStorageType incrementType, Relation relation, String index,
+                                 String matchTable, AtomicLong increment, int compensateSecond) {
         String lastValue = getLastValue(incrementType, matchTable, relation.getIncrementColumn(), index);
+        boolean hasCompensate = (compensateSecond > 0) && U.isNotBlank(lastValue);
+        if (hasCompensate) {
+            String oldValue = lastValue.split(EQUALS_I_SPLIT)[0];
+            Date date = Dates.parse(oldValue);
+            if (U.isNotBlank(date)) {
+                lastValue = Dates.format(Dates.addSecond(date, -compensateSecond), Dates.Type.YYYY_MM_DD_HH_MM_SS);
+                saveLastValue(incrementType, matchTable, relation.getIncrementColumn() + COMPENSATE_SUFFIX, index, lastValue);
+                if (Logs.ROOT_LOG.isDebugEnabled()) {
+                    Logs.ROOT_LOG.debug("compensate old({}) => current({})", oldValue, lastValue);
+                }
+            }
+        }
         String matchInId = relation.matchInfo(matchTable);
         for (;;) {
-            lastValue = handleGreaterAndEquals(incrementType, relation, matchTable, lastValue, matchInId, increment);
+            lastValue = handleGreaterAndEquals(incrementType, relation, matchTable, lastValue, matchInId, increment, hasCompensate);
             if (U.isBlank(lastValue)) {
                 return;
             }
@@ -196,11 +240,12 @@ public class DataRepository {
     }
 
     private String handleGreaterAndEquals(IncrementStorageType incrementType, Relation relation, String matchTable,
-                                          String lastValue, String matchInId, AtomicLong increment) {
+                                          String lastValue, String matchInId, AtomicLong increment, boolean hasCompensate) {
         if (U.isNotBlank(lastValue) && lastValue.endsWith(EQUALS_SUFFIX)) {
-            lastValue = lastValue.substring(0, lastValue.length() - EQUALS_SUFFIX.length());
-            handleEquals(incrementType, relation, matchTable, lastValue, matchInId, 0, increment);
-            return lastValue;
+            // lastValue = lastValue.substring(0, lastValue.length() - EQUALS_SUFFIX.length());
+            // return lastValue;
+            handleEquals(incrementType, relation, matchTable, lastValue, 0, matchInId, 0, increment, false);
+            return lastValue.substring(0, lastValue.length() - EQUALS_SUFFIX.length());
         }
 
         String sql = relation.querySql(matchTable, lastValue);
@@ -212,7 +257,8 @@ public class DataRepository {
         }
         long sqlTime = (System.currentTimeMillis() - start);
         if (Logs.ROOT_LOG.isDebugEnabled()) {
-            Logs.ROOT_LOG.debug("sql({}) time({}ms) return size({})", getSql(sql), sqlTime, dataList.size());
+            Logs.ROOT_LOG.debug("{}sql({}) time({}ms) return size({})",
+                    (hasCompensate ? "compensate " : ""), getSql(sql), sqlTime, dataList.size());
         }
 
         Map<String, List<Map<String, Object>>> relationData = childData(relation.getRelationMapping(), dataList);
@@ -225,22 +271,30 @@ public class DataRepository {
         increment.addAndGet(size);
         long end = System.currentTimeMillis();
         if (Logs.ROOT_LOG.isInfoEnabled()) {
-            Logs.ROOT_LOG.info("greater({}) sql table({}) time({}ms) size({}) batch to es({}) time({}ms) success({}), all time({}ms)",
-                    lastValue, matchTable, allSqlTime, dataList.size(), index, (end - esStart), size, (end - start));
+            Logs.ROOT_LOG.info("{}greater({}) sql table({}) time({}ms) size({}) batch to es({}) time({}ms) success({}), all time({}ms)",
+                    (hasCompensate ? "compensate " : ""), lastValue, matchTable, allSqlTime, dataList.size(), index, (end - esStart), size, (end - start));
         }
         if (size == 0) {
             // if write to es false, can break loop
             return null;
         }
 
-        lastValue = getLast(relation, dataList);
+        Map<String, Integer> lastAndCount = getLast(relation, dataList);
+        if (A.isEmpty(lastAndCount)) {
+            return null;
+        }
+        lastValue = A.first(lastAndCount.keySet());
+        if (U.isBlank(lastValue)) {
+            return null;
+        }
         if (U.isBlank(lastValue)) {
             // if last data was nil, can break loop
             return null;
         }
-        handleEquals(incrementType, relation, matchTable, lastValue, matchInId, 0, increment);
+        handleEquals(incrementType, relation, matchTable, lastValue, lastAndCount.get(lastValue), matchInId, 0, increment, hasCompensate);
         // write last record
-        saveLastValue(incrementType, matchTable, relation.getIncrementColumn(), index, lastValue);
+        saveLastValue(incrementType, matchTable,
+                relation.getIncrementColumn() + (hasCompensate ? COMPENSATE_SUFFIX : ""), index, lastValue);
 
         // if sql: limit 1000, query data size 900, can break loop
         if (dataList.size() < relation.getLimit()) {
@@ -249,9 +303,16 @@ public class DataRepository {
         return lastValue;
     }
     private void handleEquals(IncrementStorageType incrementType, Relation relation, String matchTable,
-                              String tempColumnValue, String matchInId, int lastEqualsCount, AtomicLong increment) {
-        String[] equalsValueArr = tempColumnValue.split(EQUALS_I_SPLIT);
-        String equalsValue = equalsValueArr[0];
+                              String tempColumnValue, int lastDataCount, String matchInId, int lastEqualsCount,
+                              AtomicLong increment, boolean hasCompensate) {
+        String eai;
+        if (tempColumnValue.endsWith(EQUALS_SUFFIX)) {
+            eai = tempColumnValue.substring(0, tempColumnValue.length() - EQUALS_SUFFIX.length());
+        } else {
+            eai = tempColumnValue;
+        }
+        String[] equalsArr = eai.split(EQUALS_I_SPLIT);
+        String equalsValue = equalsArr[0];
         long nowMs = System.currentTimeMillis();
 
         // pre: time > '2010-10-10 00:00:01' | 1286640001000, current: time = '2010-10-10 00:00:01' | 1286640001000
@@ -259,26 +320,34 @@ public class DataRepository {
         long start = System.currentTimeMillis();
         Integer equalsCount = A.first(jdbcTemplate.queryForList(equalsCountSql, Integer.class));
         if (Logs.ROOT_LOG.isDebugEnabled()) {
-            Logs.ROOT_LOG.debug("equals count sql({}) time({}ms) return({})",
-                    getSql(equalsCountSql), (System.currentTimeMillis() - start), equalsCount);
+            Logs.ROOT_LOG.debug("{}equals count sql({}) time({}ms) return({})",
+                    (hasCompensate ? "compensate " : ""), getSql(equalsCountSql), (System.currentTimeMillis() - start), equalsCount);
         }
         if (U.less0(equalsCount)) {
-            currentSecondHandle(equalsValue, nowMs, incrementType, relation, matchTable, 0, matchInId, 0, increment);
+            currentSecondHandle(equalsValue, nowMs, incrementType, relation,
+                    matchTable, 0, matchInId, 0, increment, hasCompensate);
+            return;
+        }
+        if (U.greater0(lastDataCount) && equalsCount == lastDataCount) {
+            currentSecondHandle(equalsValue, nowMs, incrementType, relation,
+                    matchTable, 0, matchInId, 0, increment, hasCompensate);
             return;
         }
         if (lastEqualsCount > 0 && lastEqualsCount == equalsCount) {
-            currentSecondHandle(equalsValue, nowMs, incrementType, relation, matchTable, 0, matchInId, equalsCount, increment);
+            currentSecondHandle(equalsValue, nowMs, incrementType, relation,
+                    matchTable, 0, matchInId, equalsCount, increment, hasCompensate);
             return;
         }
 
         String index = relation.useIndex();
         int equalsLoopCount = relation.loopCount(equalsCount);
         int i = 0;
-        if (equalsValueArr.length == 2) {
-            i = U.toInt(equalsValueArr[1]);
+        if (equalsArr.length == 2) {
+            i = U.toInt(equalsArr[1]);
             // if count = 1000, limit = 10, save in file has 101, can be return right now!
             if (i * relation.getLimit() > equalsCount) {
-                currentSecondHandle(equalsValue, nowMs, incrementType, relation, matchTable, 0, matchInId, equalsCount, increment);
+                currentSecondHandle(equalsValue, nowMs, incrementType, relation,
+                        matchTable, 0, matchInId, equalsCount, increment, hasCompensate);
                 return;
             }
             if (i < 0) {
@@ -291,13 +360,14 @@ public class DataRepository {
             List<Map<String, Object>> equalsDataList = jdbcTemplate.queryForList(equalsSql);
             // if not data, can break equals handle
             if (A.isEmpty(equalsDataList)) {
-                currentSecondHandle(equalsValue, nowMs, incrementType, relation, matchTable, i, matchInId, equalsCount, increment);
+                currentSecondHandle(equalsValue, nowMs, incrementType, relation,
+                        matchTable, i, matchInId, equalsCount, increment, hasCompensate);
                 return;
             }
             long sqlTime = (System.currentTimeMillis() - sqlStart);
             if (Logs.ROOT_LOG.isDebugEnabled()) {
-                Logs.ROOT_LOG.debug("equals sql({}) time({}ms) return size({})",
-                        getSql(equalsSql), sqlTime, equalsDataList.size());
+                Logs.ROOT_LOG.debug("{}equals sql({}) time({}ms) return size({})",
+                        (hasCompensate ? "compensate " : ""), getSql(equalsSql), sqlTime, equalsDataList.size());
             }
 
             Map<String, List<Map<String, Object>>> relationData = childData(relation.getRelationMapping(), equalsDataList);
@@ -309,19 +379,22 @@ public class DataRepository {
             increment.addAndGet(size);
             long end = System.currentTimeMillis();
             if (Logs.ROOT_LOG.isInfoEnabled()) {
-                Logs.ROOT_LOG.info("equals({} : {} -> {}) sql table({}) time({}ms) size({}) batch to es({}) time({}ms) success({}), all time({}ms)",
-                        equalsValue, i, equalsLoopCount, matchTable, allSqlTime, equalsDataList.size(), index, (end - esStart), size, (end - sqlStart));
+                Logs.ROOT_LOG.info("{}equals({} : {} -> {}) sql table({}) time({}ms) size({}) batch to es({}) time({}ms) success({}), all time({}ms)",
+                        (hasCompensate ? "compensate " : ""), equalsValue, i, equalsLoopCount, matchTable,
+                        allSqlTime, equalsDataList.size(), index, (end - esStart), size, (end - sqlStart));
             }
 
             // if success was 0, can break equals handle
             // if sql: limit 1000, 1000, query data size 900, can break equals handle
             if ((size == 0) || (equalsDataList.size() < relation.getLimit())) {
-                currentSecondHandle(equalsValue, nowMs, incrementType, relation, matchTable, i, matchInId, equalsCount, increment);
+                currentSecondHandle(equalsValue, nowMs, incrementType, relation,
+                        matchTable, i, matchInId, equalsCount, increment, hasCompensate);
                 return;
             } else {
                 // write current equals record
                 String valueToSave = equalsValue + EQUALS_I_SPLIT + i + EQUALS_SUFFIX;
-                saveLastValue(incrementType, matchTable, relation.getIncrementColumn(), index, valueToSave);
+                saveLastValue(incrementType, matchTable,
+                        relation.getIncrementColumn() + (hasCompensate ? COMPENSATE_SUFFIX : ""), index, valueToSave);
             }
         }
     }
@@ -337,8 +410,8 @@ public class DataRepository {
      * when the number of milliseconds after the current second
      */
     private void currentSecondHandle(String equalsValue, long nowMs, IncrementStorageType incrementType,
-                                     Relation relation, String matchTable, int i,
-                                     String matchInId, int currentEqualsCount, AtomicLong increment) {
+                                     Relation relation, String matchTable, int i, String matchInId,
+                                     int currentEqualsCount, AtomicLong increment, boolean hasCompensate) {
         Date equalsDate = Dates.parse(equalsValue);
         if (U.isNotBlank(equalsDate)) {
             long equalsMs = equalsDate.getTime();
@@ -347,7 +420,8 @@ public class DataRepository {
                 try {
                     long nextSecondMs = ((nowMs / 1000) + 1) * 1000;
                     Thread.sleep(nextSecondMs - nowMs);
-                    handleEquals(incrementType, relation, matchTable, equalsValue + EQUALS_I_SPLIT + i, matchInId, currentEqualsCount, increment);
+                    handleEquals(incrementType, relation, matchTable, equalsValue + EQUALS_I_SPLIT + i, 0,
+                            matchInId, currentEqualsCount, increment, hasCompensate);
                 } catch (InterruptedException e) {
                     if (Logs.ROOT_LOG.isErrorEnabled()) {
                         Logs.ROOT_LOG.error("increment value has current ms, sleep to next second exception", e);
@@ -389,29 +463,53 @@ public class DataRepository {
         return returnMap;
     }
 
-    private String getSql(String sql) {
-        return U.isBlank(sql) ? U.EMPTY : U.toStr(sql, 200, 30);
+    private static String getSql(String sql) {
+        if (U.isBlank(sql)) {
+            return U.EMPTY;
+        }
+        int max = 200;
+        if (sql.length() <= max) {
+            return sql;
+        }
+        String fromSql = sql.substring(sql.toUpperCase().indexOf(" FROM ") + 1);
+        if (fromSql.length() <= max) {
+            return fromSql;
+        }
+        String[] valueArr = fromSql.split(",");
+        int len = valueArr.length;
+        if (len <= 10) {
+            return fromSql;
+        }
+        return Joiner.on(", ").join(Arrays.asList(
+                valueArr[0], valueArr[1], valueArr[2],
+                " ... ",
+                valueArr[len - 3], valueArr[len - 2], valueArr[len - 1]
+        ));
     }
-    /** write last record in temp file */
-    private String getLast(Relation relation, List<Map<String, Object>> dataList) {
-        Map<String, Object> last = A.last(dataList);
-        if (A.isNotEmpty(last)) {
-            String column = relation.getIncrementColumn();
-            Object obj = last.get(column.contains(".") ? column.substring(column.indexOf(".") + 1) : column);
+    /** write last record */
+    private Map<String, Integer> getLast(Relation relation, List<Map<String, Object>> dataList) {
+        String column = relation.getIncrementColumn();
+        Map<String, Integer> dataCountMap = Maps.newHashMap();
+        for (int i = dataList.size() - 1; i <= 0; i++) {
+            Map<String, Object> data = dataList.get(i);
+            Object obj = data.get(column.contains(".") ? column.substring(column.indexOf(".") + 1) : column);
             if (U.isNotBlank(obj)) {
-                // if was Date return 'yyyy-MM-dd HH:mm:ss', else return toStr
                 String lastData;
                 if (obj instanceof Date) {
-                    // lastData = String.valueOf(((Date) obj).getTime());
                     lastData = Dates.format((Date) obj, Dates.Type.YYYY_MM_DD_HH_MM_SS);
                 } else {
                     lastData = obj.toString();
                 }
-                return lastData;
+                if (!dataCountMap.containsKey(lastData) && dataCountMap.size() > 0) {
+                    return dataCountMap;
+                }
+                Integer count = dataCountMap.get(lastData);
+                dataCountMap.put(lastData, U.greater0(count) ? (count + 1) : 1);
             }
         }
         return null;
     }
+
     /** traverse the Database Result and organize into es Document */
     private Map<String, Map<String, String>> fixDocument(Relation relation, List<Map<String, Object>> dataList, String matchInId,
                                                          Map<String, List<Map<String, Object>>> relationData,
