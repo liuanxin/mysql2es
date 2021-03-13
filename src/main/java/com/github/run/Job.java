@@ -80,12 +80,17 @@ public class Job implements SchedulingConfigurer {
                 for (Map.Entry<String, Future<Long>> entry : resultMap.entrySet()) {
                     try {
                         Long count = entry.getValue().get();
-                        if (U.isNotBlank(count)) {
+                        if (U.greater0(count)) {
                             if (Logs.ROOT_LOG.isInfoEnabled()) {
                                 long ms = System.currentTimeMillis() - start;
                                 String tps = (count > 0 && ms > 0) ? String.valueOf(count * 1000 / ms) : "0";
                                 Logs.ROOT_LOG.info("async({}) count({}) time({}) tps({})",
                                         entry.getKey(), count, Dates.toHuman(ms), tps);
+                            }
+                        } else {
+                            if (Logs.ROOT_LOG.isErrorEnabled()) {
+                                Logs.ROOT_LOG.error(String.format("async(%s) has return (%s), time(%s)",
+                                        entry.getKey(), count, Dates.toHuman(System.currentTimeMillis() - start)));
                             }
                         }
                     } catch (InterruptedException | ExecutionException e) {

@@ -184,35 +184,39 @@ public class DataRepository {
     /** async data to es */
     @Async
     public Future<Long> asyncData(IncrementStorageType incrementType, Relation relation) {
-        if (A.isEmpty(relation.getIdColumn())) {
-            dbToEsScheme(relation);
-        }
+        try {
+            if (A.isEmpty(relation.getIdColumn())) {
+                dbToEsScheme(relation);
+            }
 
-        long count = 0;
-        String table = relation.getTable();
-        String index = relation.useIndex();
-        if (U.isNotBlank(table) && U.isNotBlank(index)) {
-            List<String> matchTables;
-            if (relation.checkMatch()) {
-                long start = System.currentTimeMillis();
-                String sql = relation.matchSql();
-                matchTables = jdbcTemplate.queryForList(sql, String.class);
-                long sqlTime = (System.currentTimeMillis() - start);
-                if (Logs.ROOT_LOG.isDebugEnabled()) {
-                    Logs.ROOT_LOG.debug("sql({}) time({}ms) return({}), size({})",
-                            getSql(sql), sqlTime, A.toStr(matchTables), matchTables.size());
+            long count = 0;
+            String table = relation.getTable();
+            String index = relation.useIndex();
+            if (U.isNotBlank(table) && U.isNotBlank(index)) {
+                List<String> matchTables;
+                if (relation.checkMatch()) {
+                    long start = System.currentTimeMillis();
+                    String sql = relation.matchSql();
+                    matchTables = jdbcTemplate.queryForList(sql, String.class);
+                    long sqlTime = (System.currentTimeMillis() - start);
+                    if (Logs.ROOT_LOG.isDebugEnabled()) {
+                        Logs.ROOT_LOG.debug("sql({}) time({}ms) return({}), size({})",
+                                getSql(sql), sqlTime, A.toStr(matchTables), matchTables.size());
+                    }
+                } else {
+                    matchTables = Collections.singletonList(table);
                 }
-            } else {
-                matchTables = Collections.singletonList(table);
-            }
 
-            AtomicLong increment = new AtomicLong();
-            for (String matchTable : matchTables) {
-                saveSingleTable(incrementType, relation, index, matchTable, increment, 0);
+                AtomicLong increment = new AtomicLong(0L);
+                for (String matchTable : matchTables) {
+                    saveSingleTable(incrementType, relation, index, matchTable, increment, 0);
+                }
+                count = increment.get();
             }
-            count = increment.get();
+            return new AsyncResult<>(count);
+        } catch (Exception e) {
+            return new AsyncResult<>(-1L);
         }
-        return new AsyncResult<>(count);
     }
 
     private void saveSingleTable(IncrementStorageType incrementType, Relation relation, String index,

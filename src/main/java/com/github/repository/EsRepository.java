@@ -176,7 +176,7 @@ public class EsRepository {
             if (Logs.ROOT_LOG.isErrorEnabled()) {
                 Logs.ROOT_LOG.error(String.format("create or update (%s) es data exception", index), e);
             }
-            return 0;
+            throw new RuntimeException("save to es exception:" + e.getMessage());
         }
     }
 }
