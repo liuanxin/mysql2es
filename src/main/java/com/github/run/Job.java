@@ -12,6 +12,7 @@ import com.google.common.collect.Maps;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.scheduling.support.CronTrigger;
 
@@ -20,22 +21,41 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+@SuppressWarnings("NullableProblems")
 @Configuration
 @AllArgsConstructor
 public class Job implements SchedulingConfigurer {
 
-    private static final AtomicBoolean RUN = new AtomicBoolean(false);
+    private static final AtomicBoolean SYNC_RUN = new AtomicBoolean(false);
+    private static final AtomicBoolean COMPENSATE_RUN = new AtomicBoolean(false);
 
     private final Config config;
     private final DataRepository dataRepository;
 
     @Override
     public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
-        taskRegistrar.addTriggerTask(() -> {
+        Map<String, Runnable> taskMap = Maps.newHashMap();
+        taskMap.put(config.getCron(), sync());
+        if (config.isEnableCompensate()) {
+            taskMap.put(config.getCompensateCron(), compensate());
+        }
+
+        ThreadPoolTaskScheduler taskScheduler = new ThreadPoolTaskScheduler();
+        taskScheduler.setPoolSize(taskMap.size());
+        taskScheduler.initialize();
+        taskRegistrar.setTaskScheduler(taskScheduler);
+
+        for (Map.Entry<String, Runnable> entry : taskMap.entrySet()) {
+            taskRegistrar.addTriggerTask(entry.getValue(), new CronTrigger(entry.getKey()));
+        }
+    }
+
+    private Runnable sync() {
+        return () -> {
             if (!config.isEnable()) {
                 return;
             }
-            if (!RUN.compareAndSet(false, true)) {
+            if (!SYNC_RUN.compareAndSet(false, true)) {
                 if (Logs.ROOT_LOG.isInfoEnabled()) {
                     Logs.ROOT_LOG.info("task has be running");
                 }
@@ -84,8 +104,63 @@ public class Job implements SchedulingConfigurer {
                 if (Logs.ROOT_LOG.isInfoEnabled()) {
                     Logs.ROOT_LOG.info("end of run task, time({})", Dates.toHuman(System.currentTimeMillis() - start));
                 }
-                RUN.set(false);
+                SYNC_RUN.set(false);
             }
-        }, new CronTrigger(config.getCron()));
+        };
+    }
+
+    private Runnable compensate() {
+        return () -> {
+            if (!config.isEnable()) {
+                return;
+            }
+            if (!COMPENSATE_RUN.compareAndSet(false, true)) {
+                if (Logs.ROOT_LOG.isInfoEnabled()) {
+                    Logs.ROOT_LOG.info("compensate task has be running");
+                }
+                return;
+            }
+
+            if (Logs.ROOT_LOG.isInfoEnabled()) {
+                Logs.ROOT_LOG.info("compensate begin to run task");
+            }
+            long start = System.currentTimeMillis();
+            try {
+                IncrementStorageType incrementType = config.getIncrementType();
+                int second = config.getCompensateSecond();
+                Map<String, Future<Long>> resultMap = Maps.newHashMap();
+                for (Relation relation : config.getRelation()) {
+                    resultMap.put(relation.useKey(), dataRepository.asyncCompensateData(incrementType, relation, second));
+                }
+                for (Map.Entry<String, Future<Long>> entry : resultMap.entrySet()) {
+                    try {
+                        Long count = entry.getValue().get();
+                        if (U.isNotBlank(count)) {
+                            if (Logs.ROOT_LOG.isInfoEnabled()) {
+                                long ms = System.currentTimeMillis() - start;
+                                String tps = (count > 0 && ms > 0) ? String.valueOf(count * 1000 / ms) : "0";
+                                Logs.ROOT_LOG.info("compensate async({}) count({}) time({}) tps({})",
+                                        entry.getKey(), count, Dates.toHuman(ms), tps);
+                            }
+                        }
+                    } catch (InterruptedException | ExecutionException e) {
+                        if (Logs.ROOT_LOG.isErrorEnabled()) {
+                            Logs.ROOT_LOG.error(String.format("compensate async(%s) Thread exception, time(%s)",
+                                    entry.getKey(), Dates.toHuman(System.currentTimeMillis() - start)), e);
+                        }
+                    } catch (Exception e) {
+                        if (Logs.ROOT_LOG.isErrorEnabled()) {
+                            Logs.ROOT_LOG.error(String.format("compensate async(%s) exception, time(%s)",
+                                    entry.getKey(), Dates.toHuman(System.currentTimeMillis() - start)), e);
+                        }
+                    }
+                }
+            } finally {
+                if (Logs.ROOT_LOG.isInfoEnabled()) {
+                    Logs.ROOT_LOG.info("compensate end of run task, time({})", Dates.toHuman(System.currentTimeMillis() - start));
+                }
+                COMPENSATE_RUN.set(false);
+            }
+        };
     }
 }
