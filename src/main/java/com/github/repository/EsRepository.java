@@ -15,6 +15,7 @@ import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.IndicesClient;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.VersionType;
@@ -37,9 +38,9 @@ public class EsRepository {
     public Future<Boolean> deleteScheme(String index) {
         try {
             IndicesClient indices = client.indices();
-            if (indices.exists(new GetIndexRequest().indices(index))) {
+            if (indices.exists(new GetIndexRequest().indices(index), RequestOptions.DEFAULT)) {
                 long start = System.currentTimeMillis();
-                DeleteIndexResponse resp = indices.delete(new DeleteIndexRequest(index));
+                DeleteIndexResponse resp = indices.delete(new DeleteIndexRequest(index), RequestOptions.DEFAULT);
                 boolean flag = resp.isAcknowledged();
                 if (Logs.ROOT_LOG.isDebugEnabled()) {
                     Logs.ROOT_LOG.debug("delete scheme ({}) time({}) return({})", index, (System.currentTimeMillis() - start + "ms"), flag);
@@ -68,7 +69,7 @@ public class EsRepository {
     private boolean existsIndex(IndicesClient indices, String index) {
         try {
             long start = System.currentTimeMillis();
-            boolean ack = indices.exists(new GetIndexRequest().indices(index));
+            boolean ack = indices.exists(new GetIndexRequest().indices(index), RequestOptions.DEFAULT);
             if (Logs.ROOT_LOG.isDebugEnabled()) {
                 Logs.ROOT_LOG.debug("query index({}) exists time({}) return({})",
                         index, (System.currentTimeMillis() - start + "ms"), ack);
@@ -87,7 +88,7 @@ public class EsRepository {
             // String settings = Searchs.getSettings();
             // request.settings(settings, XContentType.JSON);
             long start = System.currentTimeMillis();
-            boolean ack = indices.create(request).isAcknowledged();
+            boolean ack = indices.create(request, RequestOptions.DEFAULT).isAcknowledged();
             if (Logs.ROOT_LOG.isDebugEnabled()) {
                 Logs.ROOT_LOG.debug("create index({}) time({}) return({})",
                         index, (System.currentTimeMillis() - start + "ms"), ack);
@@ -105,7 +106,7 @@ public class EsRepository {
             String source = Jsons.toJson(A.maps("properties", properties));
             PutMappingRequest request = new PutMappingRequest(index).source(source, XContentType.JSON);
             long start = System.currentTimeMillis();
-            boolean ack = indices.putMapping(request).isAcknowledged();
+            boolean ack = indices.putMapping(request, RequestOptions.DEFAULT).isAcknowledged();
             if (Logs.ROOT_LOG.isInfoEnabled()) {
                 Logs.ROOT_LOG.info("put ({}) mapping time({}) return({})", index, (System.currentTimeMillis() - start + "ms"), ack);
             }
@@ -147,7 +148,7 @@ public class EsRepository {
         }
 
         try {
-            BulkResponse responses = client.bulk(batchRequest);
+            BulkResponse responses = client.bulk(batchRequest, RequestOptions.DEFAULT);
             int size = responses.getItems().length;
 
             for (BulkItemResponse response : responses) {
