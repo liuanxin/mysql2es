@@ -69,7 +69,7 @@ public class Job implements SchedulingConfigurer {
             try {
                 IncrementStorageType incrementType = config.getIncrementType();
                 boolean deleteEveryTime = incrementType == IncrementStorageType.TEMP_FILE && config.isDeleteTempEveryTime();
-                Map<String, Future<Long>> resultMap = Maps.newHashMap();
+                Map<String, Future<String>> resultMap = Maps.newHashMap();
                 for (Relation relation : config.getRelation()) {
                     resultMap.put(relation.useKey(), dataRepository.asyncData(incrementType, relation));
 
@@ -77,9 +77,10 @@ public class Job implements SchedulingConfigurer {
                         F.delete(relation.getTable(), relation.getIndex());
                     }
                 }
-                for (Map.Entry<String, Future<Long>> entry : resultMap.entrySet()) {
+                for (Map.Entry<String, Future<String>> entry : resultMap.entrySet()) {
                     try {
-                        Long count = entry.getValue().get();
+                        String msg = entry.getValue().get();
+                        Long count = U.toLong(msg);
                         if (U.greater0(count)) {
                             if (Logs.ROOT_LOG.isInfoEnabled()) {
                                 long ms = System.currentTimeMillis() - start;
@@ -90,7 +91,7 @@ public class Job implements SchedulingConfigurer {
                         } else {
                             if (Logs.ROOT_LOG.isErrorEnabled()) {
                                 Logs.ROOT_LOG.error(String.format("async(%s) has return (%s), time(%s)",
-                                        entry.getKey(), count, Dates.toHuman(System.currentTimeMillis() - start)));
+                                        entry.getKey(), msg, Dates.toHuman(System.currentTimeMillis() - start)));
                             }
                         }
                     } catch (InterruptedException | ExecutionException e) {
@@ -133,19 +134,25 @@ public class Job implements SchedulingConfigurer {
             try {
                 IncrementStorageType incrementType = config.getIncrementType();
                 int second = config.getCompensateSecond();
-                Map<String, Future<Long>> resultMap = Maps.newHashMap();
+                Map<String, Future<String>> resultMap = Maps.newHashMap();
                 for (Relation relation : config.getRelation()) {
                     resultMap.put(relation.useKey(), dataRepository.asyncCompensateData(incrementType, relation, second));
                 }
-                for (Map.Entry<String, Future<Long>> entry : resultMap.entrySet()) {
+                for (Map.Entry<String, Future<String>> entry : resultMap.entrySet()) {
                     try {
-                        Long count = entry.getValue().get();
+                        String msg = entry.getValue().get();
+                        Long count = U.toLong(msg);
                         if (U.isNotBlank(count)) {
                             if (Logs.ROOT_LOG.isInfoEnabled()) {
                                 long ms = System.currentTimeMillis() - start;
                                 String tps = (count > 0 && ms > 0) ? String.valueOf(count * 1000 / ms) : "0";
                                 Logs.ROOT_LOG.info("compensate async({}) count({}) time({}) tps({})",
                                         entry.getKey(), count, Dates.toHuman(ms), tps);
+                            }
+                        } else {
+                            if (Logs.ROOT_LOG.isErrorEnabled()) {
+                                Logs.ROOT_LOG.error(String.format("compensate async(%s) has return (%s), time(%s)",
+                                        entry.getKey(), msg, Dates.toHuman(System.currentTimeMillis() - start)));
                             }
                         }
                     } catch (InterruptedException | ExecutionException e) {
