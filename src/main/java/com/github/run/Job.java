@@ -142,7 +142,7 @@ public class Job implements SchedulingConfigurer {
                     try {
                         String msg = entry.getValue().get();
                         Long count = U.toLong(msg);
-                        if (U.isNotBlank(count)) {
+                        if (U.greater0(count)) {
                             if (Logs.ROOT_LOG.isInfoEnabled()) {
                                 long ms = System.currentTimeMillis() - start;
                                 String tps = (count > 0 && ms > 0) ? String.valueOf(count * 1000 / ms) : "0";
