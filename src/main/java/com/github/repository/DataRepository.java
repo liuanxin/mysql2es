@@ -153,43 +153,44 @@ public class DataRepository {
     }
 
     @Async
-    public Future<Long> asyncCompensateData(IncrementStorageType incrementType, Relation relation, int compensateSecond) {
-        long count = 0;
-        String table = relation.getTable();
-        String index = relation.useIndex();
-        if (U.isNotBlank(table) && U.isNotBlank(index)) {
-            List<String> matchTables;
-            if (relation.checkMatch()) {
-                long start = System.currentTimeMillis();
-                String sql = relation.matchSql();
-                matchTables = jdbcTemplate.queryForList(sql, String.class);
-                long sqlTime = (System.currentTimeMillis() - start);
-                if (Logs.ROOT_LOG.isDebugEnabled()) {
-                    Logs.ROOT_LOG.debug("compensate sql({}) time({}ms) return({}), size({})",
-                            getSql(sql), sqlTime, A.toStr(matchTables), matchTables.size());
+    public Future<String> asyncCompensateData(IncrementStorageType incrementType, Relation relation, int compensateSecond) {
+        AtomicLong increment = new AtomicLong();
+        try {
+            String table = relation.getTable();
+            String index = relation.useIndex();
+            if (U.isNotBlank(table) && U.isNotBlank(index)) {
+                List<String> matchTables;
+                if (relation.checkMatch()) {
+                    long start = System.currentTimeMillis();
+                    String sql = relation.matchSql();
+                    matchTables = jdbcTemplate.queryForList(sql, String.class);
+                    long sqlTime = (System.currentTimeMillis() - start);
+                    if (Logs.ROOT_LOG.isDebugEnabled()) {
+                        Logs.ROOT_LOG.debug("compensate sql({}) time({}ms) return({}), size({})",
+                                getSql(sql), sqlTime, A.toStr(matchTables), matchTables.size());
+                    }
+                } else {
+                    matchTables = Collections.singletonList(table);
                 }
-            } else {
-                matchTables = Collections.singletonList(table);
-            }
 
-            AtomicLong increment = new AtomicLong();
-            for (String matchTable : matchTables) {
-                saveSingleTable(incrementType, relation, index, matchTable, increment, compensateSecond);
+                for (String matchTable : matchTables) {
+                    saveSingleTable(incrementType, relation, index, matchTable, increment, compensateSecond);
+                }
             }
-            count = increment.get();
+            return new AsyncResult<>(String.valueOf(increment.get()));
+        } catch (Exception e) {
+            long count = increment.get();
+            if (Logs.ROOT_LOG.isErrorEnabled()) {
+                Logs.ROOT_LOG.error(String.format("compensate async data exception, has handle (%s)", count), e);
+            }
+            return new AsyncResult<>("compensate async data has " + count + ", but has exception: " + e.getMessage());
         }
-        return new AsyncResult<>(count);
     }
 
-    /** async data to es */
     @Async
-    public Future<Long> asyncData(IncrementStorageType incrementType, Relation relation) {
+    public Future<String> asyncData(IncrementStorageType incrementType, Relation relation) {
+        AtomicLong increment = new AtomicLong(0L);
         try {
-            if (A.isEmpty(relation.getIdColumn())) {
-                dbToEsScheme(relation);
-            }
-
-            long count = 0;
             String table = relation.getTable();
             String index = relation.useIndex();
             if (U.isNotBlank(table) && U.isNotBlank(index)) {
@@ -207,15 +208,17 @@ public class DataRepository {
                     matchTables = Collections.singletonList(table);
                 }
 
-                AtomicLong increment = new AtomicLong(0L);
                 for (String matchTable : matchTables) {
                     saveSingleTable(incrementType, relation, index, matchTable, increment, 0);
                 }
-                count = increment.get();
             }
-            return new AsyncResult<>(count);
+            return new AsyncResult<>(String.valueOf(increment.get()));
         } catch (Exception e) {
-            return new AsyncResult<>(-1L);
+            long count = increment.get();
+            if (Logs.ROOT_LOG.isErrorEnabled()) {
+                Logs.ROOT_LOG.error(String.format("async data exception, has handle (%s)", count), e);
+            }
+            return new AsyncResult<>("async data has " + count + ", but has exception: " + e.getMessage());
         }
     }
 
