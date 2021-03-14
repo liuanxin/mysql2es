@@ -249,8 +249,6 @@ public class DataRepository {
     private String handleGreaterAndEquals(IncrementStorageType incrementType, Relation relation, String matchTable,
                                           String lastValue, String matchInId, AtomicLong increment, boolean hasCompensate) {
         if (U.isNotBlank(lastValue) && lastValue.endsWith(EQUALS_SUFFIX)) {
-            // lastValue = lastValue.substring(0, lastValue.length() - EQUALS_SUFFIX.length());
-            // return lastValue;
             handleEquals(incrementType, relation, matchTable, lastValue, 0, matchInId, 0, increment, false);
             return lastValue.substring(0, lastValue.length() - EQUALS_SUFFIX.length());
         }
@@ -497,24 +495,43 @@ public class DataRepository {
     private Map<String, Integer> getLast(Relation relation, List<Map<String, Object>> dataList) {
         String column = relation.getIncrementColumn();
         Map<String, Integer> dataCountMap = Maps.newHashMap();
-        for (int i = dataList.size() - 1; i >= 0; i--) {
-            Map<String, Object> data = dataList.get(i);
-            Object obj = data.get(column.contains(".") ? column.substring(column.indexOf(".") + 1) : column);
-            if (U.isNotBlank(obj)) {
-                String lastData;
-                if (obj instanceof Date) {
-                    lastData = Dates.format((Date) obj, Dates.Type.YYYY_MM_DD_HH_MM_SS);
-                } else {
-                    lastData = obj.toString();
-                }
-                if (!dataCountMap.containsKey(lastData) && dataCountMap.size() > 0) {
-                    return dataCountMap;
-                }
-                Integer count = dataCountMap.get(lastData);
-                dataCountMap.put(lastData, U.greater0(count) ? (count + 1) : 1);
+
+        String lastIncrementData = getIncrementData(A.last(dataList), column);
+        if (U.isBlank(lastIncrementData)) {
+            return dataCountMap;
+        }
+        String firstIncrementData = getIncrementData(A.first(dataList), column);
+        if (lastIncrementData.equals(firstIncrementData)) {
+            dataCountMap.put(lastIncrementData, dataList.size());
+            return dataCountMap;
+        }
+
+        dataCountMap.put(lastIncrementData, 1);
+        // if has [1,2,3,4,5] just handle [2,3,4]
+        for (int i = dataList.size() - 2; i >= 1; i--) {
+            String incrementData = getIncrementData(dataList.get(i), column);
+            if (lastIncrementData.equals(incrementData)) {
+                dataCountMap.put(lastIncrementData, dataCountMap.get(lastIncrementData) + 1);
+            } else {
+                return dataCountMap;
             }
         }
         return dataCountMap;
+    }
+    private String getIncrementData(Map<String, Object> data, String column) {
+        if (A.isEmpty(data)) {
+            return null;
+        }
+        Object obj = data.get(column.contains(".") ? column.substring(column.indexOf(".") + 1) : column);
+        if (U.isBlank(obj)) {
+            return null;
+        }
+
+        if (obj instanceof Date) {
+            return Dates.format((Date) obj, Dates.Type.YYYY_MM_DD_HH_MM_SS);
+        } else {
+            return obj.toString();
+        }
     }
 
     /** traverse the Database Result and organize into es Document */
