@@ -80,11 +80,11 @@ public class Job implements SchedulingConfigurer {
                 for (Map.Entry<String, Future<String>> entry : resultMap.entrySet()) {
                     try {
                         String msg = entry.getValue().get();
-                        Long count = U.toLong(msg);
-                        if (U.greater0(count)) {
+                        if (U.isNumber(msg)) {
                             if (Logs.ROOT_LOG.isInfoEnabled()) {
+                                Long count = U.toLong(msg);
                                 long ms = System.currentTimeMillis() - start;
-                                String tps = (count > 0 && ms > 0) ? String.valueOf(count * 1000 / ms) : "0";
+                                String tps = (U.greater0(count) && ms > 0) ? String.valueOf(count * 1000 / ms) : "0";
                                 Logs.ROOT_LOG.info("async({}) count({}) time({}) tps({})",
                                         entry.getKey(), count, Dates.toHuman(ms), tps);
                             }
@@ -141,11 +141,11 @@ public class Job implements SchedulingConfigurer {
                 for (Map.Entry<String, Future<String>> entry : resultMap.entrySet()) {
                     try {
                         String msg = entry.getValue().get();
-                        Long count = U.toLong(msg);
-                        if (U.greater0(count)) {
+                        if (U.isNumber(msg)) {
                             if (Logs.ROOT_LOG.isInfoEnabled()) {
+                                Long count = U.toLong(msg);
                                 long ms = System.currentTimeMillis() - start;
-                                String tps = (count > 0 && ms > 0) ? String.valueOf(count * 1000 / ms) : "0";
+                                String tps = (U.greater0(count) && ms > 0) ? String.valueOf(count * 1000 / ms) : "0";
                                 Logs.ROOT_LOG.info("compensate async({}) count({}) time({}) tps({})",
                                         entry.getKey(), count, Dates.toHuman(ms), tps);
                             }
