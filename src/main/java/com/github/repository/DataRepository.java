@@ -485,11 +485,7 @@ public class DataRepository {
         if (len <= 10) {
             return fromSql;
         }
-        return Joiner.on(", ").join(Arrays.asList(
-                valueArr[0], valueArr[1], valueArr[2],
-                " ... ",
-                valueArr[len - 3], valueArr[len - 2], valueArr[len - 1]
-        ));
+        return Joiner.on(", ").join(Arrays.asList(valueArr[0], (". " + (valueArr.length - 2) + " ."), valueArr[len - 1]));
     }
     /** write last record */
     private Map<String, Integer> getLast(Relation relation, List<Map<String, Object>> dataList) {
