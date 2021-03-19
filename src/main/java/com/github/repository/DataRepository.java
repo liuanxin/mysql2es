@@ -153,7 +153,8 @@ public class DataRepository {
     }
 
     @Async
-    public Future<String> asyncCompensateData(IncrementStorageType incrementType, Relation relation, int compensateSecond) {
+    public Future<String> asyncCompensateData(IncrementStorageType incrementType, Relation relation,
+                                              int beginIntervalSecond, int compensateSecond) {
         AtomicLong increment = new AtomicLong();
         try {
             String table = relation.getTable();
@@ -174,7 +175,7 @@ public class DataRepository {
                 }
 
                 for (String matchTable : matchTables) {
-                    saveSingleTable(incrementType, relation, index, matchTable, increment, compensateSecond);
+                    saveSingleTable(incrementType, relation, index, matchTable, increment, beginIntervalSecond, compensateSecond);
                 }
             }
             return new AsyncResult<>(String.valueOf(increment.get()));
@@ -209,7 +210,7 @@ public class DataRepository {
                 }
 
                 for (String matchTable : matchTables) {
-                    saveSingleTable(incrementType, relation, index, matchTable, increment, 0);
+                    saveSingleTable(incrementType, relation, index, matchTable, increment, 0, 0);
                 }
             }
             return new AsyncResult<>(String.valueOf(increment.get()));
@@ -223,13 +224,23 @@ public class DataRepository {
     }
 
     private void saveSingleTable(IncrementStorageType incrementType, Relation relation, String index,
-                                 String matchTable, AtomicLong increment, int compensateSecond) {
+                                 String matchTable, AtomicLong increment, int beginIntervalSecond, int compensateSecond) {
         String lastValue = getLastValue(incrementType, matchTable, relation.getIncrementColumn(), index);
         boolean hasCompensate = (compensateSecond > 0) && U.isNotBlank(lastValue);
         if (hasCompensate) {
             String oldValue = lastValue.split(EQUALS_I_SPLIT)[0];
             Date date = Dates.parse(oldValue);
             if (U.isNotBlank(date)) {
+                if (beginIntervalSecond > 0) {
+                    Date startCompensate = Dates.addSecond(Dates.now(), -beginIntervalSecond);
+                    if (startCompensate.getTime() > date.getTime()) {
+                        if (Logs.ROOT_LOG.isInfoEnabled()) {
+                            Logs.ROOT_LOG.info("compensation will start from({}), but it is currently({}), will not be operated",
+                                    Dates.format(startCompensate, Dates.Type.YYYY_MM_DD_HH_MM_SS), oldValue);
+                        }
+                        return;
+                    }
+                }
                 lastValue = Dates.format(Dates.addSecond(date, -compensateSecond), Dates.Type.YYYY_MM_DD_HH_MM_SS);
                 saveLastValue(incrementType, matchTable, relation.getIncrementColumn() + COMPENSATE_SUFFIX, index, lastValue);
                 if (Logs.ROOT_LOG.isDebugEnabled()) {

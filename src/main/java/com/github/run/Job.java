@@ -133,10 +133,12 @@ public class Job implements SchedulingConfigurer {
             long start = System.currentTimeMillis();
             try {
                 IncrementStorageType incrementType = config.getIncrementType();
-                int second = config.getCompensateSecond();
+                int beginIntervalSecond = config.getBeginIntervalSecond();
+                int compensateSecond = config.getCompensateSecond();
                 Map<String, Future<String>> resultMap = Maps.newHashMap();
                 for (Relation relation : config.getRelation()) {
-                    resultMap.put(relation.useKey(), dataRepository.asyncCompensateData(incrementType, relation, second));
+                    resultMap.put(relation.useKey(), dataRepository.asyncCompensateData(incrementType, relation,
+                            beginIntervalSecond, compensateSecond));
                 }
                 for (Map.Entry<String, Future<String>> entry : resultMap.entrySet()) {
                     try {
