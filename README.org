@@ -23,6 +23,7 @@ db2es:
 
   enable-compensate: true       # 是否启用数据补偿, 默认是 false, 当使用时间戳进行同步时用到, 如果长事务比较多, 会出现同步服务处理过了某个时间, 应用服务器才提交事务. 这会导致数据不一致
   compensate-cron: 1 * * * * *  # 数据补偿用到的定时任务的表达式
+  begin-interval-second: 600    # 同步时间跟当前时间的间隔在这个值以内时才开始进行数据补偿, 单位: 秒
   compensate-second: 60         # 数据补偿时往前的时间数, 单位: 秒
 
   relation:
