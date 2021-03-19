@@ -45,10 +45,9 @@ public class Config {
     private String cron = "0 * * * * *"; // every minutes with default
 
     private boolean enableCompensate = false;
-
     private String compensateCron = "13 0/2 * * * *";
-
-    private int compensateSecond = 30;
+    private int beginIntervalSecond = 600;
+    private int compensateSecond = 60;
 
     /**
      * <pre>
