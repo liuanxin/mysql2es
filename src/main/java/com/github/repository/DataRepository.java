@@ -46,10 +46,9 @@ public class DataRepository {
             "  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP," +
             "  PRIMARY KEY (`table_index`)" +
             ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
-    private static final String SELECT_COUNT = "SELECT COUNT(*) FROM `t_db_to_es` WHERE `table_index` = ?";
     /* 「replace into」 will cover create_time and update_time to now() */
-    private static final String ADD_INCREMENT = "INSERT INTO `t_db_to_es`(`table_index`, `increment_value`) VALUES(?, ?)";
-    private static final String UPDATE_INCREMENT = "UPDATE `t_db_to_es` SET `increment_value` = ? WHERE `table_index` = ?";
+    private static final String ADD_INCREMENT = "INSERT INTO `t_db_to_es`(`table_index`, `increment_value`) " +
+            "VALUES(?, ?) ON DUPLICATE KEY UPDATE `increment_value` = VALUES(`increment_value`)";
     private static final String GET_INCREMENT = "SELECT `increment_value` FROM `t_db_to_es` WHERE `table_index` = ?";
 
 
@@ -63,13 +62,11 @@ public class DataRepository {
 
     private String getLastValue(IncrementStorageType incrementType, String table, String incrementColumn, String index) {
         String tableColumn = getTableColumn(table, incrementColumn);
-        if (U.isBlank(incrementType) || incrementType == IncrementStorageType.TEMP_FILE) {
-            return F.read(tableColumn, index);
-        } else if (incrementType == IncrementStorageType.MYSQL) {
+        if (incrementType == IncrementStorageType.MYSQL) {
             String name = F.fileNameOrTableKey(tableColumn, index);
             return A.first(jdbcTemplate.queryForList(GET_INCREMENT, String.class, name));
         } else {
-            return null;
+            return F.read(tableColumn, index);
         }
     }
     private String getTableColumn(String table, String incrementColumn) {
@@ -78,16 +75,11 @@ public class DataRepository {
     private void saveLastValue(IncrementStorageType incrementType, String table,
                                String incrementColumn, String index, String value) {
         String tableColumn = getTableColumn(table, incrementColumn);
-        if (U.isBlank(incrementType) || incrementType == IncrementStorageType.TEMP_FILE) {
-            F.write(tableColumn, index, value);
-        } else if (incrementType == IncrementStorageType.MYSQL) {
+        if (incrementType == IncrementStorageType.MYSQL) {
             String name = F.fileNameOrTableKey(tableColumn, index);
-            Integer count = A.first(jdbcTemplate.queryForList(SELECT_COUNT, Integer.class, name));
-            if (U.greater0(count)) {
-                jdbcTemplate.update(UPDATE_INCREMENT, value, name);
-            } else {
-                jdbcTemplate.update(ADD_INCREMENT, name, value);
-            }
+            jdbcTemplate.update(ADD_INCREMENT, name, value);
+        } else {
+            F.write(tableColumn, index, value);
         }
     }
 
