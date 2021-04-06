@@ -46,10 +46,9 @@ public class DataRepository {
             "  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP," +
             "  PRIMARY KEY (`table_index`)" +
             ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
-    private static final String SELECT_COUNT = "SELECT COUNT(*) FROM `t_db_to_es` WHERE `table_index` = ?";
     /* 「replace into」 will cover create_time and update_time to now() */
-    private static final String ADD_INCREMENT = "INSERT INTO `t_db_to_es`(`table_index`, `increment_value`) VALUES(?, ?)";
-    private static final String UPDATE_INCREMENT = "UPDATE `t_db_to_es` SET `increment_value` = ? WHERE `table_index` = ?";
+    private static final String ADD_INCREMENT = "INSERT INTO `t_db_to_es`(`table_index`, `increment_value`) " +
+            "VALUES(?, ?) ON DUPLICATE KEY UPDATE `increment_value` = VALUES(`increment_value`)";
     private static final String GET_INCREMENT = "SELECT `increment_value` FROM `t_db_to_es` WHERE `table_index` = ?";
 
 
@@ -63,13 +62,11 @@ public class DataRepository {
 
     private String getLastValue(IncrementStorageType incrementType, String table, String incrementColumn, String index) {
         String tableColumn = getTableColumn(table, incrementColumn);
-        if (U.isBlank(incrementType) || incrementType == IncrementStorageType.TEMP_FILE) {
-            return F.read(tableColumn, index);
-        } else if (incrementType == IncrementStorageType.MYSQL) {
+        if (incrementType == IncrementStorageType.MYSQL) {
             String name = F.fileNameOrTableKey(tableColumn, index);
             return A.first(jdbcTemplate.queryForList(GET_INCREMENT, String.class, name));
         } else {
-            return null;
+            return F.read(tableColumn, index);
         }
     }
     private String getTableColumn(String table, String incrementColumn) {
@@ -78,16 +75,11 @@ public class DataRepository {
     private void saveLastValue(IncrementStorageType incrementType, String table,
                                String incrementColumn, String index, String value) {
         String tableColumn = getTableColumn(table, incrementColumn);
-        if (U.isBlank(incrementType) || incrementType == IncrementStorageType.TEMP_FILE) {
-            F.write(tableColumn, index, value);
-        } else if (incrementType == IncrementStorageType.MYSQL) {
+        if (incrementType == IncrementStorageType.MYSQL) {
             String name = F.fileNameOrTableKey(tableColumn, index);
-            Integer count = A.first(jdbcTemplate.queryForList(SELECT_COUNT, Integer.class, name));
-            if (U.greater0(count)) {
-                jdbcTemplate.update(UPDATE_INCREMENT, value, name);
-            } else {
-                jdbcTemplate.update(ADD_INCREMENT, name, value);
-            }
+            jdbcTemplate.update(ADD_INCREMENT, name, value);
+        } else {
+            F.write(tableColumn, index, value);
         }
     }
 
@@ -153,76 +145,94 @@ public class DataRepository {
     }
 
     @Async
-    public Future<Long> asyncCompensateData(IncrementStorageType incrementType, Relation relation, int compensateSecond) {
-        long count = 0;
-        String table = relation.getTable();
-        String index = relation.useIndex();
-        if (U.isNotBlank(table) && U.isNotBlank(index)) {
-            List<String> matchTables;
-            if (relation.checkMatch()) {
-                long start = System.currentTimeMillis();
-                String sql = relation.matchSql();
-                matchTables = jdbcTemplate.queryForList(sql, String.class);
-                long sqlTime = (System.currentTimeMillis() - start);
-                if (Logs.ROOT_LOG.isDebugEnabled()) {
-                    Logs.ROOT_LOG.debug("compensate sql({}) time({}ms) return({}), size({})",
-                            getSql(sql), sqlTime, A.toStr(matchTables), matchTables.size());
+    public Future<String> asyncCompensateData(IncrementStorageType incrementType, Relation relation,
+                                              int beginIntervalSecond, int compensateSecond) {
+        AtomicLong increment = new AtomicLong();
+        try {
+            String table = relation.getTable();
+            String index = relation.useIndex();
+            if (U.isNotBlank(table) && U.isNotBlank(index)) {
+                List<String> matchTables;
+                if (relation.checkMatch()) {
+                    long start = System.currentTimeMillis();
+                    String sql = relation.matchSql();
+                    matchTables = jdbcTemplate.queryForList(sql, String.class);
+                    long sqlTime = (System.currentTimeMillis() - start);
+                    if (Logs.ROOT_LOG.isDebugEnabled()) {
+                        Logs.ROOT_LOG.debug("compensate sql({}) time({}ms) return({}), size({})",
+                                getSql(sql), sqlTime, A.toStr(matchTables), matchTables.size());
+                    }
+                } else {
+                    matchTables = Collections.singletonList(table);
                 }
-            } else {
-                matchTables = Collections.singletonList(table);
-            }
 
-            AtomicLong increment = new AtomicLong();
-            for (String matchTable : matchTables) {
-                saveSingleTable(incrementType, relation, index, matchTable, increment, compensateSecond);
+                for (String matchTable : matchTables) {
+                    saveSingleTable(incrementType, relation, index, matchTable, increment, beginIntervalSecond, compensateSecond);
+                }
             }
-            count = increment.get();
+            return new AsyncResult<>(String.valueOf(increment.get()));
+        } catch (Exception e) {
+            long count = increment.get();
+            if (Logs.ROOT_LOG.isErrorEnabled()) {
+                Logs.ROOT_LOG.error(String.format("compensate async data exception, has handle (%s)", count), e);
+            }
+            return new AsyncResult<>("compensate async data has " + count + ", but has exception: " + e.getMessage());
         }
-        return new AsyncResult<>(count);
     }
 
-    /** async data to es */
     @Async
-    public Future<Long> asyncData(IncrementStorageType incrementType, Relation relation) {
-        if (A.isEmpty(relation.getIdColumn())) {
-            dbToEsScheme(relation);
-        }
-
-        long count = 0;
-        String table = relation.getTable();
-        String index = relation.useIndex();
-        if (U.isNotBlank(table) && U.isNotBlank(index)) {
-            List<String> matchTables;
-            if (relation.checkMatch()) {
-                long start = System.currentTimeMillis();
-                String sql = relation.matchSql();
-                matchTables = jdbcTemplate.queryForList(sql, String.class);
-                long sqlTime = (System.currentTimeMillis() - start);
-                if (Logs.ROOT_LOG.isDebugEnabled()) {
-                    Logs.ROOT_LOG.debug("sql({}) time({}ms) return({}), size({})",
-                            getSql(sql), sqlTime, A.toStr(matchTables), matchTables.size());
+    public Future<String> asyncData(IncrementStorageType incrementType, Relation relation) {
+        AtomicLong increment = new AtomicLong(0L);
+        try {
+            String table = relation.getTable();
+            String index = relation.useIndex();
+            if (U.isNotBlank(table) && U.isNotBlank(index)) {
+                List<String> matchTables;
+                if (relation.checkMatch()) {
+                    long start = System.currentTimeMillis();
+                    String sql = relation.matchSql();
+                    matchTables = jdbcTemplate.queryForList(sql, String.class);
+                    long sqlTime = (System.currentTimeMillis() - start);
+                    if (Logs.ROOT_LOG.isDebugEnabled()) {
+                        Logs.ROOT_LOG.debug("sql({}) time({}ms) return({}), size({})",
+                                getSql(sql), sqlTime, A.toStr(matchTables), matchTables.size());
+                    }
+                } else {
+                    matchTables = Collections.singletonList(table);
                 }
-            } else {
-                matchTables = Collections.singletonList(table);
-            }
 
-            AtomicLong increment = new AtomicLong();
-            for (String matchTable : matchTables) {
-                saveSingleTable(incrementType, relation, index, matchTable, increment, 0);
+                for (String matchTable : matchTables) {
+                    saveSingleTable(incrementType, relation, index, matchTable, increment, 0, 0);
+                }
             }
-            count = increment.get();
+            return new AsyncResult<>(String.valueOf(increment.get()));
+        } catch (Exception e) {
+            long count = increment.get();
+            if (Logs.ROOT_LOG.isErrorEnabled()) {
+                Logs.ROOT_LOG.error(String.format("async data exception, has handle (%s)", count), e);
+            }
+            return new AsyncResult<>("async data has " + count + ", but has exception: " + e.getMessage());
         }
-        return new AsyncResult<>(count);
     }
 
     private void saveSingleTable(IncrementStorageType incrementType, Relation relation, String index,
-                                 String matchTable, AtomicLong increment, int compensateSecond) {
+                                 String matchTable, AtomicLong increment, int beginIntervalSecond, int compensateSecond) {
         String lastValue = getLastValue(incrementType, matchTable, relation.getIncrementColumn(), index);
         boolean hasCompensate = (compensateSecond > 0) && U.isNotBlank(lastValue);
         if (hasCompensate) {
             String oldValue = lastValue.split(EQUALS_I_SPLIT)[0];
             Date date = Dates.parse(oldValue);
             if (U.isNotBlank(date)) {
+                if (beginIntervalSecond > 0) {
+                    Date startCompensate = Dates.addSecond(Dates.now(), -beginIntervalSecond);
+                    if (startCompensate.getTime() > date.getTime()) {
+                        if (Logs.ROOT_LOG.isInfoEnabled()) {
+                            Logs.ROOT_LOG.info("compensation will start from({}), but it is currently({}), will not be operated",
+                                    Dates.format(startCompensate, Dates.Type.YYYY_MM_DD_HH_MM_SS), oldValue);
+                        }
+                        return;
+                    }
+                }
                 lastValue = Dates.format(Dates.addSecond(date, -compensateSecond), Dates.Type.YYYY_MM_DD_HH_MM_SS);
                 saveLastValue(incrementType, matchTable, relation.getIncrementColumn() + COMPENSATE_SUFFIX, index, lastValue);
                 if (Logs.ROOT_LOG.isDebugEnabled()) {
@@ -242,8 +252,6 @@ public class DataRepository {
     private String handleGreaterAndEquals(IncrementStorageType incrementType, Relation relation, String matchTable,
                                           String lastValue, String matchInId, AtomicLong increment, boolean hasCompensate) {
         if (U.isNotBlank(lastValue) && lastValue.endsWith(EQUALS_SUFFIX)) {
-            // lastValue = lastValue.substring(0, lastValue.length() - EQUALS_SUFFIX.length());
-            // return lastValue;
             handleEquals(incrementType, relation, matchTable, lastValue, 0, matchInId, 0, increment, false);
             return lastValue.substring(0, lastValue.length() - EQUALS_SUFFIX.length());
         }
@@ -480,34 +488,49 @@ public class DataRepository {
         if (len <= 10) {
             return fromSql;
         }
-        return Joiner.on(", ").join(Arrays.asList(
-                valueArr[0], valueArr[1], valueArr[2],
-                " ... ",
-                valueArr[len - 3], valueArr[len - 2], valueArr[len - 1]
-        ));
+        return Joiner.on(", ").join(Arrays.asList(valueArr[0], (". " + (valueArr.length - 2) + " ."), valueArr[len - 1]));
     }
     /** write last record */
     private Map<String, Integer> getLast(Relation relation, List<Map<String, Object>> dataList) {
         String column = relation.getIncrementColumn();
         Map<String, Integer> dataCountMap = Maps.newHashMap();
-        for (int i = dataList.size() - 1; i >= 0; i--) {
-            Map<String, Object> data = dataList.get(i);
-            Object obj = data.get(column.contains(".") ? column.substring(column.indexOf(".") + 1) : column);
-            if (U.isNotBlank(obj)) {
-                String lastData;
-                if (obj instanceof Date) {
-                    lastData = Dates.format((Date) obj, Dates.Type.YYYY_MM_DD_HH_MM_SS);
-                } else {
-                    lastData = obj.toString();
-                }
-                if (!dataCountMap.containsKey(lastData) && dataCountMap.size() > 0) {
-                    return dataCountMap;
-                }
-                Integer count = dataCountMap.get(lastData);
-                dataCountMap.put(lastData, U.greater0(count) ? (count + 1) : 1);
+
+        String lastIncrementData = getIncrementData(A.last(dataList), column);
+        if (U.isBlank(lastIncrementData)) {
+            return dataCountMap;
+        }
+        String firstIncrementData = getIncrementData(A.first(dataList), column);
+        if (lastIncrementData.equals(firstIncrementData)) {
+            dataCountMap.put(lastIncrementData, dataList.size());
+            return dataCountMap;
+        }
+
+        dataCountMap.put(lastIncrementData, 1);
+        // if has [1,2,3,4,5] just handle [2,3,4]
+        for (int i = dataList.size() - 2; i >= 1; i--) {
+            String incrementData = getIncrementData(dataList.get(i), column);
+            if (lastIncrementData.equals(incrementData)) {
+                dataCountMap.put(lastIncrementData, dataCountMap.get(lastIncrementData) + 1);
+            } else {
+                return dataCountMap;
             }
         }
-        return null;
+        return dataCountMap;
+    }
+    private String getIncrementData(Map<String, Object> data, String column) {
+        if (A.isEmpty(data)) {
+            return null;
+        }
+        Object obj = data.get(column.contains(".") ? column.substring(column.indexOf(".") + 1) : column);
+        if (U.isBlank(obj)) {
+            return null;
+        }
+
+        if (obj instanceof Date) {
+            return Dates.format((Date) obj, Dates.Type.YYYY_MM_DD_HH_MM_SS);
+        } else {
+            return obj.toString();
+        }
     }
 
     /** traverse the Database Result and organize into es Document */
