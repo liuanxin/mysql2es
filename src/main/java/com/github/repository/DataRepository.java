@@ -162,39 +162,36 @@ public class DataRepository {
         AtomicBoolean run = COMPENSATE_RUN.computeIfAbsent(index, key -> new AtomicBoolean(false));
         if (run.compareAndSet(false, true)) {
             try {
-                long start = System.currentTimeMillis();
-                AtomicLong increment = new AtomicLong();
-                try {
-                    String table = relation.getTable();
-                    if (U.isNotBlank(table) && U.isNotBlank(index)) {
-                        List<String> matchTables;
-                        if (relation.checkMatch()) {
-                            String sql = relation.matchSql();
-                            matchTables = jdbcTemplate.queryForList(sql, String.class);
-                            long sqlTime = (System.currentTimeMillis() - start);
-                            if (Logs.ROOT_LOG.isDebugEnabled()) {
-                                Logs.ROOT_LOG.debug("compensate sql({}) time({}ms) return({}), size({})",
-                                        getSql(sql), sqlTime, A.toStr(matchTables), matchTables.size());
-                            }
-                        } else {
-                            matchTables = Collections.singletonList(table);
+                String table = relation.getTable();
+                if (U.isNotBlank(table) && U.isNotBlank(index)) {
+                    long start = System.currentTimeMillis();
+                    List<String> matchTables;
+                    if (relation.checkMatch()) {
+                        String sql = relation.matchSql();
+                        matchTables = jdbcTemplate.queryForList(sql, String.class);
+                        long sqlTime = (System.currentTimeMillis() - start);
+                        if (Logs.ROOT_LOG.isDebugEnabled()) {
+                            Logs.ROOT_LOG.debug("compensate sql({}) time({}ms) return({}), size({})",
+                                    getSql(sql), sqlTime, A.toStr(matchTables), matchTables.size());
                         }
+                    } else {
+                        matchTables = Collections.singletonList(table);
+                    }
 
-                        for (String matchTable : matchTables) {
-                            saveSingleTable(incrementType, relation, index, matchTable, increment, beginCompensateSecond, compensateSecond);
-                        }
-                        if (Logs.ROOT_LOG.isInfoEnabled()) {
-                            long count = increment.get();
-                            long ms = System.currentTimeMillis() - start;
-                            String tps = (count > 0) ? String.valueOf(count * 1000 / ms) : "0";
-                            Logs.ROOT_LOG.info("compensate async({}) count({}) time({}) tps({})", index, count, Dates.toHuman(ms), tps);
-                        }
+                    AtomicLong increment = new AtomicLong();
+                    for (String matchTable : matchTables) {
+                        saveSingleTable(incrementType, relation, index, matchTable, increment, beginCompensateSecond, compensateSecond);
                     }
-                } catch (Exception e) {
-                    if (Logs.ROOT_LOG.isErrorEnabled()) {
-                        Logs.ROOT_LOG.error(String.format("compensate async(%s) count(%s) time(%s), but has exception",
-                                index, increment.get(), Dates.toHuman(System.currentTimeMillis() - start)), e);
+                    if (Logs.ROOT_LOG.isInfoEnabled()) {
+                        long count = increment.get();
+                        long ms = System.currentTimeMillis() - start;
+                        String tps = (count > 0) ? String.valueOf(count * 1000 / ms) : "0";
+                        Logs.ROOT_LOG.info("compensate async({}) count({}) time({}) tps({})", index, count, Dates.toHuman(ms), tps);
                     }
+                }
+            } catch (Exception e) {
+                if (Logs.ROOT_LOG.isErrorEnabled()) {
+                    Logs.ROOT_LOG.error(String.format("compensate async(%s) has exception", index), e);
                 }
             } finally {
                 run.set(false);
@@ -217,40 +214,37 @@ public class DataRepository {
         AtomicBoolean run = SYNC_RUN.computeIfAbsent(index, key -> new AtomicBoolean(false));
         if (run.compareAndSet(false, true)) {
             try {
-                long start = System.currentTimeMillis();
-                AtomicLong increment = new AtomicLong(0L);
-                try {
-                    String table = relation.getTable();
-                    if (U.isNotBlank(table) && U.isNotBlank(index)) {
-                        List<String> matchTables;
-                        if (relation.checkMatch()) {
-                            String sql = relation.matchSql();
-                            matchTables = jdbcTemplate.queryForList(sql, String.class);
-                            long sqlTime = (System.currentTimeMillis() - start);
-                            if (Logs.ROOT_LOG.isDebugEnabled()) {
-                                Logs.ROOT_LOG.debug("sql({}) time({}ms) return({}), size({})",
-                                        getSql(sql), sqlTime, A.toStr(matchTables), matchTables.size());
-                            }
-                        } else {
-                            matchTables = Collections.singletonList(table);
+                String table = relation.getTable();
+                if (U.isNotBlank(table) && U.isNotBlank(index)) {
+                    long start = System.currentTimeMillis();
+                    List<String> matchTables;
+                    if (relation.checkMatch()) {
+                        String sql = relation.matchSql();
+                        matchTables = jdbcTemplate.queryForList(sql, String.class);
+                        long sqlTime = (System.currentTimeMillis() - start);
+                        if (Logs.ROOT_LOG.isDebugEnabled()) {
+                            Logs.ROOT_LOG.debug("sql({}) time({}ms) return({}), size({})",
+                                    getSql(sql), sqlTime, A.toStr(matchTables), matchTables.size());
                         }
+                    } else {
+                        matchTables = Collections.singletonList(table);
+                    }
 
-                        for (String matchTable : matchTables) {
-                            saveSingleTable(incrementType, relation, index, matchTable, increment, 0, 0);
-                        }
-                        if (Logs.ROOT_LOG.isInfoEnabled()) {
-                            long count = increment.get();
-                            long ms = System.currentTimeMillis() - start;
-                            String tps = (count > 0) ? String.valueOf(count * 1000 / ms) : "0";
-                            // equals data will sync multi times, It will larger than db's count
-                            Logs.ROOT_LOG.info("async({}) count({}) time({}) tps({})", index, count, Dates.toHuman(ms), tps);
-                        }
+                    AtomicLong increment = new AtomicLong(0L);
+                    for (String matchTable : matchTables) {
+                        saveSingleTable(incrementType, relation, index, matchTable, increment, 0, 0);
                     }
-                } catch (Exception e) {
-                    if (Logs.ROOT_LOG.isErrorEnabled()) {
-                        Logs.ROOT_LOG.error(String.format("async(%s) count(%s) time(%s), but has exception",
-                                index, increment.get(), Dates.toHuman(System.currentTimeMillis() - start)));
+                    if (Logs.ROOT_LOG.isInfoEnabled()) {
+                        long count = increment.get();
+                        long ms = System.currentTimeMillis() - start;
+                        String tps = (count > 0) ? String.valueOf(count * 1000 / ms) : "0";
+                        // equals data will sync multi times, It will larger than db's count
+                        Logs.ROOT_LOG.info("async({}) count({}) time({}) tps({})", index, count, Dates.toHuman(ms), tps);
                     }
+                }
+            } catch (Exception e) {
+                if (Logs.ROOT_LOG.isErrorEnabled()) {
+                    Logs.ROOT_LOG.error(String.format("async(%s) has exception", index), e);
                 }
             } finally {
                 run.set(false);
