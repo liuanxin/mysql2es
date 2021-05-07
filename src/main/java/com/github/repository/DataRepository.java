@@ -572,9 +572,8 @@ public class DataRepository {
             } else if (U.isNumber(template)) {
                 return index + template;
             } else {
-                if (Logs.ROOT_LOG.isWarnEnabled()) {
-                    Logs.ROOT_LOG.warn("templateColumn on the data is not a Date type and not a Number type");
-                }
+                throw new RuntimeException(String.format(
+                        "index(%s): templateColumn on the data(%s) is not a Date type and not a Number type", index, data));
             }
         }
         return index;
