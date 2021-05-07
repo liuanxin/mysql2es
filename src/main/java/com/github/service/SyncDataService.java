@@ -5,7 +5,10 @@ import com.github.model.IncrementStorageType;
 import com.github.model.Relation;
 import com.github.repository.DataRepository;
 import com.github.repository.EsRepository;
-import com.github.util.*;
+import com.github.util.A;
+import com.github.util.Dates;
+import com.github.util.F;
+import com.github.util.Logs;
 import com.google.common.collect.Maps;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -76,7 +79,7 @@ public class SyncDataService {
         try {
             IncrementStorageType incrementType = config.getIncrementType();
             boolean deleteEveryTime = incrementType == IncrementStorageType.TEMP_FILE && config.isDeleteTempEveryTime();
-            Map<String, Future<String>> resultMap = Maps.newHashMap();
+            Map<String, Future<Void>> resultMap = Maps.newHashMap();
             for (Relation relation : config.getRelation()) {
                 resultMap.put(relation.useKey(), dataRepository.asyncData(incrementType, relation));
 
@@ -84,24 +87,9 @@ public class SyncDataService {
                     F.delete(relation.getTable(), relation.getIndex());
                 }
             }
-            for (Map.Entry<String, Future<String>> entry : resultMap.entrySet()) {
+            for (Map.Entry<String, Future<Void>> entry : resultMap.entrySet()) {
                 try {
-                    String msg = entry.getValue().get();
-                    if (U.isNumber(msg)) {
-                        if (Logs.ROOT_LOG.isInfoEnabled()) {
-                            Long count = U.toLong(msg);
-                            long ms = System.currentTimeMillis() - start;
-                            String tps = (U.greater0(count) && ms > 0) ? String.valueOf(count * 1000 / ms) : "0";
-                            // equals data will sync multi times, It will larger than db's count
-                            Logs.ROOT_LOG.info("async({}) count({}), time({}) tps({})",
-                                    entry.getKey(), count, Dates.toHuman(ms), tps);
-                        }
-                    } else {
-                        if (Logs.ROOT_LOG.isErrorEnabled()) {
-                            Logs.ROOT_LOG.error(String.format("async(%s) has return (%s), time(%s)",
-                                    entry.getKey(), msg, Dates.toHuman(System.currentTimeMillis() - start)));
-                        }
-                    }
+                    entry.getValue().get();
                 } catch (InterruptedException | ExecutionException e) {
                     if (Logs.ROOT_LOG.isErrorEnabled()) {
                         Logs.ROOT_LOG.error(String.format("async(%s) Thread exception, time(%s)",
@@ -141,28 +129,14 @@ public class SyncDataService {
             IncrementStorageType incrementType = config.getIncrementType();
             int beginIntervalSecond = config.getBeginIntervalSecond();
             int compensateSecond = config.getCompensateSecond();
-            Map<String, Future<String>> resultMap = Maps.newHashMap();
+            Map<String, Future<Void>> resultMap = Maps.newHashMap();
             for (Relation relation : config.getRelation()) {
                 resultMap.put(relation.useKey(), dataRepository.asyncCompensateData(incrementType, relation,
                         beginIntervalSecond, compensateSecond));
             }
-            for (Map.Entry<String, Future<String>> entry : resultMap.entrySet()) {
+            for (Map.Entry<String, Future<Void>> entry : resultMap.entrySet()) {
                 try {
-                    String msg = entry.getValue().get();
-                    if (U.isNumber(msg)) {
-                        if (Logs.ROOT_LOG.isInfoEnabled()) {
-                            Long count = U.toLong(msg);
-                            long ms = System.currentTimeMillis() - start;
-                            String tps = (U.greater0(count) && ms > 0) ? String.valueOf(count * 1000 / ms) : "0";
-                            Logs.ROOT_LOG.info("compensate async({}) count({}) time({}) tps({})",
-                                    entry.getKey(), count, Dates.toHuman(ms), tps);
-                        }
-                    } else {
-                        if (Logs.ROOT_LOG.isErrorEnabled()) {
-                            Logs.ROOT_LOG.error(String.format("compensate async(%s) has return (%s), time(%s)",
-                                    entry.getKey(), msg, Dates.toHuman(System.currentTimeMillis() - start)));
-                        }
-                    }
+                    entry.getValue().get();
                 } catch (InterruptedException | ExecutionException e) {
                     if (Logs.ROOT_LOG.isErrorEnabled()) {
                         Logs.ROOT_LOG.error(String.format("compensate async(%s) Thread exception, time(%s)",
