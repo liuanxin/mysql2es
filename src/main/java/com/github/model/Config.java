@@ -43,7 +43,7 @@ public class Config {
      * @see org.springframework.scheduling.support.CronSequenceGenerator#doParse(String[])
      */
     @SuppressWarnings("deprecation")
-    private String cron = "7 * * * * *"; // every minutes
+    private String cron = "0 * * * * *"; // every minutes
 
     private boolean enableCompensate = false;
     private String compensateCron = "13 0/2 * * * *"; // every 2 minutes on the 13th second
