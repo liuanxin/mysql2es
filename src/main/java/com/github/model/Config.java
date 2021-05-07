@@ -25,9 +25,6 @@ public class Config {
     /** increment value storage, default has temp file: -Djava.io.tmpdir=/path/ */
     private IncrementStorageType incrementType = IncrementStorageType.TEMP_FILE;
 
-    /** delete temporary files every time when sync */
-    private boolean deleteTempEveryTime = false;
-
     /**
      * <pre>
      * .---------------- second (0 - 59)         if (0/10) then (0, 10, 20, 30, 40, 50) run
@@ -47,8 +44,8 @@ public class Config {
 
     private boolean enableCompensate = false;
     private String compensateCron = "13 0/2 * * * *"; // every 2 minutes on the 13th second
-    private int beginIntervalSecond = 600;
-    private int compensateSecond = 60;
+    private int beginCompensateSecond = 1200; // sync data is within 20 minutes
+    private int compensateSecond = 300; // Sync data within 5 minutes
 
     /**
      * <pre>
