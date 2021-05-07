@@ -1,6 +1,7 @@
 package com.github.repository;
 
 import com.github.model.ChildMapping;
+import com.github.model.Config;
 import com.github.model.IncrementStorageType;
 import com.github.model.Relation;
 import com.github.util.*;
@@ -30,7 +31,7 @@ public class DataRepository {
     /**
      * <pre>
      * CREATE TABLE IF NOT EXISTS `t_db_to_es` (
-     *   `table_index` VARCHAR(64) NOT NULL COMMENT '表 + es index',
+     *   `table_index` VARCHAR(128) NOT NULL COMMENT '表 + es index',
      *   `increment_value` VARCHAR(256) NOT NULL COMMENT '增量数据值',
      *   `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
      *   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -40,7 +41,7 @@ public class DataRepository {
      */
     private static final String GENERATE_TABLE =
             "CREATE TABLE IF NOT EXISTS `t_db_to_es` (" +
-            "  `table_index` VARCHAR(64) NOT NULL," +
+            "  `table_index` VARCHAR(128) NOT NULL," +
             "  `increment_value` VARCHAR(256) NOT NULL," +
             "  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP," +
             "  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP," +
@@ -52,6 +53,7 @@ public class DataRepository {
     private static final String GET_INCREMENT = "SELECT `increment_value` FROM `t_db_to_es` WHERE `table_index` = ?";
 
 
+    private final Config config;
     private final JdbcTemplate jdbcTemplate;
     private final EsRepository esRepository;
 
@@ -135,8 +137,8 @@ public class DataRepository {
                 }
                 relation.setIdColumn(idList);
             } else {
-                for (String key : idColumn) {
-                    U.assertNil(fieldMap.get(key), String.format("table (%s) don't have column (%s)", table, key));
+                for (String id : idColumn) {
+                    U.assertNil(fieldMap.get(id), String.format("table(%s) don't have column(%s)", table, id));
                 }
             }
             return propertyMap;
@@ -217,12 +219,16 @@ public class DataRepository {
 
     private void saveSingleTable(IncrementStorageType incrementType, Relation relation, String index,
                                  String matchTable, AtomicLong increment, int beginIntervalSecond, int compensateSecond) {
+        if (!config.isEnable()) {
+            throw new RuntimeException("break sync db to es");
+        }
+
         String lastValue = getLastValue(incrementType, matchTable, relation.getIncrementColumn(), index);
         boolean hasCompensate = (compensateSecond > 0) && U.isNotBlank(lastValue);
         if (hasCompensate) {
             String oldValue = lastValue.split(EQUALS_I_SPLIT)[0];
             Date date = Dates.parse(oldValue);
-            if (U.isNotBlank(date)) {
+            if (U.isNotNull(date)) {
                 if (beginIntervalSecond > 0) {
                     Date startCompensate = Dates.addSecond(Dates.now(), -beginIntervalSecond);
                     if (startCompensate.getTime() > date.getTime()) {
@@ -251,6 +257,10 @@ public class DataRepository {
 
     private String handleGreaterAndEquals(IncrementStorageType incrementType, Relation relation, String matchTable,
                                           String lastValue, String matchInId, AtomicLong increment, boolean hasCompensate) {
+        if (!config.isEnable()) {
+            throw new RuntimeException("break sync db to es");
+        }
+
         if (U.isNotBlank(lastValue) && lastValue.endsWith(EQUALS_SUFFIX)) {
             handleEquals(incrementType, relation, matchTable, lastValue, 0, matchInId, 0, increment, false);
             return lastValue.substring(0, lastValue.length() - EQUALS_SUFFIX.length());
@@ -274,13 +284,15 @@ public class DataRepository {
         long allSqlTime = (System.currentTimeMillis() - start);
 
         long esStart = System.currentTimeMillis();
-        String index = relation.useIndex();
-        int size = esRepository.saveDataToEs(index, fixDocument(relation, dataList, matchInId, relationData, nestedData));
+        Map<String, Map<String, Map<String, String>>> esDataMap =
+                fixIndexDocument(relation, dataList, matchInId, relationData, nestedData);
+        int size = esRepository.saveDataToEs(esDataMap);
         increment.addAndGet(size);
         long end = System.currentTimeMillis();
         if (Logs.ROOT_LOG.isInfoEnabled()) {
             Logs.ROOT_LOG.info("{}greater({}) sql table({}) time({}ms) size({}) batch to es({}) time({}ms) success({}), all time({}ms)",
-                    (hasCompensate ? "compensate " : ""), lastValue, matchTable, allSqlTime, dataList.size(), index, (end - esStart), size, (end - start));
+                    (hasCompensate ? "compensate " : ""), lastValue, matchTable, allSqlTime, dataList.size(),
+                    esDataMap.keySet(), (end - esStart), size, (end - start));
         }
         if (size == 0) {
             // if write to es false, can break loop
@@ -302,7 +314,7 @@ public class DataRepository {
         handleEquals(incrementType, relation, matchTable, lastValue, lastAndCount.get(lastValue), matchInId, 0, increment, hasCompensate);
         // write last record
         saveLastValue(incrementType, matchTable,
-                relation.getIncrementColumn() + (hasCompensate ? COMPENSATE_SUFFIX : ""), index, lastValue);
+                relation.getIncrementColumn() + (hasCompensate ? COMPENSATE_SUFFIX : ""), relation.getIndex(), lastValue);
 
         // if sql: limit 1000, query data size 900, can break loop
         if (dataList.size() < relation.getLimit()) {
@@ -313,6 +325,10 @@ public class DataRepository {
     private void handleEquals(IncrementStorageType incrementType, Relation relation, String matchTable,
                               String tempColumnValue, int lastDataCount, String matchInId, int lastEqualsCount,
                               AtomicLong increment, boolean hasCompensate) {
+        if (!config.isEnable()) {
+            throw new RuntimeException("break sync db to es");
+        }
+
         String eai;
         if (tempColumnValue.endsWith(EQUALS_SUFFIX)) {
             eai = tempColumnValue.substring(0, tempColumnValue.length() - EQUALS_SUFFIX.length());
@@ -347,7 +363,6 @@ public class DataRepository {
             return;
         }
 
-        String index = relation.useIndex();
         int equalsLoopCount = relation.loopCount(equalsCount);
         int i = 0;
         if (equalsArr.length == 2) {
@@ -383,13 +398,15 @@ public class DataRepository {
             long allSqlTime = (System.currentTimeMillis() - sqlStart);
 
             long esStart = System.currentTimeMillis();
-            int size = esRepository.saveDataToEs(index, fixDocument(relation, equalsDataList, matchInId, relationData, nestedData));
+            Map<String, Map<String, Map<String, String>>> esDataMap =
+                    fixIndexDocument(relation, equalsDataList, matchInId, relationData, nestedData);
+            int size = esRepository.saveDataToEs(esDataMap);
             increment.addAndGet(size);
             long end = System.currentTimeMillis();
             if (Logs.ROOT_LOG.isInfoEnabled()) {
                 Logs.ROOT_LOG.info("{}equals({} : {} -> {}) sql table({}) time({}ms) size({}) batch to es({}) time({}ms) success({}), all time({}ms)",
                         (hasCompensate ? "compensate " : ""), equalsValue, i, equalsLoopCount, matchTable,
-                        allSqlTime, equalsDataList.size(), index, (end - esStart), size, (end - sqlStart));
+                        allSqlTime, equalsDataList.size(), esDataMap.keySet(), (end - esStart), size, (end - sqlStart));
             }
 
             // if success was 0, can break equals handle
@@ -402,7 +419,7 @@ public class DataRepository {
                 // write current equals record
                 String valueToSave = equalsValue + EQUALS_I_SPLIT + i + EQUALS_SUFFIX;
                 saveLastValue(incrementType, matchTable,
-                        relation.getIncrementColumn() + (hasCompensate ? COMPENSATE_SUFFIX : ""), index, valueToSave);
+                        relation.getIncrementColumn() + (hasCompensate ? COMPENSATE_SUFFIX : ""), relation.useIndex(), valueToSave);
             }
         }
     }
@@ -421,7 +438,7 @@ public class DataRepository {
                                      Relation relation, String matchTable, int i, String matchInId,
                                      int currentEqualsCount, AtomicLong increment, boolean hasCompensate) {
         Date equalsDate = Dates.parse(equalsValue);
-        if (U.isNotBlank(equalsDate)) {
+        if (U.isNotNull(equalsDate)) {
             long equalsMs = equalsDate.getTime();
             boolean needSleepToNextSecond = (nowMs > equalsMs) && (equalsMs / 1000 == nowMs / 1000);
             if (needSleepToNextSecond) {
@@ -493,20 +510,21 @@ public class DataRepository {
     /** write last record */
     private Map<String, Integer> getLast(Relation relation, List<Map<String, Object>> dataList) {
         String column = relation.getIncrementColumn();
-        Map<String, Integer> dataCountMap = Maps.newHashMap();
 
         String lastIncrementData = getIncrementData(A.last(dataList), column);
         if (U.isBlank(lastIncrementData)) {
-            return dataCountMap;
+            return Collections.emptyMap();
         }
+
+        Map<String, Integer> dataCountMap = Maps.newHashMap();
         String firstIncrementData = getIncrementData(A.first(dataList), column);
-        if (lastIncrementData.equals(firstIncrementData)) {
+        if (U.isNotNull(firstIncrementData) && firstIncrementData.equals(lastIncrementData)) {
             dataCountMap.put(lastIncrementData, dataList.size());
             return dataCountMap;
         }
 
         dataCountMap.put(lastIncrementData, 1);
-        // if has [1,2,3,4,5] just handle [2,3,4]
+        // if has [1,2,3,4,5], just handle [2,3,4], ignore head and tail
         for (int i = dataList.size() - 2; i >= 1; i--) {
             String incrementData = getIncrementData(dataList.get(i), column);
             if (lastIncrementData.equals(incrementData)) {
@@ -533,13 +551,121 @@ public class DataRepository {
         }
     }
 
-    /** traverse the Database Result and organize into es Document */
-    private Map<String, Map<String, String>> fixDocument(Relation relation, List<Map<String, Object>> dataList, String matchInId,
-                                                         Map<String, List<Map<String, Object>>> relationData,
-                                                         Map<String, List<Map<String, Object>>> nestedData) {
+    private String handleIndex(String index, Relation relation, Map<String, Object> data) {
+        String templateColumn = relation.getTemplateColumn();
+        if (U.isNotBlank(templateColumn)) {
+            String template = U.toStr(data.get(templateColumn));
+            Date datetime = Dates.parse(template);
+            if (U.isNotBlank(datetime)) {
+                return index + Dates.format(datetime, relation.getTemplatePattern());
+            } else if (U.isNumber(template)) {
+                return index + template;
+            } else {
+                if (Logs.ROOT_LOG.isWarnEnabled()) {
+                    Logs.ROOT_LOG.warn("templateColumn on the data is not a Date type and not a Number type");
+                }
+            }
+        }
+        return index;
+    }
+
+    /**
+     * organize db result to es Document
+     *
+     * {
+     *   index1 : { id1 : data1, id2 : data2 },
+     *   index2 : { id3 : data3, id4 : data4 }
+     * }
+     *
+     * data1: { id: id1, name: xxx ... }
+     * data2: { id: id2, name: yyy ... }
+     * data3: { id: id3, name: zzz ... }
+     * data4: { id: id4, name: abc ... }
+     */
+    private Map<String, Map<String, Map<String, String>>> fixIndexDocument(
+            Relation relation,
+            List<Map<String, Object>> dataList,
+            String matchInId,
+            Map<String, List<Map<String, Object>>> relationData,
+            Map<String, List<Map<String, Object>>> nestedData
+    ) {
+        Map<String, ChildMapping> relationMapping = relation.getRelationMapping();
+        Map<String, Map<String, Map<String, Object>>> relationMap = handleRelation(relationData, relationMapping);
+
+        Map<String, ChildMapping> nestedMapping = relation.getNestedMapping();
+        Map<String, Multimap<String, Map<String, Object>>> nestedMap = handleNested(nestedData, nestedMapping);
+
+        Map<String, Map<String, Map<String, String>>> documentMap = Maps.newHashMap();
+        int saveSize = 0;
+        for (Map<String, Object> data : dataList) {
+            fillRelation(relationMapping, relationMap, data);
+            fillNested(nestedMapping, nestedMap, data);
+
+            Map<String, Object> dataMap = handleData(relation, data);
+            // Document no data, don't need to save? or update to nil?
+            if (A.isNotEmpty(dataMap)) {
+                Map<String, String> source = Maps.newHashMap();
+                source.put("data", Jsons.toJson(dataMap));
+
+                fillRouteOnSingle(relation, data, source);
+                fillVersionOnSingle(relation, data, source);
+
+                String realIndex = handleIndex(relation.getIndex(), relation, data);
+                Map<String, Map<String, String>> idDataMap = documentMap.get(realIndex);
+                if (A.isEmpty(idDataMap)) {
+                    idDataMap = Maps.newHashMap();
+                }
+                String id = handleId(relation, matchInId, data);
+                idDataMap.put(id, source);
+                documentMap.put(realIndex, idDataMap);
+                saveSize++;
+            }
+        }
+        if (saveSize < dataList.size()) {
+            if (Logs.ROOT_LOG.isWarnEnabled()) {
+                Logs.ROOT_LOG.warn("db size({}) <--> es size({})", dataList.size(), saveSize);
+            }
+        }
+        return documentMap;
+    }
+
+    private String handleId(Relation relation, String matchInId, Map<String, Object> data) {
+        StringBuilder idBuild = new StringBuilder();
+        String idPrefix = relation.getIdPrefix();
+        if (U.isNotBlank(idPrefix)) {
+            idBuild.append(idPrefix.trim());
+        }
+        if (U.isNotBlank(matchInId)) {
+            if (idBuild.length() > 0) {
+                idBuild.append("-");
+            }
+            idBuild.append(matchInId.trim());
+        }
+        for (String idColumn : relation.getIdColumn()) {
+            if (idBuild.length() > 0) {
+                idBuild.append("-");
+            }
+            String str = U.toStr(data.get(idColumn));
+            if (U.isNotBlank(str)) {
+                idBuild.append(str.trim());
+            }
+        }
+        String idSuffix = relation.getIdSuffix();
+        if (U.isNotBlank(idSuffix)) {
+            if (idBuild.length() > 0) {
+                idBuild.append("-");
+            }
+            idBuild.append(idSuffix.trim());
+        }
+        // if not has id, use es generator
+        return idBuild.length() == 0 ? UUIDs.base64UUID() : idBuild.toString();
+    }
+
+    private Map<String, Map<String, Map<String, Object>>> handleRelation(Map<String, List<Map<String, Object>>> relationData,
+                                                                         Map<String, ChildMapping> relationMapping) {
         Map<String, Map<String, Map<String, Object>>> relationMap = Maps.newHashMap();
-        if (A.isNotEmpty(relation.getRelationMapping())) {
-            for (Map.Entry<String, ChildMapping> entry : relation.getRelationMapping().entrySet()) {
+        if (A.isNotEmpty(relationMapping)) {
+            for (Map.Entry<String, ChildMapping> entry : relationMapping.entrySet()) {
                 String key = entry.getKey();
                 ChildMapping child = entry.getValue();
 
@@ -558,9 +684,14 @@ public class DataRepository {
                 }
             }
         }
+        return relationMap;
+    }
+
+    private Map<String, Multimap<String, Map<String, Object>>> handleNested(Map<String, List<Map<String, Object>>> nestedData,
+                                                                            Map<String, ChildMapping> nestedMapping) {
         Map<String, Multimap<String, Map<String, Object>>> nestedMap = Maps.newHashMap();
-        if (A.isNotEmpty(relation.getNestedMapping())) {
-            for (Map.Entry<String, ChildMapping> entry : relation.getNestedMapping().entrySet()) {
+        if (A.isNotEmpty(nestedMapping)) {
+            for (Map.Entry<String, ChildMapping> entry : nestedMapping.entrySet()) {
                 String key = entry.getKey();
                 ChildMapping nested = entry.getValue();
 
@@ -579,145 +710,126 @@ public class DataRepository {
                 }
             }
         }
+        return nestedMap;
+    }
 
-        Map<String, Map<String, String>> documents = Maps.newHashMap();
-        for (Map<String, Object> data : dataList) {
-            StringBuilder idBuild = new StringBuilder();
-            String idPrefix = relation.getIdPrefix();
-            if (U.isNotBlank(idPrefix)) {
-                idBuild.append(idPrefix.trim());
-            }
-            if (U.isNotBlank(matchInId)) {
-                if (idBuild.length() > 0) {
-                    idBuild.append("-");
-                }
-                idBuild.append(matchInId.trim());
-            }
-            for (String column : relation.getIdColumn()) {
-                if (idBuild.length() > 0) {
-                    idBuild.append("-");
-                }
-                String str = U.toStr(data.get(column));
-                if (U.isNotBlank(str)) {
-                    idBuild.append(str.trim());
-                }
-            }
-            String idSuffix = relation.getIdSuffix();
-            if (U.isNotBlank(idSuffix)) {
-                if (idBuild.length() > 0) {
-                    idBuild.append("-");
-                }
-                idBuild.append(idSuffix.trim());
-            }
-            // if not has id, use es generator
-            String id = idBuild.length() == 0 ? UUIDs.base64UUID() : idBuild.toString();
-
-            if (A.isNotEmpty(relation.getRelationMapping())) {
-                for (Map.Entry<String, ChildMapping> entry : relation.getRelationMapping().entrySet()) {
-                    String nestedKey = entry.getKey();
-                    if (data.containsKey(nestedKey)) {
-                        if (Logs.ROOT_LOG.isWarnEnabled()) {
-                            Logs.ROOT_LOG.warn("one to one mapping({}) has already alias in primary sql, ignore put)", nestedKey);
-                        }
-                    } else {
-                        ChildMapping nestedValue = entry.getValue();
-                        Map<String, Map<String, Object>> dataMap = relationMap.get(nestedKey);
-                        if (A.isNotEmpty(dataMap)) {
-                            Map<String, Object> map = dataMap.get(U.toStr(data.get(nestedValue.getMainField())));
-                            if (A.isNotEmpty(map)) {
-                                // data.putAll(map); // cover all fields
-                                for (Map.Entry<String, Object> me : map.entrySet()) {
-                                    if (data.containsKey(me.getKey())) {
-                                        if (Logs.ROOT_LOG.isWarnEnabled()) {
-                                            Logs.ROOT_LOG.warn("one to one mapping({}) field({}) has already alias in primary sql, ignore put)",
-                                                    nestedKey, me.getKey());
-                                        }
-                                    } else {
-                                        data.put(me.getKey(), me.getValue());
+    private void fillRelation(Map<String, ChildMapping> relationMapping,
+                              Map<String, Map<String, Map<String, Object>>> relationMap,
+                              Map<String, Object> data) {
+        if (A.isNotEmpty(relationMapping)) {
+            for (Map.Entry<String, ChildMapping> entry : relationMapping.entrySet()) {
+                String nestedKey = entry.getKey();
+                if (data.containsKey(nestedKey)) {
+                    if (Logs.ROOT_LOG.isWarnEnabled()) {
+                        Logs.ROOT_LOG.warn("one to one mapping({}) has already alias in primary sql, ignore put)", nestedKey);
+                    }
+                } else {
+                    ChildMapping nestedValue = entry.getValue();
+                    Map<String, Map<String, Object>> dataMap = relationMap.get(nestedKey);
+                    if (A.isNotEmpty(dataMap)) {
+                        Map<String, Object> map = dataMap.get(U.toStr(data.get(nestedValue.getMainField())));
+                        if (A.isNotEmpty(map)) {
+                            // data.putAll(map); // cover all fields
+                            for (Map.Entry<String, Object> me : map.entrySet()) {
+                                if (data.containsKey(me.getKey())) {
+                                    if (Logs.ROOT_LOG.isWarnEnabled()) {
+                                        Logs.ROOT_LOG.warn("one to one mapping({}) field({}) has already alias in primary sql, ignore put)",
+                                                nestedKey, me.getKey());
                                     }
+                                } else {
+                                    data.put(me.getKey(), me.getValue());
                                 }
                             }
                         }
                     }
                 }
             }
+        }
+    }
 
-            if (A.isNotEmpty(relation.getNestedMapping())) {
-                for (Map.Entry<String, ChildMapping> entry : relation.getNestedMapping().entrySet()) {
-                    String nestedKey = entry.getKey();
-                    if (data.containsKey(nestedKey)) {
-                        if (Logs.ROOT_LOG.isWarnEnabled()) {
-                            Logs.ROOT_LOG.warn("nested mapping({}) has already alias in primary sql, ignore put)", nestedKey);
-                        }
-                    } else {
-                        ChildMapping nestedValue = entry.getValue();
-                        Multimap<String, Map<String, Object>> multimap = nestedMap.get(nestedKey);
-                        if (U.isNotBlank(multimap) && multimap.size() > 0) {
-                            Collection<Map<String, Object>> list = multimap.get(U.toStr(data.get(nestedValue.getMainField())));
-                            if (A.isNotEmpty(list)) {
-                                data.put(nestedKey, list);
-                            }
+    private void fillNested(Map<String, ChildMapping> nestedMapping,
+                            Map<String, Multimap<String, Map<String, Object>>> nestedMap,
+                            Map<String, Object> data) {
+        if (A.isNotEmpty(nestedMapping)) {
+            for (Map.Entry<String, ChildMapping> entry : nestedMapping.entrySet()) {
+                String nestedKey = entry.getKey();
+                if (data.containsKey(nestedKey)) {
+                    if (Logs.ROOT_LOG.isWarnEnabled()) {
+                        Logs.ROOT_LOG.warn("nested mapping({}) has already alias in primary sql, ignore put)", nestedKey);
+                    }
+                } else {
+                    ChildMapping nestedValue = entry.getValue();
+                    Multimap<String, Map<String, Object>> multimap = nestedMap.get(nestedKey);
+                    if (U.isNotBlank(multimap) && multimap.size() > 0) {
+                        Collection<Map<String, Object>> list = multimap.get(U.toStr(data.get(nestedValue.getMainField())));
+                        if (A.isNotEmpty(list)) {
+                            data.put(nestedKey, list);
                         }
                     }
                 }
-            }
-
-            Map<String, Object> dataMap = Maps.newHashMap();
-            for (Map.Entry<String, Object> entry : data.entrySet()) {
-                String key = relation.useField(entry.getKey());
-                if (U.isNotBlank(key)) {
-                    Object value = entry.getValue();
-                    if (U.isNotBlank(value)) {
-                        if (Sets.newHashSet("0000-00-00", "00:00:00", "0000-00-00 00:00:00").contains(value.toString())) {
-                            dataMap.put(key, NIL_DATE_TIME);
-                        } else {
-                            dataMap.put(key, value);
-                        }
-                    } else {
-                        // field has suggest and null, can't be write => https://elasticsearch.cn/question/4051
-                        // use    IFNULL(xxx, ' ')    in SQL
-                        // dataMap.put(key, U.isBlank(value) ? "" : value);
-                        dataMap.put(key, "");
-                    }
-                }
-            }
-
-            // Document no data, don't need to save? or update to nil?
-            if (A.isNotEmpty(dataMap)) {
-                Map<String, String> sourceMap = Maps.newHashMap();
-                sourceMap.put("data", Jsons.toJson(dataMap));
-
-                if (A.isNotEmpty(relation.getRouteColumn())) {
-                    List<String> routes = Lists.newArrayList();
-                    for (String route : relation.getRouteColumn()) {
-                        Object obj = data.get(route);
-                        if (U.isNotBlank(obj)) {
-                            routes.add(U.toStr(obj).trim());
-                        }
-                    }
-                    if (A.isNotEmpty(routes)) {
-                        sourceMap.put("routing", A.toStr(routes));
-                    }
-                }
-                if (U.isNotBlank(relation.getVersionColumn())) {
-                    String version = U.toStr(data.get(relation.getVersionColumn()));
-                    if (U.isNumber(version) && U.greater0(Double.parseDouble(version))) {
-                        sourceMap.put("version", version);
-                    } else {
-                        Date datetime = Dates.parse(version);
-                        if (U.isNotBlank(datetime)) {
-                            sourceMap.put("version", U.toStr(datetime.getTime()));
-                        }
-                    }
-                }
-                documents.put(id, sourceMap);
             }
         }
-        if (documents.size() < dataList.size()) {
-            if (Logs.ROOT_LOG.isWarnEnabled()) {
-                Logs.ROOT_LOG.warn("data size({}) <--> es size({}), may be has duplicate id", dataList.size(), documents.size());
+    }
+
+    private Map<String, Object> handleData(Relation relation, Map<String, Object> data) {
+        Map<String, Object> dataMap = Maps.newHashMap();
+        for (Map.Entry<String, Object> entry : data.entrySet()) {
+            String key = relation.useField(entry.getKey());
+            if (U.isNotBlank(key)) {
+                Object value = entry.getValue();
+                if (U.isNotBlank(value)) {
+                    if (Sets.newHashSet("0000-00-00", "00:00:00", "0000-00-00 00:00:00").contains(value.toString())) {
+                        dataMap.put(key, NIL_DATE_TIME);
+                    } else {
+                        dataMap.put(key, value);
+                    }
+                } else {
+                    // field has suggest and null, can't be write => https://elasticsearch.cn/question/4051
+                    // use    IFNULL(xxx, ' ')    in SQL
+                    // dataMap.put(key, U.isBlank(value) ? "" : value);
+                    dataMap.put(key, "");
+                }
             }
         }
-        return documents;
+        return dataMap;
+    }
+
+    private void fillVersionOnSingle(Relation relation, Map<String, Object> data, Map<String, String> sourceMap) {
+        String versionColumn = relation.getVersionColumn();
+        if (U.isNotBlank(versionColumn)) {
+            String version = U.toStr(data.get(versionColumn));
+            if (U.isNumber(version) && U.greater0(Double.parseDouble(version))) {
+                sourceMap.put("version", version);
+            } else {
+                Date datetime = Dates.parse(version);
+                if (U.isNotNull(datetime)) {
+                    sourceMap.put("version", U.toStr(datetime.getTime()));
+                } else {
+                    if (Logs.ROOT_LOG.isWarnEnabled()) {
+                        Logs.ROOT_LOG.warn("versionColumn on the data is not a Number type, and not a Date type");
+                    }
+                }
+            }
+        }
+    }
+
+    private void fillRouteOnSingle(Relation relation, Map<String, Object> data, Map<String, String> sourceMap) {
+        List<String> routeColumnList = relation.getRouteColumn();
+        if (A.isNotEmpty(routeColumnList)) {
+            List<String> routes = Lists.newArrayList();
+            for (String route : routeColumnList) {
+                Object obj = data.get(route);
+                if (U.isNotBlank(obj)) {
+                    routes.add(U.toStr(obj).trim());
+                }
+            }
+            if (A.isEmpty(routes)) {
+                if (Logs.ROOT_LOG.isWarnEnabled()) {
+                    Logs.ROOT_LOG.warn("routeColumn has not on the data");
+                }
+            } else {
+                sourceMap.put("routing", A.toStr(routes));
+            }
+        }
     }
 }
