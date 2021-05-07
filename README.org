@@ -153,24 +153,10 @@ PUT /order
       "order_no": {
         "type": "keyword"
       },
-      "customer_code": {
-        "type": "keyword"
-      },
       "order_status": {
         "type": "integer"
       },
-      "price": {
-        "type": "scaled_float",
-        "scaling_factor": 100
-      },
-      "sum": {
-        "type": "integer"
-      },
       "create_time": {
-        "type": "date",
-        "format": "epoch_millis||yyyy-MM-dd||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSS"
-      },
-      "update_time": {
         "type": "date",
         "format": "epoch_millis||yyyy-MM-dd||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSS"
       },
@@ -178,29 +164,8 @@ PUT /order
         "type": "date",
         "format": "epoch_millis||yyyy-MM-dd||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSS"
       },
-      "ship_time": {
-        "type": "date",
-        "format": "epoch_millis||yyyy-MM-dd||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSS"
-      },
-      "receipt_time": {
-        "type": "date",
-        "format": "epoch_millis||yyyy-MM-dd||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSS"
-      },
-      "success_time": {
-        "type": "date",
-        "format": "epoch_millis||yyyy-MM-dd||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSS"
-      },
 
       "receiver": {
-        "type": "keyword"
-      },
-      "province": {
-        "type": "keyword"
-      },
-      "city": {
-        "type": "keyword"
-      },
-      "area": {
         "type": "keyword"
       },
       "address": {
@@ -217,23 +182,41 @@ PUT /order
             "type": "long"
           },
           "name": {
-            "type": "keyword"
+            "type": "text"
           },
           "sku_desc": {
             "type": "keyword"
-          },
-          "unit_price": {
-            "type": "scaled_float",
-            "scaling_factor": 100
-          },
-          "num": {
-            "type": "integer"
-          },
-          "total": {
-            "type": "scaled_float",
-            "scaling_factor": 100
           }
         }
+      }
+    }
+  }
+}
+#+END_SRC
+
+基于模板按月建索引, 对应用程序使用别名的 es 示例如下
+#+BEGIN_SRC yml
+DELETE /_template/order
+PUT /_template/order
+{
+  "index_patterns": [ "order_*" ],
+  "aliases": {
+    "order_query": {}
+  },
+  "settings": {
+    "number_of_shards": "1",
+    "number_of_replicas": "0"
+  },
+  "mappings": {
+    "properties": {
+      "id": {
+        "type": "long"
+      },
+      "order_no": {
+        "type": "keyword"
+      },
+      "order_status": {
+        "type": "integer"
       }
     }
   }
