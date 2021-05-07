@@ -1,7 +1,5 @@
 package com.github.config;
 
-import com.github.model.Config;
-import com.github.util.A;
 import com.github.util.U;
 import lombok.AllArgsConstructor;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
@@ -13,30 +11,28 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executor;
 
+/**
+ * spring.task.execution.threadNamePrefix = mysql2es-async-
+ * spring.task.execution.pool.coreSize = 8
+ * spring.task.execution.pool.maxSize = 8
+ * spring.task.execution.pool.queueCapacity = 0
+ *
+ * @see org.springframework.boot.autoconfigure.task.TaskExecutionProperties
+ */
 @Configuration
 @EnableAsync
 @AllArgsConstructor
 public class TaskConfig implements AsyncConfigurer {
 
-    private final Config config;
-
     @Override
     public Executor getAsyncExecutor() {
+        int size = U.PROCESSORS << 2;
+
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-
-        if (U.isNotBlank(config) && A.isNotEmpty(config.getRelation())) {
-            int size = config.getRelation().size() << 1;
-            executor.setCorePoolSize(size);
-            executor.setMaxPoolSize(size);
-            executor.setQueueCapacity(0);
-        } else {
-            int size = U.PROCESSORS;
-            executor.setCorePoolSize(size);
-            executor.setMaxPoolSize(size << 1);
-            executor.setQueueCapacity(size);
-        }
-
-        executor.setThreadNamePrefix("mysql2es-executor-");
+        executor.setCorePoolSize(size);
+        executor.setMaxPoolSize(size);
+        executor.setQueueCapacity(0);
+        executor.setThreadNamePrefix("mysql2es-async-");
         executor.initialize();
         return executor;
     }
