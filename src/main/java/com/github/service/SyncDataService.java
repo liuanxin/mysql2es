@@ -7,30 +7,20 @@ import com.github.repository.DataRepository;
 import com.github.repository.EsRepository;
 import com.github.util.A;
 import com.github.util.Dates;
-import com.github.util.F;
 import com.github.util.Logs;
-import com.google.common.collect.Maps;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @SuppressWarnings("rawtypes")
 @Component
 @RequiredArgsConstructor
 public class SyncDataService {
 
-    private static final AtomicBoolean SYNC_RUN = new AtomicBoolean(false);
-    private static final AtomicBoolean COMPENSATE_RUN = new AtomicBoolean(false);
-
-
     private final Config config;
     private final EsRepository esRepository;
     private final DataRepository dataRepository;
-
 
     public void init() {
         if (!config.isEnable()) {
@@ -65,48 +55,10 @@ public class SyncDataService {
         if (!config.isEnable()) {
             return;
         }
-        if (!SYNC_RUN.compareAndSet(false, true)) {
-            if (Logs.ROOT_LOG.isInfoEnabled()) {
-                Logs.ROOT_LOG.info("task has be running");
-            }
-            return;
-        }
 
-        if (Logs.ROOT_LOG.isInfoEnabled()) {
-            Logs.ROOT_LOG.info("begin to run task");
-        }
-        long start = System.currentTimeMillis();
-        try {
-            IncrementStorageType incrementType = config.getIncrementType();
-            boolean deleteEveryTime = incrementType == IncrementStorageType.TEMP_FILE && config.isDeleteTempEveryTime();
-            Map<String, Future<Void>> resultMap = Maps.newHashMap();
-            for (Relation relation : config.getRelation()) {
-                resultMap.put(relation.useKey(), dataRepository.asyncData(incrementType, relation));
-
-                if (deleteEveryTime) {
-                    F.delete(relation.getTable(), relation.getIndex());
-                }
-            }
-            for (Map.Entry<String, Future<Void>> entry : resultMap.entrySet()) {
-                try {
-                    entry.getValue().get();
-                } catch (InterruptedException | ExecutionException e) {
-                    if (Logs.ROOT_LOG.isErrorEnabled()) {
-                        Logs.ROOT_LOG.error(String.format("async(%s) Thread exception, time(%s)",
-                                entry.getKey(), Dates.toHuman(System.currentTimeMillis() - start)), e);
-                    }
-                } catch (Exception e) {
-                    if (Logs.ROOT_LOG.isErrorEnabled()) {
-                        Logs.ROOT_LOG.error(String.format("async(%s) exception, time(%s)",
-                                entry.getKey(), Dates.toHuman(System.currentTimeMillis() - start)), e);
-                    }
-                }
-            }
-        } finally {
-            if (Logs.ROOT_LOG.isInfoEnabled()) {
-                Logs.ROOT_LOG.info("end of run task, time({})", Dates.toHuman(System.currentTimeMillis() - start));
-            }
-            SYNC_RUN.set(false);
+        IncrementStorageType incrementType = config.getIncrementType();
+        for (Relation relation : config.getRelation()) {
+            dataRepository.asyncData(incrementType, relation);
         }
     }
 
@@ -114,46 +66,12 @@ public class SyncDataService {
         if (!config.isEnable() || !config.isEnableCompensate()) {
             return;
         }
-        if (!COMPENSATE_RUN.compareAndSet(false, true)) {
-            if (Logs.ROOT_LOG.isInfoEnabled()) {
-                Logs.ROOT_LOG.info("compensate task has be running");
-            }
-            return;
-        }
 
-        if (Logs.ROOT_LOG.isInfoEnabled()) {
-            Logs.ROOT_LOG.info("compensate begin to run task");
-        }
-        long start = System.currentTimeMillis();
-        try {
-            IncrementStorageType incrementType = config.getIncrementType();
-            int beginIntervalSecond = config.getBeginIntervalSecond();
-            int compensateSecond = config.getCompensateSecond();
-            Map<String, Future<Void>> resultMap = Maps.newHashMap();
-            for (Relation relation : config.getRelation()) {
-                resultMap.put(relation.useKey(), dataRepository.asyncCompensateData(incrementType, relation,
-                        beginIntervalSecond, compensateSecond));
-            }
-            for (Map.Entry<String, Future<Void>> entry : resultMap.entrySet()) {
-                try {
-                    entry.getValue().get();
-                } catch (InterruptedException | ExecutionException e) {
-                    if (Logs.ROOT_LOG.isErrorEnabled()) {
-                        Logs.ROOT_LOG.error(String.format("compensate async(%s) Thread exception, time(%s)",
-                                entry.getKey(), Dates.toHuman(System.currentTimeMillis() - start)), e);
-                    }
-                } catch (Exception e) {
-                    if (Logs.ROOT_LOG.isErrorEnabled()) {
-                        Logs.ROOT_LOG.error(String.format("compensate async(%s) exception, time(%s)",
-                                entry.getKey(), Dates.toHuman(System.currentTimeMillis() - start)), e);
-                    }
-                }
-            }
-        } finally {
-            if (Logs.ROOT_LOG.isInfoEnabled()) {
-                Logs.ROOT_LOG.info("compensate end of run task, time({})", Dates.toHuman(System.currentTimeMillis() - start));
-            }
-            COMPENSATE_RUN.set(false);
+        IncrementStorageType incrementType = config.getIncrementType();
+        int beginCompensateSecond = config.getBeginCompensateSecond();
+        int compensateSecond = config.getCompensateSecond();
+        for (Relation relation : config.getRelation()) {
+            dataRepository.asyncCompensateData(incrementType, relation, beginCompensateSecond, compensateSecond);
         }
     }
 }
