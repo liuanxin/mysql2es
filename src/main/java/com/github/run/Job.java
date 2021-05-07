@@ -18,6 +18,7 @@ import org.springframework.scheduling.support.CronTrigger;
  */
 @Configuration
 @AllArgsConstructor
+@SuppressWarnings("NullableProblems")
 public class Job implements SchedulingConfigurer {
 
     private final Config config;
@@ -25,13 +26,17 @@ public class Job implements SchedulingConfigurer {
 
     @Override
     public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
-        ThreadPoolTaskScheduler crontab = new ThreadPoolTaskScheduler();
-        crontab.setPoolSize(U.PROCESSORS << 2);
-        crontab.setThreadNamePrefix("mysql2es-crontab-");
-        crontab.initialize();
-        taskRegistrar.setTaskScheduler(crontab);
+        if (config.isEnable()) {
+            ThreadPoolTaskScheduler crontab = new ThreadPoolTaskScheduler();
+            crontab.setPoolSize(U.PROCESSORS << 2);
+            crontab.setThreadNamePrefix("mysql2es-crontab-");
+            crontab.initialize();
+            taskRegistrar.setTaskScheduler(crontab);
 
-        taskRegistrar.addTriggerTask(syncService::handle, new CronTrigger(config.getCron()));
-        taskRegistrar.addTriggerTask(syncService::handleCompensate, new CronTrigger(config.getCompensateCron()));
+            taskRegistrar.addTriggerTask(syncService::handle, new CronTrigger(config.getCron()));
+            if (config.isEnableCompensate()) {
+                taskRegistrar.addTriggerTask(syncService::handleCompensate, new CronTrigger(config.getCompensateCron()));
+            }
+        }
     }
 }
