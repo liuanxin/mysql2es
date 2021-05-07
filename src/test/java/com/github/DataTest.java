@@ -37,13 +37,16 @@ public class DataTest {
     @Sql(value = {"classpath:sql/delete.sql"}, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
     @Test
     public void test() {
-        List<Future<Long>> resultList = Lists.newArrayList();
+        List<Future<String>> resultList = Lists.newArrayList();
         for (Relation relation : relations) {
             resultList.add(dataRepository.asyncData(incrementType, relation));
         }
-        for (Future<Long> future : resultList) {
+        for (Future<String> future : resultList) {
             try {
-                future.get();
+                String msg = future.get();
+                if (Logs.ROOT_LOG.isDebugEnabled()) {
+                    Logs.ROOT_LOG.debug("test: async db data to es return: " + msg);
+                }
             } catch (InterruptedException | ExecutionException e) {
                 if (Logs.ROOT_LOG.isErrorEnabled()) {
                     Logs.ROOT_LOG.error("test: async db data to es exception", e);

@@ -49,6 +49,11 @@ public class Relation {
      */
     private String versionColumn;
 
+    /** database field used for template: https://www.elastic.co/guide/en/elasticsearch/reference/current/index-templates.html */
+    private String templateColumn;
+    /** database field used for template, the Date type's patten */
+    private String templatePattern;
+
     /** If it is a multi-table mapping, whether to stitch the info on the table to the id */
     private boolean patternToId = true;
 
