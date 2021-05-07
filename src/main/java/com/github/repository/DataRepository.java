@@ -11,16 +11,18 @@ import lombok.AllArgsConstructor;
 import org.elasticsearch.common.UUIDs;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Component
 @AllArgsConstructor
-@SuppressWarnings({ "rawtypes", "DuplicatedCode" })
+@SuppressWarnings({"rawtypes", "DuplicatedCode", "UnusedReturnValue"})
 public class DataRepository {
 
     private static final Map<String, AtomicBoolean> SYNC_RUN = new ConcurrentHashMap<>();
@@ -150,10 +152,10 @@ public class DataRepository {
     }
 
     @Async
-    public void asyncCompensateData(IncrementStorageType incrementType, Relation relation,
-                                    int beginCompensateSecond, int compensateSecond) {
+    public Future<Void> asyncCompensateData(IncrementStorageType incrementType, Relation relation,
+                                            int beginCompensateSecond, int compensateSecond) {
         if (!config.isEnable() || !config.isEnableCompensate()) {
-            return;
+            return new AsyncResult<>(null);
         }
 
         String index = relation.useIndex();
@@ -202,12 +204,13 @@ public class DataRepository {
                 Logs.ROOT_LOG.debug("compensate task ({}) has running", index);
             }
         }
+        return new AsyncResult<>(null);
     }
 
     @Async
-    public void asyncData(IncrementStorageType incrementType, Relation relation) {
+    public Future<Void> asyncData(IncrementStorageType incrementType, Relation relation) {
         if (!config.isEnable()) {
-            return;
+            return new AsyncResult<>(null);
         }
 
         String index = relation.useIndex();
@@ -257,6 +260,7 @@ public class DataRepository {
                 Logs.ROOT_LOG.debug("async task ({}) has running", index);
             }
         }
+        return new AsyncResult<>(null);
     }
 
     private void saveSingleTable(IncrementStorageType incrementType, Relation relation, String index,
