@@ -42,13 +42,13 @@ public class Config {
      *
      * @see org.springframework.scheduling.support.CronSequenceGenerator#doParse(String[])
      */
-    private String cron = "0 * * * * *"; // every minutes with default
+    @SuppressWarnings("deprecation")
+    private String cron = "0 * * * * *"; // every minutes
 
     private boolean enableCompensate = false;
-
-    private String compensateCron = "13 0/2 * * * *";
-
-    private int compensateSecond = 30;
+    private String compensateCron = "13 0/2 * * * *"; // every 2 minutes on the 13th second
+    private int beginIntervalSecond = 600;
+    private int compensateSecond = 60;
 
     /**
      * <pre>
