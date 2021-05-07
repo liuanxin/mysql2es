@@ -1,9 +1,9 @@
 package com.github.config;
 
 import com.github.util.U;
-import lombok.AllArgsConstructor;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.aop.interceptor.SimpleAsyncUncaughtExceptionHandler;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -21,12 +21,14 @@ import java.util.concurrent.Executor;
  */
 @Configuration
 @EnableAsync
-@AllArgsConstructor
 public class TaskConfig implements AsyncConfigurer {
+
+    @Value("${db2es.asyncPoolSize:0}")
+    private int asyncPoolSize;
 
     @Override
     public Executor getAsyncExecutor() {
-        int size = U.PROCESSORS << 2;
+        int size = (asyncPoolSize <= 0) ? (U.PROCESSORS << 2) : asyncPoolSize;
 
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(size);
