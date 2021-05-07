@@ -4,7 +4,6 @@ import com.google.common.base.CaseFormat;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.UUID;
 import java.util.regex.Pattern;
 
 /** util */
@@ -34,7 +33,6 @@ public final class U {
                 .convert(table.toUpperCase().startsWith("T_") ? table.toUpperCase().substring(2) : table);
     }
 
-
     public static String addSuffix(String src) {
         if (isBlank(src)) {
             return "/";
@@ -45,10 +43,6 @@ public final class U {
         return src + "/";
     }
 
-
-    public static boolean isNotNumber(Object obj) {
-        return !isNumber(obj);
-    }
     public static boolean isNumber(Object obj) {
         if (isBlank(obj)) {
             return false;
@@ -94,34 +88,20 @@ public final class U {
         }
     }
 
+    public static boolean isNull(Object obj) {
+        return obj == null;
+    }
+    public static boolean isNotNull(Object obj) {
+        return !isNull(obj);
+    }
     public static boolean isBlank(Object obj) {
-        return obj == null || obj.toString().trim().length() == 0 || "null".equalsIgnoreCase(obj.toString().trim());
+        return isNull(obj) || obj.toString().trim().length() == 0 || "null".equalsIgnoreCase(obj.toString().trim());
     }
     public static boolean isNotBlank(Object obj) {
         return !isBlank(obj);
     }
     public static String toStr(Object obj) {
         return obj == null ? null : obj.toString();
-    }
-
-    public static String toStr(Object obj, int maxLen, int leftRightLen) {
-        String str = toStr(obj);
-        if (isBlank(str)) {
-            return EMPTY;
-        }
-
-        int length = str.length();
-        if (length > maxLen) {
-            int returnLength = leftRightLen * 2 + 5;
-            if (maxLen > returnLength) {
-                return str.substring(0, leftRightLen) + " ... " + str.substring(length - leftRightLen, length);
-            }
-        }
-        return str;
-    }
-
-    public static String uuid() {
-        return UUID.randomUUID().toString();
     }
 
     public static void assertNil(Object obj, String msg) {
