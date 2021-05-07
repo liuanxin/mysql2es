@@ -54,6 +54,8 @@ db2es:
 
       route-column: c1,c2       # The fields used for routing, multiple separated by commas
       version-column: updated   # The field used for version
+      template-column: created  # The field name used for data when using the ElasticSearch template
+      template-pattern: yyyy_MM # The mode used for the field name of the data when using the ElasticSearch template, which is useful when used in the Date field
 
       column-lower-camel: true  # Whether the attribute is converted to camel case, true will convert user_name in the table to userName, the default is false
       mapping:                  # By default, it will be generated from the table field (c_some_type ==> someType), and only special cases can set.

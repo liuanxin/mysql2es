@@ -51,6 +51,8 @@ db2es:
 
       route-column: c1,c2       # 可以不设定. 数据保存进 es 时用来做分片的字段, 多个用逗号隔开
       version-column: updated   # 可以不设定. 数据保存进 es 时用来表示版本的字段, id 或 时间戳
+      template-column: created  # 可以不设定. 使用 es 模板时用来做数据的字段名
+      template-pattern: yyyy_MM # 可以不设定. 使用 es 模板时用来做数据的字段名使用的模式, 当用在日期字段时有用
 
       column-lower-camel: true  # 属性是否转为驼峰, true 则将表中的 user_name 转换成 userName, 默认是 false
       mapping:                  # 可以不设定. 默认将会从表字段生成, 只设置特殊情况即可
