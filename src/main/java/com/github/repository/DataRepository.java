@@ -602,7 +602,8 @@ public class DataRepository {
                 return index + template;
             } else {
                 throw new RuntimeException(String.format(
-                        "index(%s): templateColumn on the data(%s) is not a Date type and not a Number type", index, data));
+                        "templateColumn(%s) in data(%s: %s) is not a Date type and not a Number type",
+                        templateColumn, index, data));
             }
         }
         return index;
