@@ -273,8 +273,8 @@ public class DataRepository {
                     Date startCompensate = Dates.addSecond(Dates.now(), -beginCompensateSecond);
                     if (startCompensate.getTime() > date.getTime()) {
                         if (Logs.ROOT_LOG.isInfoEnabled()) {
-                            Logs.ROOT_LOG.info("compensation will start from({}), but it is currently({}), will not be operated",
-                                    Dates.format(startCompensate, Dates.Type.YYYY_MM_DD_HH_MM_SS), oldValue);
+                            Logs.ROOT_LOG.info("index({}) compensation will start from({}), current has ({}), not be operated",
+                                    index, Dates.format(startCompensate, Dates.Type.YYYY_MM_DD_HH_MM_SS), oldValue);
                         }
                         return;
                     }
@@ -353,8 +353,8 @@ public class DataRepository {
         }
         handleEquals(incrementType, relation, matchTable, lastValue, lastAndCount.get(lastValue), matchInId, 0, increment, hasCompensate);
         // write last record
-        saveLastValue(incrementType, matchTable,
-                relation.getIncrementColumn() + (hasCompensate ? COMPENSATE_SUFFIX : ""), relation.getIndex(), lastValue);
+        String incrementColumn = relation.getIncrementColumn() + (hasCompensate ? COMPENSATE_SUFFIX : "");
+        saveLastValue(incrementType, matchTable, incrementColumn, relation.getIndex(), lastValue);
 
         // if sql: limit 1000, query data size 900, can break loop
         if (dataList.size() < relation.getLimit()) {
@@ -458,8 +458,8 @@ public class DataRepository {
             } else {
                 // write current equals record
                 String valueToSave = equalsValue + EQUALS_I_SPLIT + i + EQUALS_SUFFIX;
-                saveLastValue(incrementType, matchTable,
-                        relation.getIncrementColumn() + (hasCompensate ? COMPENSATE_SUFFIX : ""), relation.useIndex(), valueToSave);
+                String incrementColumn = relation.getIncrementColumn() + (hasCompensate ? COMPENSATE_SUFFIX : "");
+                saveLastValue(incrementType, matchTable, incrementColumn, relation.useIndex(), valueToSave);
             }
         }
     }
