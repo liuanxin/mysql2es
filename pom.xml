@@ -19,7 +19,7 @@
 
         <!--<mysql.version>5.1.49</mysql.version>-->
         <hikaricp.version>4.0.3</hikaricp.version>
-        <elasticsearch.version>6.3.2</elasticsearch.version>
+        <elasticsearch.version>6.4.2</elasticsearch.version>
 
         <guava.version>30.1-jre</guava.version>
         <jackson.version>2.12.2</jackson.version>
