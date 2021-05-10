@@ -184,9 +184,13 @@ public class DataRepository {
                     }
                     if (Logs.ROOT_LOG.isInfoEnabled()) {
                         long count = increment.get();
-                        long ms = System.currentTimeMillis() - start;
+                        long end = System.currentTimeMillis();
+                        long ms = end - start;
                         String tps = (count > 0) ? String.valueOf(count * 1000 / ms) : "0";
-                        Logs.ROOT_LOG.info("compensate async({}) count({}) time({}) tps({})", index, count, Dates.toHuman(ms), tps);
+                        Logs.ROOT_LOG.info("compensate async({}) count({}), {} -> {} time({}) tps({})", index, count,
+                                Dates.format(new Date(start), Dates.Type.YYYY_MM_DD_HH_MM_SSSSS),
+                                Dates.format(new Date(end), Dates.Type.YYYY_MM_DD_HH_MM_SSSSS),
+                                Dates.toHuman(ms), tps);
                     }
                 }
             } catch (Exception e) {
@@ -236,10 +240,14 @@ public class DataRepository {
                     }
                     if (Logs.ROOT_LOG.isInfoEnabled()) {
                         long count = increment.get();
-                        long ms = System.currentTimeMillis() - start;
+                        long end = System.currentTimeMillis();
+                        long ms = end - start;
                         String tps = (count > 0) ? String.valueOf(count * 1000 / ms) : "0";
                         // equals data will sync multi times, It will larger than db's count
-                        Logs.ROOT_LOG.info("async({}) count({}) time({}) tps({})", index, count, Dates.toHuman(ms), tps);
+                        Logs.ROOT_LOG.info("async({}) count({}), {} -> {} time({}) tps({})", index, count,
+                                Dates.format(new Date(start), Dates.Type.YYYY_MM_DD_HH_MM_SSSSS),
+                                Dates.format(new Date(end), Dates.Type.YYYY_MM_DD_HH_MM_SSSSS),
+                                Dates.toHuman(ms), tps);
                     }
                 }
             } catch (Exception e) {
@@ -354,7 +362,7 @@ public class DataRepository {
         handleEquals(incrementType, relation, matchTable, lastValue, lastAndCount.get(lastValue), matchInId, 0, increment, hasCompensate);
         // write last record
         String incrementColumn = relation.getIncrementColumn() + (hasCompensate ? COMPENSATE_SUFFIX : "");
-        saveLastValue(incrementType, matchTable, incrementColumn, relation.getIndex(), lastValue);
+        saveLastValue(incrementType, matchTable, incrementColumn, relation.useIndex(), lastValue);
 
         // if sql: limit 1000, query data size 900, can break loop
         if (dataList.size() < relation.getLimit()) {
