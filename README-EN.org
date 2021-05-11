@@ -195,6 +195,14 @@ PUT /order
     }
   }
 }
+
+POST /_aliases
+{
+  "actions" : [
+    { "remove" : { "index" : "order", "alias" : "old_order_query" } },
+    { "add" : { "index" : "order", "alias" : "new_order_query" } }
+  ]
+}
 #+END_SRC
 
 The index is built on a monthly basis based on the template, and the example of es using aliases for the application example
