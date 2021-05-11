@@ -192,6 +192,14 @@ PUT /order
     }
   }
 }
+
+POST /_aliases
+{
+  "actions" : [
+    { "remove" : { "index" : "order", "alias" : "old_order_query" } },
+    { "add" : { "index" : "order", "alias" : "new_order_query" } }
+  ]
+}
 #+END_SRC
 
 基于模板按月建索引, 对应用程序使用别名的 es 示例如下
