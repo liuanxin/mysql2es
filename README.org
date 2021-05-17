@@ -148,7 +148,7 @@ PUT /order
       "normalizer": {
         "self_normalizer": {
           "type": "custom",
-          "filter": ["lowercase"]
+          "filter": ["trim", "lowercase"]
         }
       }
     }
@@ -232,7 +232,7 @@ PUT /_template/order
       "normalizer": {
         "self_normalizer": {
           "type": "custom",
-          "filter": ["lowercase"]
+          "filter": ["trim", "lowercase"]
         }
       }
     }
