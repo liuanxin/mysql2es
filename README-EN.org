@@ -146,7 +146,15 @@ PUT /order
 {
   "settings": {
     "number_of_shards": "5",
-    "number_of_replicas": "0"
+    "number_of_replicas": "0",
+    "analysis": {
+      "normalizer": {
+        "self_normalizer": {
+          "type": "custom",
+          "filter": ["lowercase"]
+        }
+      }
+    }
   },
   "mappings": {
     "properties": {
@@ -154,7 +162,8 @@ PUT /order
         "type": "long"
       },
       "order_no": {
-        "type": "keyword"
+        "type": "keyword",
+        "normalizer": "self_normalizer"
       },
       "order_status": {
         "type": "integer"
@@ -169,13 +178,16 @@ PUT /order
       },
 
       "receiver": {
-        "type": "keyword"
+        "type": "keyword",
+        "normalizer": "self_normalizer"
       },
       "address": {
-        "type": "keyword"
+        "type": "keyword",
+        "normalizer": "self_normalizer"
       },
       "phone": {
-        "type": "keyword"
+        "type": "keyword",
+        "normalizer": "self_normalizer"
       },
 
       "item": {
@@ -188,7 +200,8 @@ PUT /order
             "type": "text"
           },
           "sku_desc": {
-            "type": "keyword"
+            "type": "keyword",
+            "normalizer": "self_normalizer"
           }
         }
       }
@@ -216,7 +229,15 @@ PUT /_template/order
   },
   "settings": {
     "number_of_shards": "1",
-    "number_of_replicas": "0"
+    "number_of_replicas": "0",
+    "analysis": {
+      "normalizer": {
+        "self_normalizer": {
+          "type": "custom",
+          "filter": ["lowercase"]
+        }
+      }
+    }
   },
   "mappings": {
     "properties": {
@@ -224,7 +245,8 @@ PUT /_template/order
         "type": "long"
       },
       "order_no": {
-        "type": "keyword"
+        "type": "keyword",
+        "normalizer": "self_normalizer"
       },
       "order_status": {
         "type": "integer"
