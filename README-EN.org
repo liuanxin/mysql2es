@@ -197,7 +197,8 @@ PUT /order
             "type": "long"
           },
           "name": {
-            "type": "text"
+            "type": "text",
+            "normalizer": "self_normalizer"
           },
           "sku_desc": {
             "type": "keyword",
