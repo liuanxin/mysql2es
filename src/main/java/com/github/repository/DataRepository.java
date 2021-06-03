@@ -159,7 +159,7 @@ public class DataRepository {
         }
 
         String index = relation.useIndex();
-        AtomicBoolean run = COMPENSATE_RUN.computeIfAbsent(index, key -> new AtomicBoolean(false));
+        AtomicBoolean run = computeIfAbsent(COMPENSATE_RUN, index);
         if (run.compareAndSet(false, true)) {
             try {
                 String table = relation.getTable();
@@ -208,6 +208,16 @@ public class DataRepository {
         return new AsyncResult<>(null);
     }
 
+    /**
+     * A temporary workaround for Java 8 specific performance issue JDK-8161372
+     *
+     * @see <a href="https://bugs.openjdk.java.net/browse/JDK-8161372">https://bugs.openjdk.java.net/browse/JDK-8161372</a>
+     */
+    private AtomicBoolean computeIfAbsent(Map<String, AtomicBoolean> map, String key) {
+        AtomicBoolean value = map.get(key);
+        return (value != null) ? value : map.computeIfAbsent(key, mappingFunction -> new AtomicBoolean(false));
+    }
+
     @Async
     public Future<Void> asyncData(IncrementStorageType incrementType, Relation relation) {
         if (!config.isEnable()) {
@@ -215,7 +225,7 @@ public class DataRepository {
         }
 
         String index = relation.useIndex();
-        AtomicBoolean run = SYNC_RUN.computeIfAbsent(index, key -> new AtomicBoolean(false));
+        AtomicBoolean run = computeIfAbsent(SYNC_RUN, index);
         if (run.compareAndSet(false, true)) {
             try {
                 String table = relation.getTable();
@@ -575,7 +585,7 @@ public class DataRepository {
         // if has [1,2,3,4,5], just handle [2,3,4], ignore head and tail
         for (int i = dataList.size() - 2; i >= 1; i--) {
             String incrementData = getIncrementData(dataList.get(i), column);
-            if (lastIncrementData.equals(incrementData)) {
+            if (U.isNotNull(lastIncrementData) && lastIncrementData.equals(incrementData)) {
                 dataCountMap.put(lastIncrementData, dataCountMap.get(lastIncrementData) + 1);
             } else {
                 return dataCountMap;
