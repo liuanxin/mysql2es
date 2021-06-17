@@ -853,18 +853,20 @@ public class DataRepository {
     }
 
     private void fillVersionOnSingle(Relation relation, Map<String, Object> data, Map<String, String> sourceMap) {
-        String versionColumn = relation.getVersionColumn();
-        if (U.isNotBlank(versionColumn)) {
-            String version = U.toStr(data.get(versionColumn));
-            if (U.isNumber(version) && U.greater0(Double.parseDouble(version))) {
-                sourceMap.put("version", version);
-            } else {
-                Date datetime = Dates.parse(version);
-                if (U.isNotNull(datetime)) {
-                    sourceMap.put("version", U.toStr(datetime.getTime()));
+        if (config.isVersionCheck()) {
+            String versionColumn = relation.getVersionColumn();
+            if (U.isNotBlank(versionColumn)) {
+                String version = U.toStr(data.get(versionColumn));
+                if (U.isNumber(version) && U.greater0(Double.parseDouble(version))) {
+                    sourceMap.put("version", version);
                 } else {
-                    if (Logs.ROOT_LOG.isWarnEnabled()) {
-                        Logs.ROOT_LOG.warn("versionColumn on the data is not a Number type, and not a Date type");
+                    Date datetime = Dates.parse(version);
+                    if (U.isNotNull(datetime)) {
+                        sourceMap.put("version", U.toStr(datetime.getTime()));
+                    } else {
+                        if (Logs.ROOT_LOG.isWarnEnabled()) {
+                            Logs.ROOT_LOG.warn("versionColumn on the data is not a Number type, and not a Date type");
+                        }
                     }
                 }
             }
