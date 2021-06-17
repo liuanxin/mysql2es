@@ -27,6 +27,7 @@ db2es:
   compensate-cron: 1 * * * * *  # The expression of the timed task used in data compensation
   begin-interval-second: 600    # Data compensation starts when the interval between the last handle time and the current time is within this value, unit: second. default 1200(20 minute)
   compensate-second: 60         # The number of seconds before the data compensation. default 300(5 minute)
+  version-check: false          # false, no version check is done when writing es, default true
 
   relation:
     -

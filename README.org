@@ -25,6 +25,7 @@ db2es:
   compensate-cron: 1 * * * * *  # 数据补偿用到的定时任务的表达式
   begin-interval-second: 600    # 同步时间跟当前时间的间隔在这个值以内时才开始进行数据补偿, 单位: 秒. 默认 1200(20 分钟)
   compensate-second: 60         # 数据补偿时往前的时间数, 单位: 秒. 默认 300(5 分钟)
+  version-check: false          # 如果设置为 false 则写入时不做 es 的版本检查, 默认是 true
 
   relation:
     -
