@@ -47,6 +47,9 @@ public class Config {
     private int beginCompensateSecond = 1200; // sync data is within 20 minutes
     private int compensateSecond = 300; // Sync data within 5 minutes
 
+    /** false, no version check is done when writing es */
+    private boolean versionCheck = true;
+
     /**
      * <pre>
      * [

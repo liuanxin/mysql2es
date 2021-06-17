@@ -152,9 +152,11 @@ public class EsRepository {
                             doc.routing(routing);
                         }
 
-                        Long version = U.toLong(source.get("version"));
-                        if (U.greater0(version)) {
-                            doc.versionType(VersionType.EXTERNAL_GTE).version(version);
+                        if (config.isVersionCheck()) {
+                            Long version = U.toLong(source.get("version"));
+                            if (U.greater0(version)) {
+                                doc.versionType(VersionType.EXTERNAL_GTE).version(version);
+                            }
                         }
 
                         batchRequest.add(doc);
