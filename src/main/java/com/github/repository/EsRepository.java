@@ -175,7 +175,7 @@ public class EsRepository {
 
             List<BulkItemResponse.Failure> failureList = Lists.newArrayList();
             int loopSize = successSize;
-            // 只在日志中保留的头尾错误个数, 比如有 10 条错误
+            // 只在日志中保留的头尾错误个数
             int failLogHeadTailCount = 2;
             for (int i = 0; i < loopSize; i++) {
                 BulkItemResponse response = items[i];
@@ -192,7 +192,8 @@ public class EsRepository {
             }
             if (successSize == originalSize) {
                 if (Logs.ROOT_LOG.isDebugEnabled()) {
-                    Logs.ROOT_LOG.debug("batch save es({}) successSize({}) success({})", indexIdDataMap.keySet(), originalSize, successSize);
+                    Logs.ROOT_LOG.debug("batch save es({}) successSize({}) success({})",
+                            indexIdDataMap.keySet(), originalSize, successSize);
                 }
             } else if (A.isNotEmpty(failureList)) {
                 if (Logs.ROOT_LOG.isErrorEnabled()) {
@@ -205,7 +206,8 @@ public class EsRepository {
             // org.elasticsearch.index.mapper.CompletionFieldMapper.parse(443)
             // https://github.com/elastic/elasticsearch/pull/30713/files
             if (Logs.ROOT_LOG.isErrorEnabled()) {
-                Logs.ROOT_LOG.error(String.format("create or update es(%s) data exception", indexIdDataMap.keySet()), e);
+                Logs.ROOT_LOG.error(String.format("create or update es(%s) data exception",
+                        indexIdDataMap.keySet()), e);
             }
             throw new RuntimeException("save to es exception:" + e.getMessage());
         }
