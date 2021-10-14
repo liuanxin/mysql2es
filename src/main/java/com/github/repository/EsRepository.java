@@ -5,6 +5,7 @@ import com.github.util.A;
 import com.github.util.Jsons;
 import com.github.util.Logs;
 import com.github.util.U;
+import com.google.common.collect.Lists;
 import lombok.RequiredArgsConstructor;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
@@ -24,6 +25,7 @@ import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
@@ -167,32 +169,44 @@ public class EsRepository {
 
         try {
             BulkResponse responses = client.bulk(batchRequest);
-            int size = responses.getItems().length;
+            BulkItemResponse[] items = responses.getItems();
+            int successSize = items.length;
 
-            for (BulkItemResponse response : responses) {
+            List<BulkItemResponse.Failure> failureList = Lists.newArrayList();
+            int loopSize = successSize;
+            // 只在日志中保留的头尾错误个数
+            int failLogHeadTailCount = 2;
+            for (int i = 0; i < loopSize; i++) {
+                BulkItemResponse response = items[i];
                 if (response.isFailed()) {
+                    successSize--;
+
                     BulkItemResponse.Failure failure = response.getFailure();
-                    if (!"version_conflict_engine_exception".equals(failure.getType())) {
-                        if (Logs.ROOT_LOG.isErrorEnabled()) {
-                            Logs.ROOT_LOG.error("batch save({}) size({}) success({}), has error({})",
-                                    response.getIndex(), originalSize, size, failure);
+                    if (!"version_conflict_engine_exception".equalsIgnoreCase(failure.getType())) {
+                        if (failureList.size() < failLogHeadTailCount || (i + failLogHeadTailCount) >= loopSize) {
+                            failureList.add(response.getFailure());
                         }
                     }
-                    size--;
                 }
             }
-            if (size == originalSize) {
+            if (successSize == originalSize) {
                 if (Logs.ROOT_LOG.isDebugEnabled()) {
-                    Logs.ROOT_LOG.debug("batch save es({}) size({}) success({})", indexIdDataMap.keySet(), originalSize, size);
+                    Logs.ROOT_LOG.debug("batch save es({}) original size({}) success size({})",
+                            indexIdDataMap.keySet(), originalSize, successSize);
+                }
+            } else if (A.isNotEmpty(failureList)) {
+                if (Logs.ROOT_LOG.isErrorEnabled()) {
+                    Logs.ROOT_LOG.error("batch save has error({})", failureList);
                 }
             }
-            return size;
+            return successSize;
         } catch (IOException e) {
             // <= 6.3.1 version, suggest field if empty will throw IllegalArgumentException(write is good)
             // org.elasticsearch.index.mapper.CompletionFieldMapper.parse(443)
             // https://github.com/elastic/elasticsearch/pull/30713/files
             if (Logs.ROOT_LOG.isErrorEnabled()) {
-                Logs.ROOT_LOG.error(String.format("create or update es(%s) data exception", indexIdDataMap.keySet()), e);
+                Logs.ROOT_LOG.error(String.format("create or update es(%s) data exception",
+                        indexIdDataMap.keySet()), e);
             }
             throw new RuntimeException("save to es exception:" + e.getMessage());
         }
