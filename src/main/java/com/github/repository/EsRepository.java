@@ -174,7 +174,6 @@ public class EsRepository {
 
             List<BulkItemResponse.Failure> failureList = Lists.newArrayList();
             int loopSize = successSize;
-            // 只在日志中保留的头尾错误个数
             int failLogHeadTailCount = 2;
             for (int i = 0; i < loopSize; i++) {
                 BulkItemResponse response = items[i];
