@@ -192,9 +192,10 @@ public class EsRepository {
                 if (Logs.ROOT_LOG.isDebugEnabled()) {
                     Logs.ROOT_LOG.debug("batch save es({}) size({})", indexIdDataMap.keySet(), originalSize);
                 }
-            } else if (A.isNotEmpty(failureList)) {
+            } else {
                 if (Logs.ROOT_LOG.isErrorEnabled()) {
-                    Logs.ROOT_LOG.error("batch save has error({})", failureList);
+                    Logs.ROOT_LOG.error("batch save original-size({}) success-size({}) error({})",
+                            failureList, originalSize, successSize);
                 }
             }
             return successSize;
