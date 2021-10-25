@@ -116,12 +116,12 @@ public class DataRepository {
                 Object column = map.get("Field");
                 Object type = map.get("Type");
 
-                if (U.isNotBlank(column) && U.isNotBlank(type)) {
+                if (U.isNotNull(column) && U.isNotNull(type)) {
                     String field = column.toString();
                     fieldMap.put(field, true);
 
                     Object key = map.get("Key");
-                    if (U.isNotBlank(key) && "PRI".equals(key)) {
+                    if (U.isNotNull(key) && "PRI".equals(key)) {
                         idList.add(field);
                     }
                     if (scheme) {
@@ -363,9 +363,6 @@ public class DataRepository {
         }
         lastValue = A.first(lastAndCount.keySet());
         if (U.isBlank(lastValue)) {
-            return null;
-        }
-        if (U.isBlank(lastValue)) {
             // if last data was nil, can break loop
             return null;
         }
@@ -598,7 +595,7 @@ public class DataRepository {
             return null;
         }
         Object obj = data.get(column.contains(".") ? column.substring(column.indexOf(".") + 1) : column);
-        if (U.isBlank(obj)) {
+        if (U.isNull(obj)) {
             return null;
         }
 
@@ -614,7 +611,7 @@ public class DataRepository {
         if (U.isNotBlank(templateColumn)) {
             String template = U.toStr(data.get(templateColumn));
             Date datetime = Dates.parse(template);
-            if (U.isNotBlank(datetime)) {
+            if (U.isNotNull(datetime)) {
                 return index + Dates.format(datetime, relation.getTemplatePattern());
             } else if (U.isNumber(template)) {
                 return index + template;
@@ -818,7 +815,7 @@ public class DataRepository {
                 } else {
                     ChildMapping nestedValue = entry.getValue();
                     Multimap<String, Map<String, Object>> multimap = nestedMap.get(nestedKey);
-                    if (U.isNotBlank(multimap) && multimap.size() > 0) {
+                    if (U.isNotNull(multimap) && multimap.size() > 0) {
                         Collection<Map<String, Object>> list = multimap.get(U.toStr(data.get(nestedValue.getMainField())));
                         if (A.isNotEmpty(list)) {
                             data.put(nestedKey, list);
@@ -835,7 +832,7 @@ public class DataRepository {
             String key = relation.useField(entry.getKey());
             if (U.isNotBlank(key)) {
                 Object value = entry.getValue();
-                if (U.isNotBlank(value)) {
+                if (U.isNotNull(value)) {
                     if (Sets.newHashSet("0000-00-00", "00:00:00", "0000-00-00 00:00:00").contains(value.toString())) {
                         dataMap.put(key, NIL_DATE_TIME);
                     } else {
@@ -879,7 +876,7 @@ public class DataRepository {
             List<String> routes = Lists.newArrayList();
             for (String route : routeColumnList) {
                 Object obj = data.get(route);
-                if (U.isNotBlank(obj)) {
+                if (U.isNotNull(obj)) {
                     routes.add(U.toStr(obj).trim());
                 }
             }
