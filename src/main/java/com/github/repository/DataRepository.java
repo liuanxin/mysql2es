@@ -611,7 +611,7 @@ public class DataRepository {
         if (U.isNotBlank(templateColumn)) {
             String template = U.toStr(data.get(templateColumn));
             Date datetime = Dates.parse(template);
-            if (U.isNull(datetime)) {
+            if (U.isNotNull(datetime)) {
                 return index + Dates.format(datetime, relation.getTemplatePattern());
             } else if (U.isNumber(template)) {
                 return index + template;
