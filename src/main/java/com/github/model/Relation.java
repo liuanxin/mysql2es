@@ -96,7 +96,7 @@ public class Relation {
         U.assertNil(table, "must set (db table name)");
         U.assertNil(incrementColumn, "must set (db table increment-column)");
 
-        if (U.isNotBlank(limit)) {
+        if (U.isNotNull(limit)) {
             U.assert0(limit, "limit must greater 0");
         }
         if (U.isNotBlank(sql)) {

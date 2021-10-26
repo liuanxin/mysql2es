@@ -44,7 +44,7 @@ public final class U {
     }
 
     public static boolean isNumber(Object obj) {
-        if (isBlank(obj)) {
+        if (isNull(obj)) {
             return false;
         }
         try {
@@ -62,7 +62,7 @@ public final class U {
     }
 
     public static int toInt(Object obj) {
-        if (isBlank(obj)) {
+        if (isNull(obj)) {
             return 0;
         }
         if (obj instanceof Number) {
@@ -75,7 +75,7 @@ public final class U {
         }
     }
     public static Long toLong(Object obj) {
-        if (isBlank(obj)) {
+        if (isNull(obj)) {
             return null;
         }
         if (obj instanceof Number) {
@@ -94,10 +94,10 @@ public final class U {
     public static boolean isNotNull(Object obj) {
         return !isNull(obj);
     }
-    public static boolean isBlank(Object obj) {
-        return isNull(obj) || obj.toString().trim().length() == 0 || "null".equalsIgnoreCase(obj.toString().trim());
+    public static boolean isBlank(String str) {
+        return isNull(str) || str.trim().length() == 0 || "null".equalsIgnoreCase(str.trim());
     }
-    public static boolean isNotBlank(Object obj) {
+    public static boolean isNotBlank(String obj) {
         return !isBlank(obj);
     }
     public static String toStr(Object obj) {
@@ -105,7 +105,7 @@ public final class U {
     }
 
     public static void assertNil(Object obj, String msg) {
-        assertException(isBlank(obj), msg);
+        assertException(isNull(obj), msg);
     }
     public static void assert0(Number obj, String msg) {
         assertException(less0(obj), msg);

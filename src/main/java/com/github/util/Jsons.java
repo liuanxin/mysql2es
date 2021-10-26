@@ -23,7 +23,7 @@ public class Jsons {
 	}
 
 	public static String toJson(Object obj) {
-	    if (U.isBlank(obj)) {
+	    if (U.isNull(obj)) {
 	        return null;
         }
         try {
