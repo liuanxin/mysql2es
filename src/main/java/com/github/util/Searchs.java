@@ -69,7 +69,7 @@ public final class Searchs {
     );
     private static Map<String, Object> mappingType(String type, NeedAnalysis needAnalyzer) {
         Map<String, Object> map = A.maps("type", type);
-        if (STRING_TYPE.equals(type) && U.isNotBlank(needAnalyzer)) {
+        if (STRING_TYPE.equals(type) && U.isNotNull(needAnalyzer)) {
             if (needAnalyzer.keyword()) {
                 map.put("type", "keyword");
             }
