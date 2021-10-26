@@ -86,7 +86,7 @@ public class Dates {
 
     /** format date to string {@link Type} */
     public static String format(Date date, Type type) {
-        if (U.isBlank(date) || U.isBlank(type)) {
+        if (U.isNull(date) || U.isNull(type)) {
             return U.EMPTY;
         } else {
             return getDateFormat(type).print(date.getTime());
@@ -94,7 +94,7 @@ public class Dates {
     }
 
     public static String format(Date date, String type) {
-        if (U.isBlank(date) || U.isBlank(type)) {
+        if (U.isNull(date) || U.isBlank(type)) {
             return U.EMPTY;
         } else {
             return DateTimeFormat.forPattern(type).print(date.getTime());
