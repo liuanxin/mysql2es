@@ -36,18 +36,23 @@ public class Config {
      * |  |  |  |  |  |
      * *  *  *  *  *  *
      * </pre>
+     * default: every minutes
      *
      * @see org.springframework.scheduling.support.CronSequenceGenerator#doParse(String[])
      */
     @SuppressWarnings("deprecation")
-    private String cron = "0 * * * * *"; // every minutes
+    private String cron = "0 * * * * *";
 
+    /** whether to enable data compensation. default: false */
     private boolean enableCompensate = false;
-    private String compensateCron = "13 0/2 * * * *"; // every 2 minutes on the 13th second
-    private int beginCompensateSecond = 1200; // sync data is within 20 minutes
-    private int compensateSecond = 300; // Sync data within 5 minutes
+    /** cron expression for data compensation. default: every 2 minutes on the 13th second */
+    private String compensateCron = "13 0/2 * * * *";
+    /** when sync data time less than this value from now, start compensate data. default: 20 minutes(1200 second) */
+    private int beginCompensateSecond = 1200;
+    /** start time when compensating data. default: 5 minutes(300 second) */
+    private int compensateSecond = 300;
 
-    /** false, no version check is done when writing es */
+    /** false: no version check is done when writing es */
     private boolean versionCheck = true;
 
     /**
