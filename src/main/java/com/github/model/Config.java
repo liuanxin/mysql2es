@@ -38,9 +38,8 @@ public class Config {
      * </pre>
      * default: every minutes
      *
-     * @see org.springframework.scheduling.support.CronSequenceGenerator#doParse(String[])
+     * @see org.springframework.scheduling.support.CronExpression#parse(java.lang.String)
      */
-    @SuppressWarnings("deprecation")
     private String cron = "0 * * * * *";
 
     /** whether to enable data compensation. default: false */
