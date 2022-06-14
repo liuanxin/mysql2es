@@ -59,7 +59,7 @@ db2es:
       scheme: true
 
       # Custom sql statement (do not use ORDER BY and LIMIT, will be automatically added based on increment-column), no setting will automatically assemble from the database table
-      sql: "select o.id, o.order_no, o.customer_code, o.order_status, ifnull(o.price,0) price, ifnull(o.sum,0) sum,
+      sql: "select o.id, o.order_no, o.order_status, ifnull(o.price,0) price, ifnull(o.sum,0) sum,
           o.create_time, unix_timestamp(o.update_time) update_time, ifnull(o.pay_time,0) pay_time,
           ifnull(o.ship_time,0) ship_time, ifnull(o.receipt_time,0) receipt_time, ifnull(o.success_time,0) success_time,
           oa.receiver, oa.province, oa.city, oa.area, oa.address, oa.phone
