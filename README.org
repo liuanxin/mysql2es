@@ -11,29 +11,44 @@
 相关的配置如下:
 #+BEGIN_SRC yml
 spring:
-  datasource:                   # mysql 配置见: org.springframework.boot.autoconfigure.jdbc.DataSourceProperties 和 com.zaxxer.hikari.HikariConfig
+  # mysql 配置见: org.springframework.boot.autoconfigure.jdbc.DataSourceProperties 和 com.zaxxer.hikari.HikariConfig
+  datasource:
     ... 数据库配置 ...
+  # es 配置见: org.springframework.boot.autoconfigure.elasticsearch.rest.RestClientProperties
   elasticsearch.rest:
-    uris: 192.168.1.2:9200      # es 配置见: org.springframework.boot.autoconfigure.elasticsearch.rest.RestClientProperties
+    uris: 192.168.1.2:9200
 
 db2es:
-  enable: false                 # 是否启用同步, 不设置则默认是 true
-  increment-type: mysql         # 增量数据保存在哪, 不设置则保存在临时文件(默认在 /tmp 下, 使用 -Djava.io.tmpdir=/path 自定义位置), 只支持保存在临时文件和 mysql(会自动生成一个 t_db_to_es 的 kv 表)
-  cron: 0/5 * * * * *           # 可以不设定, 定时任务的表达式, 默认是每分钟执行一次
-
-  enable-compensate: true       # 是否启用数据补偿, 默认是 false, 当使用时间戳进行同步时用到, 如果长事务比较多, 会出现同步服务处理过了某个时间, 应用服务器才提交事务. 这会导致数据不一致
-  compensate-cron: 1 * * * * *  # 数据补偿用到的定时任务的表达式
-  begin-interval-second: 600    # 同步时间跟当前时间的间隔在这个值以内时才开始进行数据补偿, 单位: 秒. 默认 1200(20 分钟)
-  compensate-second: 60         # 数据补偿时往前的时间数, 单位: 秒. 默认 300(5 分钟)
-  version-check: false          # 如果设置为 false 则写入时不做 es 的版本检查, 默认是 true
+  # 是否启用同步, 不设置则默认是 true
+  enable: false
+  # 增量数据保存在哪, 不设置则保存在临时文件(默认在 /tmp 下, 使用 -Djava.io.tmpdir=/path 自定义位置), 只支持保存在临时文件和 mysql(会自动生成 t_db_to_es 表)
+  increment-type: mysql
+  # 可以不设定, 定时任务的表达式, 默认是每分钟执行一次
+  cron: 0/5 * * * * *
+  
+  # 是否启用数据补偿, 默认是 false, 当使用时间戳进行同步时用到, 如果长事务比较多, 会出现同步服务处理过了某个时间, 应用服务器才提交事务. 这会导致数据不一致
+  enable-compensate: true
+  # 数据补偿用到的定时任务的表达式
+  compensate-cron: 1 * * * * *
+  # 同步时间跟当前时间的间隔在这个值以内时才开始进行数据补偿, 单位: 秒. 默认 1200(20 分钟)
+  begin-interval-second: 600
+  # 数据补偿时往前的时间数, 单位: 秒. 默认 300(5 分钟)
+  compensate-second: 60
+  
+  # 如果设置为 false 则写入时不做 es 的版本检查, 默认是 true, 依赖索引中的 version-column 列
+  version-check: false
 
   relation:
     -
-      table: t_order            # *** 必须设定且要有主键. 主键会生成 es 中 /index/type/id 的 id, 如果是多列主键会用 "-" 拼接, 可以使用 % 做为通配来匹配多张表(当分表时)
-      increment-column: id      # *** 必须设定. 表示用来做数据增量操作时用, 一般使用自增 id 或 time(更新时间戳)
+      # *** 必须设定且要有主键. 主键会生成 es 中 /index/type/id 的 id, 如果是多列主键会用 "-" 拼接, 可以使用 % 做为通配来匹配多张表(当分表时)
+      table: t_order
+      # *** 必须设定. 表示用来做数据增量操作时用, 一般使用自增 id 或 time(更新时间戳)
+      increment-column: id
 
-      index: order              # 可以不设定. 表示 es 中 /index/type/id 的 index, 不设定将会从数据库表名生成(t_some_one ==> some-one), 6.0 开始 index name 必须是小写
-      scheme: true              # 可以不设定. 是否在启动时基于 数据库表结构 生成 es 的 scheme, 默认是 false, 建议先在 es 中建立好索引的 scheme
+      # 可以不设定. 表示 es 中 /index/type/id 的 index, 不设定将会从数据库表名生成(t_some_one ==> some-one), 6.0 开始 index name 必须是小写
+      index: order
+      # 可以不设定. 是否在启动时基于 数据库表结构 生成 es 的 scheme, 默认是 false, 建议先在 es 中建立好索引的 scheme
+      scheme: true
 
       # 可以不设定. 自定义的 sql 语句(不要用 ORDER BY 和 LIMIT, 会基于 increment-column 自动添加), 不设定将会基于 table 来拼装
       sql: "select o.id, o.order_no, o.customer_code, o.order_status, ifnull(o.price,0) price, ifnull(o.sum,0) sum,
@@ -42,30 +57,46 @@ db2es:
           oa.receiver, oa.province, oa.city, oa.area, oa.address, oa.phone
         from t_order o
           left join t_order_address oa on o.id = oa.order_id"
-      table-alias: o            # 可以不设定. 如果 sql 有使用多个表 join, 主表的别名
-      limit: 2000               # 可以不设定. 一次从数据库获取 及 同步进 es 的条数, 默认是 1000
+      # 可以不设定. 如果 sql 有使用多个表 join, 主表的别名
+      table-alias: o
+      # 可以不设定. 一次从数据库获取 及 同步进 es 的条数, 默认是 1000
+      limit: 2000
 
-      id-column: c1,c2          # 可以不设定. 用来生成 index 的 id 列, 不设置将会自动从表中获取, 当表中有主键又有多列唯一索引, 想用唯一索引来做 index 的 id 时可以使用此配置
-      id-prefix:                # 可以不设定. 当想在 index 的 id 上加前缀时使用
-      pattern-to-id: false      # 可以不设定. true 表示将表名的通配数据做为 id 的一部分(比如上面的 table 使用 t_order_% 通配, 则表 t_order_2016 同步时 2016 将做为 id 的前缀), 默认是 true
-      id-suffix:                # 可以不设定. 当想在 index 的 id 上加后缀时使用
+      # 可以不设定. 用来生成 index 的 id 列, 不设置将会自动从表中获取, 当表中有主键又有多列唯一索引, 想用唯一索引来做 index 的 id 时可以使用此配置
+      id-column: c1,c2
+      # 可以不设定. 当想在 index 的 id 上加前缀时使用
+      id-prefix:
+      # 可以不设定. true 表示将表名的通配数据做为 id 的一部分(比如上面的 table 使用 t_order_% 通配, 则表 t_order_2016 同步时 2016 将做为 id 的前缀), 默认是 true
+      pattern-to-id: false
+      # 可以不设定. 当想在 index 的 id 上加后缀时使用
+      id-suffix:
 
-      route-column: c1,c2       # 可以不设定. 数据保存进 es 时用来做分片的字段, 多个用逗号隔开
-      version-column: updated   # 可以不设定. 数据保存进 es 时用来表示版本的字段, id 或 时间戳
-      template-column: created  # 可以不设定. 使用 es 模板时用来做数据的字段名
-      template-pattern: yyyy_MM # 可以不设定. 使用 es 模板时用来做数据的字段名使用的模式, 当用在日期字段时有用
+      # 可以不设定. 数据保存进 es 时用来做分片的字段, 多个用逗号隔开
+      route-column: c1,c2
+      # 可以不设定. 数据保存进 es 时用来表示版本的字段, id 或 时间戳
+      version-column: updated
+      # 可以不设定. 使用 es 模板时用来做数据的字段名
+      template-column: created
+      # 可以不设定. 使用 es 模板时用来做数据的字段名使用的模式, 当用在日期字段时有用
+      template-pattern: yyyy_MM
 
-      column-lower-camel: true  # 属性是否转为驼峰, true 则将表中的 user_name 转换成 userName, 默认是 false
-      mapping:                  # 可以不设定. 默认将会从表字段生成, 只设置特殊情况即可
-        c_type: type              # table column(如果有别名则使用别名) : es field
-      ignore-column: c1,c2      # 可以不设定. 上面的 sql 中不想写入索引的字段(如果字段有别名则用别名)
+      # 属性是否转为驼峰, true 则将表中的 user_name 转换成 userName, 默认是 false
+      column-lower-camel: true
+      # 可以不设定. 默认将会从表字段生成, 只设置特殊情况即可
+      mapping:
+        # 表字段(如果有别名则使用别名): es 列
+        c_type: type
+      # 可以不设定. 上面的 sql 中不想写入索引的字段(如果字段有别名则用别名)
+      ignore-column: c1,c2
 
-      big-count-to-sql: 2000    # 可以不设定. sql 中 limit start,1000 里的 start 超出这个值就将 sql 优化成 inner join 的方式, 默认是 2000
-      primary-key: id           # 可以不设定. 主键名, 当表数据很多时使用  LIMIT 1000万,1000  效率会很慢, 这个字段会优化 sql 语句, 默认是 id
-      # 原来的 sql: SELECT ... FROM t_product WHERE time > '2010-01-01 00:00:01' LIMIT 1000万,1000
-      # 优化的 sql: SELECT ... FROM t_product c inner join (SELECT id FROM t_product WHERE time > '2010-01-01 00:00:01' LIMIT 1000万,1000) t on t.id = c.id
+      # 可以不设定. sql 中 limit start,1000 里的 start 超出这个值就将 sql 优化成 inner join 的方式, 默认是 2000
+      big-count-to-sql: 10000
+      # 可以不设定. 主键名, 当表数据很多时使用 <LIMIT 1000万, 1000> 效率会很慢, 会基于这个字段优化 sql 语句, 默认是 id
+      primary-key: id
+      # 原来的 sql: SELECT ... FROM t_product WHERE time > '2010-01-01 00:00:01' LIMIT 1000万, 1000
+      # 优化的 sql: SELECT ... FROM t_product c inner join (SELECT id FROM t_product WHERE time > '2010-01-01 00:00:01' LIMIT 1000万, 1000) t on t.id = c.id
       # 原先的 sql 执行时先通过索引找到 id, 再去存数据的物理块取记录, 最后在结果集里偏移 1000万 后再取 1000 条, 所以效率好不了
-      # 优化的 sql 括号中偏移 1000万 是基于覆盖索引在处理(索引存的是索引列 + 主键), 然后再用 id 联表取数据, 因此这样是很快的
+      # 优化的 sql 括号中偏移 1000万 全都是基于覆盖索引, 之后再用 id 联表取数据, 因此这样是很快的
 
       # 与主表 一对一 关联的子表数据, 最终会跟主表数据平级(在上面的 sql 中使用 left join 也可以, 如果 left join 的 sql 查询性能不如单表查询时, 可以使用此种方式)
       relation-mapping:
