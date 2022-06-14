@@ -3,11 +3,17 @@
 
 ** MariaDB/MySQL to ElasticSearch
 
-   Synchronize the MariaDB/MySQL table data to ElasticSearch,
-   does not support physical deletion (physical deletion needs to be processed according to binlog),
-   it is recommended to use logical deletion. For example, add the「deleted(1 deleted, default 0)」field to the table.
+  Synchronize the MariaDB/MySQL table data to ElasticSearch,
+  does not support physical deletion (physical deletion needs to be processed according to binlog),
+  it is recommended to use logical deletion. For example, add the「deleted(1 deleted, default 0)」field to the table.
 
-   Based on jdk 8 and spring boot 2
+  Based on jdk 8 and spring boot
+  + support for sub-tables, but not for sub-databases
+  + support [[https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-routing-field.html][routing]]
+  + support [[https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html#index-versioning][index-version]]
+  + support [[https://www.elastic.co/guide/en/elasticsearch/reference/current/index-templates.html][template]]
+  + support [[https://www.elastic.co/guide/en/elasticsearch/reference/current/nested.html][nested-type]]
+
 
 
 The relevant configuration instructions are as follows:
