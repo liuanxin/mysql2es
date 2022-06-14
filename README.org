@@ -57,7 +57,7 @@ db2es:
       scheme: true
 
       # 可以不设定. 自定义的 sql 语句(不要用 ORDER BY 和 LIMIT, 会基于 increment-column 自动添加), 不设定将会基于 table 来拼装
-      sql: "select o.id, o.order_no, o.customer_code, o.order_status, ifnull(o.price,0) price, ifnull(o.sum,0) sum,
+      sql: "select o.id, o.order_no, o.order_status, ifnull(o.price,0) price, ifnull(o.sum,0) sum,
           o.create_time, unix_timestamp(o.update_time) update_time, ifnull(o.pay_time,0) pay_time,
           ifnull(o.ship_time,0) ship_time, ifnull(o.receipt_time,0) receipt_time, ifnull(o.success_time,0) success_time,
           oa.receiver, oa.province, oa.city, oa.area, oa.address, oa.phone
