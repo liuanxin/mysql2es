@@ -13,6 +13,38 @@
   + 支持 [[https://www.elastic.co/guide/en/elasticsearch/reference/current/index-templates.html][索引模板]]
   + 支持 [[https://www.elastic.co/guide/en/elasticsearch/reference/current/nested.html][嵌套类型]]
 
+
+** 运行
+#+BEGIN_SRC bash
+git clone https://github.com/liuanxin/mysql2es.git
+cd mysql2es
+
+# 查看所有分支 --> 对应 es 版本
+echo "`git branch`"
+git checkout ${es_version}
+mvn clean package -DskipTests
+
+# 更改 application-prod.yml 成你自己的配置
+nohup java -jar -Dspring.profiles.active=prod target/mysql2es.jar >/dev/null 2>&1 &
+
+或者
+
+# 添加你的配置文件到任意地方, 如: ~/application.yml(建议基于 application-prod.yml 修改即可)
+nohup java -jar -Dspring.config.location=~/application.yml target/mysql2es.jar >/dev/null 2>&1 &
+
+
+# 日志在 ~/logs/mysql2es.log 中
+#+END_SRC
+
+
+** 说明
+
+建议先在 ElasticSearch 中建好 index 的 scheme(如果想基于数据库表字段类型来生成可以在配置中设置 ~scheme~ 为 ~true~).  \\
+
+系统启动后会根据定时规则来同步数据, 同步时基于 sql 拼接增量字段来获取分页数据并批量写入 ElasticSearch 直到没有数据为止,
+最后的记录会存起来(mysql 或临时文件, 前者会自动生成数据库表, 后者默认在 /tmp 下, 使用 -Djava.io.tmpdir=/path 修改)
+供下次同步时使用(如果到了下次运行时间, 但上次还没有运行结束将会顺延)
+
 相关的配置如下:
 #+BEGIN_SRC yml
 spring:
@@ -123,38 +155,6 @@ db2es:
       table: t_product
       increment-column: update_time
 #+END_SRC
-
-
-** 运行
-#+BEGIN_SRC bash
-git clone https://github.com/liuanxin/mysql2es.git
-cd mysql2es
-
-# 查看所有分支 --> 对应 es 版本
-echo "`git branch`"
-git checkout ${es_version}
-mvn clean package -DskipTests
-
-# 更改 application-prod.yml 成你自己的配置
-nohup java -jar -Dspring.profiles.active=prod target/mysql2es.jar >/dev/null 2>&1 &
-
-或者
-
-# 添加你的配置文件到任意地方, 如: ~/application.yml(建议基于 application-prod.yml 修改即可)
-nohup java -jar -Dspring.config.location=~/application.yml target/mysql2es.jar >/dev/null 2>&1 &
-
-
-# 日志在 ~/logs/mysql2es.log 中
-#+END_SRC
-
-
-** 说明
-
-建议先在 ElasticSearch 中建好 index 的 scheme(如果想基于数据库表字段类型来生成可以在配置中设置 ~scheme~ 为 ~true~).  \\
-
-系统启动后会根据定时规则来同步数据, 同步时基于 sql 拼接增量字段来获取分页数据并批量写入 ElasticSearch 直到没有数据为止,
-最后的记录会存起来(mysql 或临时文件, 前者会自动生成数据库表, 后者默认在 /tmp 下, 使用 -Djava.io.tmpdir=/path 修改)
-供下次同步时使用(如果到了下次运行时间, 但上次还没有运行结束将会顺延)
 
 
 cron 的说明如下
