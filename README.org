@@ -45,6 +45,7 @@ nohup java -jar -Dspring.config.location=~/application.yml target/mysql2es.jar >
 最后的记录会存起来(mysql 或临时文件, 前者会自动生成数据库表, 后者默认在 /tmp 下, 使用 -Djava.io.tmpdir=/path 修改)
 供下次同步时使用(如果到了下次运行时间, 但上次还没有运行结束将会顺延)
 
+
 相关的配置如下:
 #+BEGIN_SRC yml
 spring:
