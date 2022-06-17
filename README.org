@@ -7,7 +7,7 @@
   建议使用逻辑删除(业务系统使用逻辑删除本身就是一件很自然的事), 比如在表中添加「deleted(1 已删除, 默认是 0)」字段.
 
   基于 jdk 8 和 spring boot
-  + 支持多表(分表)写入一个 ElasticSearch 索引, 暂不支持分库
+  + 支持多表(分表), 暂不支持分库
   + 支持 [[https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-routing-field.html][路由]]
   + 支持 [[https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html#index-versioning][数据版本]]
   + 支持 [[https://www.elastic.co/guide/en/elasticsearch/reference/current/index-templates.html][索引模板]]
