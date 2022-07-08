@@ -62,7 +62,7 @@ spring:
 db2es:
   # Disabled to sync if set false, default is true
   enable: false
-  # Where are the incremental fields stored, default temp-file, only supports temp-file and mysql
+  # Where are the incremental fields stored(temp_file or mysql), default temp file
   increment-type: mysql
   # Default is to execute once per minute
   cron: 0/5 * * * * *
