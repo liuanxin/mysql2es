@@ -15,10 +15,9 @@ public class Relation {
     private static final String GT = " > ";
     private static final String EQUALS = " = ";
 
-
-    /** when sync data time less than this value from now, start compensate data. default: 20 minutes(1200 second) */
+    /** The data compensation starts only when the interval between the synchronization time and the current time is within this value. When this value is configured, the above global configuration will no longer be used, unit: seconds */
     private int beginCompensateSecond = 0;
-    /** start time when compensating data. default: 5 minutes(300 second) */
+    /** The number of time ahead for data compensation, when this value is configured, the above global configuration will no longer be used, unit: seconds */
     private int compensateSecond = 0;
 
 
