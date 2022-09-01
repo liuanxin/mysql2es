@@ -71,7 +71,14 @@ public class SyncDataService {
         int beginCompensateSecond = config.getBeginCompensateSecond();
         int compensateSecond = config.getCompensateSecond();
         for (Relation relation : config.getRelation()) {
-            dataRepository.asyncCompensateData(incrementType, relation, beginCompensateSecond, compensateSecond);
+            int relationBeginCompensateSecond = relation.getBeginCompensateSecond();
+            int relationCompensateSecond = relation.getCompensateSecond();
+
+            int begin = relationBeginCompensateSecond > 0 ? relationBeginCompensateSecond : beginCompensateSecond;
+            int compensate = relationCompensateSecond > 0 ? relationCompensateSecond : compensateSecond;
+            if (begin > 0 && compensate > 0) {
+                dataRepository.asyncCompensateData(incrementType, relation, begin, compensate);
+            }
         }
     }
 }
