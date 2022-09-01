@@ -15,6 +15,13 @@ public class Relation {
     private static final String GT = " > ";
     private static final String EQUALS = " = ";
 
+
+    /** when sync data time less than this value from now, start compensate data. default: 20 minutes(1200 second) */
+    private int beginCompensateSecond = 0;
+    /** start time when compensating data. default: 5 minutes(300 second) */
+    private int compensateSecond = 0;
+
+
     /** Database table name */
     private String table;
 
