@@ -80,6 +80,11 @@ db2es:
 
   relation:
     -
+      # The data compensation starts only when the interval between the synchronization time and the current time is within this value. When this value is configured, the above global configuration will no longer be used, unit: seconds
+      begin-interval-second: 1800
+      # The number of time ahead for data compensation, when this value is configured, the above global configuration will no longer be used, unit: seconds
+      compensate-second: 1500
+
       # *** Must set and have primary key. The primary key will generate the id of /index/type/id in ElasticSearch, if has multi, id where append with "-". can use % as a wildcard to match multiple tables(when sharding table)
       table: t_order
       # *** Must set. Indicates that it is used for data increment operations. Generally, it uses auto increment ~id~ or ~time~
