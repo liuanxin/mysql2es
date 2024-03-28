@@ -8,10 +8,10 @@
 
   基于 jdk 8 和 spring boot
   + 支持多表(分表), 暂不支持分库
-  + 支持 [[https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-routing-field.html][路由]]
-  + 支持 [[https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html#index-versioning][数据版本]]
-  + 支持 [[https://www.elastic.co/guide/en/elasticsearch/reference/current/index-templates.html][索引模板]]
-  + 支持 [[https://www.elastic.co/guide/en/elasticsearch/reference/current/nested.html][嵌套类型]]
+  + 支持 [[https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-routing-field.html][路由(routing)]]
+  + 支持 [[https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html#index-versioning][数据版本(index-version)]]
+  + 支持 [[https://www.elastic.co/guide/en/elasticsearch/reference/current/index-templates.html][索引模板(template)]]
+  + 支持 [[https://www.elastic.co/guide/en/elasticsearch/reference/current/nested.html][嵌套类型(nested)]]
 
 
 ** 运行
